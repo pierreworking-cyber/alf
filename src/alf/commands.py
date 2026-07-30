@@ -15,9 +15,19 @@ def hello_command():
     print("Hello Peter.")
     print()
 
+def help_command():
+    print()
+    print("Available commands:")
+
+    for command in sorted(commands):
+        print(f"- {command}")
+
+    print()
+
 commands = {
     "status": status_command,
-    "hello" : hello_command
+    "hello" : hello_command,
+    "help" : help_command
 }
 
 
