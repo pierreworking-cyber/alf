@@ -4,7 +4,7 @@ ALF command dispatcher.
 
 from .system import get_system_report
 from .memory import remember, get_memories, get_memory_categories
-from .identity import describe_identity
+from .identity import get_identity, describe_identity
 
 def status_command(argument=None):
     print()
@@ -79,6 +79,14 @@ def about_command(argument=None):
     print()
     describe_identity()
 
+def version_command(argument=None):
+    identity = get_identity()
+
+    print()
+    print(f"ALF version {identity['version']}")
+    print()
+
+
 commands = {
     "status": {
         "function": status_command,
@@ -114,6 +122,11 @@ commands = {
         "function": about_command,
         "help": "Explain what ALF is.",
         "usage": "alf about",
+    },
+    "version": {
+        "function": version_command,
+        "help": "Show ALF version.",
+        "usage": "alf version",
     },
 }
 
