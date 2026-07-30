@@ -3,4 +3,4 @@ __pycache__/
 *.pyc
 *.egg-info/
 # ALF memory database
-data/*.db
+*.db
