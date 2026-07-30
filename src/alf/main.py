@@ -29,15 +29,21 @@ def main():
     import sys
 
     if len(sys.argv) > 1:
-        if run(sys.argv[1]):
+
+        command = sys.argv[1]
+        argument = None
+
+        if len(sys.argv) > 2:
+            argument = sys.argv[2]
+
+        if run(command, argument):
             return
 
-        print(f"Unknown command: {sys.argv[1]}")
+        print(f"Unknown command: {command}")
         print("Try: alf help")
         return
 
     introduce()
-
 
 if __name__ == "__main__":
     main()

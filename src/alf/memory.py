@@ -42,5 +42,51 @@ def initialise_database():
         """
     )
 
+def remember(category: str, content: str):
+    """
+    Store a memory in ALF's database.
+    """
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    cursor.execute(
+        """
+        INSERT INTO memories (created, category, content)
+        VALUES (?, ?, ?)
+        """,
+        (created, category, content),
+    )
+
     connection.commit()
     connection.close()
+
+
+def get_memories():
+    """
+    Retrieve all ALF memories.
+    """
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, created, category, content
+        FROM memories
+        ORDER BY id
+        """
+    )
+
+    memories = cursor.fetchall()
+
+    connection.close()
+
+    return memories
+    connection.commit()
+    connection.close()
+
