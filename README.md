@@ -43,3 +43,22 @@ Peter's computer
       LLM
 
 ALF is learning.
+
+## Current Status
+
+Version: 0.1
+
+Capabilities:
+- Exists
+- Has version control
+- Can introduce itself
+
+Memory:
+- Git history
+
+Intelligence:
+- None yet
+
+Known limitations:
+- Almost everything
+
