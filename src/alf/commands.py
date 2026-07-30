@@ -11,18 +11,20 @@ def status_command(argument=None):
     print(get_system_report())
     print()
 
-def hello_command():
+def hello_command(argument=None):
     print()
     print("Hello Peter.")
     print()
 
-def help_command():
+
+def help_command(argument=None):
     print()
     print("Available commands:")
+    print()
 
     for command in sorted(commands):
-        print(f"- {command}")
-
+        description = commands[command]["help"]
+        print(f"- {command}: {description}")
     print()
 
 def remember_command(argument=None):
@@ -60,11 +62,25 @@ def memories_command(argument=None):
 
 
 commands = {
-    "status": status_command,
-    "hello" : hello_command,
-    "help" : help_command,
-    "remember" : remember_command,
-    "memories" : memories_command,
+    "status": {
+        "function": status_command,
+        "help": "Show system information."},
+
+    "hello": {
+        "function": hello_command,
+        "help": "Show welcome message."},
+
+    "help": {
+        "function": help_command,
+        "help": "list available abilities."},
+
+    "remember": {
+        "function": remember_command,
+        "help": "Add a memory."},
+
+    "memories":{
+        "function": memories_command,
+        "help": "Recall previous memories."},
 }
 
 def run(command: str, argument=None):
@@ -75,7 +91,7 @@ def run(command: str, argument=None):
     """
 
     if command in commands:
-        commands[command](argument)
+        commands[command]["function"](argument)
         return True
 
     return False
