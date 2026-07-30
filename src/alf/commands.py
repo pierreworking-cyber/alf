@@ -4,6 +4,7 @@ ALF command dispatcher.
 
 from .system import get_system_report
 from .memory import remember, get_memories, get_memory_categories
+from .identity import get_identity
 
 def status_command(argument=None):
     print()
@@ -74,6 +75,22 @@ def memories_command(argument=None):
         print(f"  {content}")
         print()
 
+def about_command(argument=None):
+
+    identity = get_identity()
+
+    print()
+    print(identity["name"])
+    print("---")
+    print(identity["purpose"])
+    print()
+
+    print("Capabilities:")
+    print("- System awareness")
+    print("- Persistent memory")
+    print("- Categorised knowledge storage")
+    print("- Command discovery")
+    print()
 
 commands = {
     "status": {
@@ -104,6 +121,12 @@ commands = {
         "function": memories_command,
         "help": "Recall previous memories.",
         "usage": "alf memories",
+    },
+
+    "about": {
+        "function": about_command,
+        "help": "Explain what ALF is.",
+        "usage": "alf about",
     },
 }
 
