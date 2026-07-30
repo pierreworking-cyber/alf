@@ -25,25 +25,39 @@ def help_command():
 
     print()
 
-def remember_command(text):
-    remember("note", text)
+def remember_command(argument=None):
+    if not argument:
+        print()
+        print("Usage: alf remember <text>")
+        print()
+        return
+
+    remember("note", argument)
 
     print()
-    print("Memory stored.")
+    print("I'll remember that Peter.")
     print()
 
 
-def memories_command():
+def memories_command(argument=None):
     memories = get_memories()
 
     print()
-    print("ALF memories:")
-    print()
+    print("ALF memories")
+    print("------------")
+
+    if not memories:
+        print("No memories stored.")
+        print()
+        return
 
     for memory in memories:
-        print(memory)
+        _, created, category, content = memory
 
-    print()
+        print(f"{created} [{category}]")
+        print(f"  {content}")
+        print()
+
 
 commands = {
     "status": status_command,
