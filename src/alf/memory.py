@@ -11,6 +11,12 @@ from datetime import datetime
 
 DATABASE = Path("data/alf.db")
 
+VALID_MEMORY_CATEGORIES = [
+    "note",
+    "fact",
+    "decision",
+    "preference",
+]
 
 def get_connection():
     """
@@ -41,6 +47,14 @@ def initialise_database():
         )
         """
     )
+
+def get_memory_categories():
+    """
+    Return valid memory categories.
+    """
+
+    return VALID_MEMORY_CATEGORIES
+
 
 def remember(category: str, content: str):
     """

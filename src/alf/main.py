@@ -31,12 +31,8 @@ def main():
     if len(sys.argv) > 1:
 
         command = sys.argv[1]
-        argument = None
-
-        if len(sys.argv) > 2:
-            argument = sys.argv[2]
-
-        if run(command, argument):
+        arguments = sys.argv[2:]
+        if run(command, arguments):
             return
 
         print(f"Unknown command: {command}")

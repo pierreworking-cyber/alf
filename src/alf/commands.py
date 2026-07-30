@@ -3,8 +3,7 @@ ALF command dispatcher.
 """
 
 from .system import get_system_report
-from .memory import remember, get_memories
-
+from .memory import remember, get_memories, get_memory_categories
 
 def status_command(argument=None):
     print()
@@ -31,19 +30,30 @@ def help_command(argument=None):
         print(f"    Usage: {usage}")
         print()
 
-def remember_command(argument=None):
-    if not argument:
+def remember_command(category=None, content=None):
+    if not category or not content:
         print()
-        print("Usage: alf remember <text>")
+        print(f"Usage: {commands['remember']['usage']}")
         print()
         return
 
-    remember("note", argument)
+    if category not in get_memory_categories():
+        print()
+        print(f"Unknown category: {category}")
+        print()
+        print("Valid categories:")
+
+        for valid_category in get_memory_categories():
+            print(f"- {valid_category}")
+
+        print()
+        return
+
+    remember(category, content)
 
     print()
-    print("I'll remember that Peter.")
+    print(f"I'll remember that Peter [{category}].")
     print()
-
 
 def memories_command(argument=None):
     memories = get_memories()
@@ -87,7 +97,7 @@ commands = {
     "remember": {
         "function": remember_command,
         "help": "Add a memory.",
-        "usage": 'alf remember "text to remember"',
+        "usage": 'alf remember <category> "text"',
     },
 
     "memories": {
@@ -97,15 +107,15 @@ commands = {
     },
 }
 
-def run(command: str, argument=None):
-    """
-    Execute an ALF command.
-
-    Returns True if the command was recognised.
-    """
+def run(command: str, arguments=None):
 
     if command in commands:
-        commands[command]["function"](argument)
+
+        if arguments:
+            commands[command]["function"](*arguments)
+        else:
+            commands[command]["function"]()
+
         return True
 
     return False
