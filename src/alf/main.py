@@ -23,6 +23,9 @@ def introduce():
     print("- almost everything")
     print()
 
+def main():
+    introduce()
+
 
 if __name__ == "__main__":
-    introduce()
+    main()
