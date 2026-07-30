@@ -86,10 +86,10 @@ def about_command(argument=None):
     print()
 
     print("Capabilities:")
-    print("- System awareness")
-    print("- Persistent memory")
-    print("- Categorised knowledge storage")
-    print("- Command discovery")
+
+    for capability in identity["capabilities"]:
+        print(f"- {capability}")
+
     print()
 
 commands = {
