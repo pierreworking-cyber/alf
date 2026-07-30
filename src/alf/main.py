@@ -6,18 +6,21 @@ ALF - Peter's local computing companion.
 Version 0.1
 """
 
-from .system import get_system_report
 
 VERSION = "0.1"
-
+from .system import get_system_report
+from .identity import get_identity
 
 def introduce():
     print()
     print("Good evening, Peter.")
     print()
-    print("I am ALF.")
-    print(f"Version: {VERSION}")
     print()
+    identity = get_identity()
+
+    print(f"I am {identity['name']}.")
+    print(f"Version: {identity['version']}")
+    print(f"Purpose: {identity['purpose']}")
     print("Current abilities:")
     print("- introduce myself")
     print()
