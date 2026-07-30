@@ -24,8 +24,12 @@ def help_command(argument=None):
 
     for command in sorted(commands):
         description = commands[command]["help"]
-        print(f"- {command}: {description}")
-    print()
+        usage = commands[command]["usage"]
+
+        print(f"- {command}")
+        print(f"    {description}")
+        print(f"    Usage: {usage}")
+        print()
 
 def remember_command(argument=None):
     if not argument:
@@ -64,23 +68,33 @@ def memories_command(argument=None):
 commands = {
     "status": {
         "function": status_command,
-        "help": "Show system information."},
+        "help": "Show system information.",
+        "usage": "alf status",
+    },
 
     "hello": {
         "function": hello_command,
-        "help": "Show welcome message."},
+        "help": "Show welcome message.",
+        "usage": "alf hello",
+    },
 
     "help": {
         "function": help_command,
-        "help": "list available abilities."},
+        "help": "List available abilities.",
+        "usage": "alf help",
+    },
 
     "remember": {
         "function": remember_command,
-        "help": "Add a memory."},
+        "help": "Add a memory.",
+        "usage": 'alf remember "text to remember"',
+    },
 
-    "memories":{
+    "memories": {
         "function": memories_command,
-        "help": "Recall previous memories."},
+        "help": "Recall previous memories.",
+        "usage": "alf memories",
+    },
 }
 
 def run(command: str, argument=None):
