@@ -5,7 +5,7 @@ ALF - Peter's local computing companion.
 
 """
 
-from .identity import get_identity
+from .identity import describe_identity
 from .commands import run
 from .time import get_greeting
 
@@ -13,17 +13,8 @@ def introduce():
     print()
     print()
     print(f"{get_greeting()}, Peter.")
-    identity = get_identity()
 
-    print(f"I am {identity['name']}.")
-    print(f"Version: {identity['version']}")
-    print(f"Purpose: {identity['purpose']}")
-    print("Current abilities:")
-    print("- introduce myself")
-    print()
-    print("Current limitations:")
-    print("- almost everything")
-    print()
+    describe_identity()
 
 def main():
     import sys

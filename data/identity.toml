@@ -9,3 +9,11 @@ capabilities = [
     "Categorised knowledge storage",
     "Command discovery"
 ]
+
+limitations = [
+    "Limited conversation ability",
+    "No natural language understanding",
+    "No autonomous planning",
+    "No external integrations",
+    "Limited memory management tools"
+]

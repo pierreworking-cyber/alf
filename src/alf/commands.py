@@ -4,7 +4,7 @@ ALF command dispatcher.
 
 from .system import get_system_report
 from .memory import remember, get_memories, get_memory_categories
-from .identity import get_identity
+from .identity import describe_identity
 
 def status_command(argument=None):
     print()
@@ -76,21 +76,8 @@ def memories_command(argument=None):
         print()
 
 def about_command(argument=None):
-
-    identity = get_identity()
-
     print()
-    print(identity["name"])
-    print("---")
-    print(identity["purpose"])
-    print()
-
-    print("Capabilities:")
-
-    for capability in identity["capabilities"]:
-        print(f"- {capability}")
-
-    print()
+    describe_identity()
 
 commands = {
     "status": {
