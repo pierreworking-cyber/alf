@@ -6,6 +6,7 @@ Provides information about the machine ALF is running on.
 
 import platform
 import os
+from .git import get_git_branch
 
 def get_uptime():
     """
@@ -37,7 +38,7 @@ def get_system_report():
         report.append(f"Processor: {cpu}")
 
     report.append(f"Python version: {platform.python_version()}")
-
+    report.append(f"Git branch: {get_git_branch()}")
 
     total_memory = get_total_memory()
     available_memory = get_available_memory()
