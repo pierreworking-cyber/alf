@@ -7,6 +7,19 @@ Provides information about the machine ALF is running on.
 import platform
 import os
 
+def get_uptime():
+    """
+    Return system uptime as a friendly string.
+    """
+
+    with open("/proc/uptime") as f:
+        seconds = float(f.read().split()[0])
+
+    days = int(seconds // 86400)
+    hours = int((seconds % 86400) // 3600)
+
+    return f"{days} days, {hours} hours"
+
 
 def get_system_report():
     report = []
@@ -17,6 +30,7 @@ def get_system_report():
     report.append(f"Operating system: {platform.system()}")
     report.append(f"Hostname: {platform.node()}")
     report.append(f"Architecture: {platform.machine()}")
+    report.append(f"Uptime: {get_uptime()}")
 
     cpu = platform.processor()
     if cpu:
