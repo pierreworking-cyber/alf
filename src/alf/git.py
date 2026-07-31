@@ -25,3 +25,12 @@ def get_git_status():
         return "modified"
 
     return "clean"
+
+def get_last_commit():
+    result = subprocess.run(
+        ["git", "log", "-1", "--pretty=%s"],
+        capture_output=True,
+        text=True,
+    )
+
+    return result.stdout.strip()
