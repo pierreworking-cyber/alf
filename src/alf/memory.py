@@ -18,22 +18,11 @@ VALID_MEMORY_CATEGORIES = [
     "preference",
 ]
 
-def get_connection():
-    """
-    Open a connection to ALF's memory database.
-    """
 
-    DATABASE.parent.mkdir(exist_ok=True)
-
-    return sqlite3.connect(DATABASE)
-
-
-def initialise_database():
+def initialise_database(connection):
     """
     Create ALF memory tables if they do not exist.
     """
-
-    connection = get_connection()
 
     cursor = connection.cursor()
 
@@ -47,6 +36,25 @@ def initialise_database():
         )
         """
     )
+
+    connection.commit()
+
+
+def get_connection():
+    """
+    Open a connection to ALF's memory database.
+
+    Ensures the database structure exists.
+    """
+
+    DATABASE.parent.mkdir(exist_ok=True)
+
+    connection = sqlite3.connect(DATABASE)
+
+    initialise_database(connection)
+
+    return connection
+
 
 def get_memory_categories():
     """
@@ -101,6 +109,3 @@ def get_memories():
     connection.close()
 
     return memories
-    connection.commit()
-    connection.close()
-
