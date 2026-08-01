@@ -5,35 +5,56 @@ Git repository awareness.
 import subprocess
 
 
-def get_git_branch():
+def run_git_command(arguments):
+    """
+    Run a Git command safely.
+
+    Returns:
+        Command output if successful.
+        None if Git fails.
+    """
+
     result = subprocess.run(
-        ["git", "branch", "--show-current"],
+        ["git"] + arguments,
         capture_output=True,
         text=True,
     )
+
+    if result.returncode != 0:
+        return None
 
     return result.stdout.strip()
 
-def get_git_status():
-    result = subprocess.run(
-        ["git", "status", "--porcelain"],
-        capture_output=True,
-        text=True,
+
+def get_git_branch():
+    result = run_git_command(
+        ["branch", "--show-current"]
     )
 
-    if result.stdout.strip():
+    return result if result else "Unavailable"
+
+
+def get_git_status():
+    result = run_git_command(
+        ["status", "--porcelain"]
+    )
+
+    if result is None:
+        return "Unavailable"
+
+    if result:
         return "modified"
 
     return "clean"
 
+
 def get_last_commit():
-    result = subprocess.run(
-        ["git", "log", "-1", "--pretty=%s"],
-        capture_output=True,
-        text=True,
+    result = run_git_command(
+        ["log", "-1", "--pretty=%s"]
     )
 
-    return result.stdout.strip()
+    return result if result else "Unavailable"
+
 
 def get_git_information():
     """
