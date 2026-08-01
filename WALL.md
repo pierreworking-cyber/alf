@@ -10,6 +10,7 @@ Not commitments. Not a schedule.
 - Move runtime data from project directory to user data directory
 - Separate configuration from identity
 - Add application logging
+- Review current module responsibilities
 - Decide whether ALF runs as:
   - manual application
   - user service

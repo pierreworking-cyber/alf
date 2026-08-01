@@ -5,8 +5,6 @@ Provides information about the machine ALF is running on.
 """
 
 import platform
-import os
-from .git import get_git_branch
 
 def get_uptime():
     """
@@ -23,32 +21,24 @@ def get_uptime():
 
 
 def get_system_report():
+
+    information = get_system_information()
+
     report = []
 
     report.append("ALF system report")
     report.append("-----------------")
+    report.append(f"Operating system: {information['operating_system']}")
+    report.append(f"Hostname: {information['hostname']}")
+    report.append(f"Architecture: {information['architecture']}")
+    report.append(f"Python version: {information['python_version']}")
+    report.append(f"Uptime: {information['uptime']}")
 
-    report.append(f"Operating system: {platform.system()}")
-    report.append(f"Hostname: {platform.node()}")
-    report.append(f"Architecture: {platform.machine()}")
-    report.append(f"Uptime: {get_uptime()}")
+    if information["total_memory"]:
+        report.append(f"Total memory: {information['total_memory']}")
 
-    cpu = platform.processor()
-    if cpu:
-        report.append(f"Processor: {cpu}")
-
-    report.append(f"Python version: {platform.python_version()}")
-    report.append(f"Git branch: {get_git_branch()}")
-
-    total_memory = get_total_memory()
-    available_memory = get_available_memory()
-
-    if total_memory:
-        report.append(f"Total memory: {total_memory}")
-
-    if available_memory:
-        report.append(f"Available memory: {available_memory}")
-
+    if information["available_memory"]:
+        report.append(f"Available memory: {information['available_memory']}")
     return "\n".join(report)
 
 def get_available_memory():
@@ -87,3 +77,22 @@ def get_total_memory():
         pass
 
     return None
+
+def get_system_information():
+    """
+    Return system information as structured data.
+    """
+
+    information = {}
+
+    information["operating_system"] = platform.system()
+    information["hostname"] = platform.node()
+    information["architecture"] = platform.machine()
+    information["python_version"] = platform.python_version()
+
+    information["uptime"] = get_uptime()
+
+    information["total_memory"] = get_total_memory()
+    information["available_memory"] = get_available_memory()
+
+    return information
