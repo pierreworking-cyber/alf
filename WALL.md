@@ -40,7 +40,19 @@ Not commitments. Not a schedule.
 
 ## Interfaces
 
-- SSH access from MacBook Pro
+- SSH access from MacBook Pro## Future Architecture
+
+---
+
+## Future Architecture
+- Consider replacing WALL.md with structured project database
+  Possible fields:
+    - importance
+    - difficulty
+    - complexity
+    - status
+    - dependencies
+    - notes
 - Remote ALF client
 - Possible graphical interface
 - Voice interface
@@ -52,3 +64,5 @@ Not commitments. Not a schedule.
 - Terminal presentation improvements
 - Configurable greeting style
 - Optional personality settings
+
+
