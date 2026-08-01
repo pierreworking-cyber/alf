@@ -4,6 +4,11 @@ Ideas and possibilities for future development.
 Not commitments. Not a schedule.
 
 ---
+## Principles
+
+- Separate discourse from direction.
+
+---
 
 ## Architecture
 
@@ -57,7 +62,7 @@ Not commitments. Not a schedule.
 - Remote ALF client
 - Possible graphical interface
 - Voice interface
-
+- Capability providers should report their own state.
 ---
 
 ## Personality
