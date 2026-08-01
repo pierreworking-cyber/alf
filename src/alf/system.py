@@ -96,3 +96,13 @@ def get_system_information():
     information["available_memory"] = get_available_memory()
 
     return information
+
+def get_capability():
+    """
+    Return system awareness capability information.
+    """
+
+    return {
+        "name": "System awareness",
+        "description": "Reports information about the machine ALF is running on",
+    }

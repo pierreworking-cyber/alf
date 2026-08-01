@@ -24,7 +24,10 @@ Not commitments. Not a schedule.
 - Consider automatic capability discovery
 - Improve error handling for missing external tools
 - Improve capability reporting
-
+- Capability providers
+  - Each module is responsible for reporting its own capability and state
+  - Central capability system discovers and aggregates providers
+  
 ## Memory
 
 - Forget/delete commands
@@ -46,7 +49,7 @@ Not commitments. Not a schedule.
 
 ## Interfaces
 
-- SSH access from MacBook Pro## Future Architecture
+- SSH access from MacBook Pro
 
 ---
 
