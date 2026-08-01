@@ -2,13 +2,13 @@
 ALF command dispatcher.
 """
 
-from .system import get_system_report
+from .status import get_status_report
 from .memory import remember, get_memories, get_memory_categories
 from .identity import get_identity, describe_identity
 
 def status_command(argument=None):
     print()
-    print(get_system_report())
+    print(get_status_report())
     print()
 
 def hello_command(argument=None):

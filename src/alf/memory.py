@@ -109,3 +109,28 @@ def get_memories():
     connection.close()
 
     return memories
+
+
+def get_memory_information():
+    """
+    Return information about ALF's memory system.
+    """
+
+    memories = get_memories()
+
+    information = {}
+
+    information["total_memories"] = len(memories)
+
+    categories = []
+
+    for memory in memories:
+        category = memory[2]
+
+        if category not in categories:
+            categories.append(category)
+
+    information["categories"] = categories
+
+    return information
+

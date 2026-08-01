@@ -15,7 +15,7 @@ Not commitments. Not a schedule.
   - manual application
   - user service
   - daemon
-
+- Improve error handling for missing external tools
 ---
 
 ## Memory

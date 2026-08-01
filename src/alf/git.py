@@ -34,3 +34,16 @@ def get_last_commit():
     )
 
     return result.stdout.strip()
+
+def get_git_information():
+    """
+    Return Git repository information.
+    """
+
+    information = {}
+
+    information["branch"] = get_git_branch()
+    information["status"] = get_git_status()
+    information["last_commit"] = get_last_commit()
+
+    return information
