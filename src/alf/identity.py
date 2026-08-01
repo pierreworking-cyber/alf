@@ -4,6 +4,7 @@ ALF identity management.
 
 import tomllib
 from .paths import get_data_directory
+from .capabilities import get_capabilities
 
 
 def get_identity():
@@ -22,7 +23,7 @@ def describe_identity():
     print()
     print("Current capabilities:")
 
-    for capability in identity["capabilities"]:
+    for capability in get_capabilities():
         print(f"- {capability}")
 
     print()

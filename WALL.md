@@ -35,7 +35,8 @@ Not commitments. Not a schedule.
 - Local AI integration
 - Natural conversation layer
 - Automatic capability reporting
-
+- Capability reporting system
+  - Replace static capability list with dynamic capability providers
 ---
 
 ## Interfaces
