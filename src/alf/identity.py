@@ -2,12 +2,12 @@
 ALF identity management.
 """
 
-from pathlib import Path
 import tomllib
+from .paths import get_data_directory
 
 
 def get_identity():
-    identity_file = Path(__file__).parents[2] / "data" / "identity.toml"
+    identity_file = get_data_directory() / "identity.toml"
 
     with open(identity_file, "rb") as file:
         return tomllib.load(file)
