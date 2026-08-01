@@ -18,6 +18,7 @@ Not commitments. Not a schedule.
 - Improve error handling for missing external tools
 - Consider automatic capability discovery
 - Improve error handling for missing external tools
+- Improve capability reporting
 
 ## Memory
 
