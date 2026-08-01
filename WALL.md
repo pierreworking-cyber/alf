@@ -16,7 +16,7 @@ Not commitments. Not a schedule.
   - user service
   - daemon
 - Improve error handling for missing external tools
----
+- Consider automatic capability discovery
 
 ## Memory
 

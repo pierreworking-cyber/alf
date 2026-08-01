@@ -4,3 +4,6 @@ __pycache__/
 *.egg-info/
 # ALF memory database
 *.db
+# ALF runtime data
+data/
+logs/

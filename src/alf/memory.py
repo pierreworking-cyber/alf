@@ -7,9 +7,10 @@ Persistent memory stored in SQLite.
 import sqlite3
 from pathlib import Path
 from datetime import datetime
+from .paths import get_data_directory
 
 
-DATABASE = Path("data/alf.db")
+DATABASE = get_data_directory() / "alf.db"
 
 VALID_MEMORY_CATEGORIES = [
     "note",
