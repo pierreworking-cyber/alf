@@ -22,12 +22,12 @@ Not commitments. Not a schedule.
   - daemon
 - Improve error handling for missing external tools
 - Consider automatic capability discovery
-- Improve error handling for missing external tools
 - Improve capability reporting
 - Capability providers
   - Modules advertise capabilities through a standard interface
   - Capability system discovers providers dynamically
   - Providers are responsible for their own state reporting
+  - Initial dynamic discovery implemented
   
 ## Memory
 
@@ -43,11 +43,6 @@ Not commitments. Not a schedule.
 
 - Local AI integration
 - Natural conversation layer
-- Automatic capability reporting
-- Capability providers
-  - Each module is responsible for reporting its own capability and state
-  - Central capability system discovers and aggregates providers
-  - Initial dynamic discovery implemented
   
   ---
 
@@ -78,4 +73,11 @@ Not commitments. Not a schedule.
 - Configurable greeting style
 - Optional personality settings
 
+## Capability system thoughts
 
+- Capability identity should eventually be separate from display name
+- Capability failures should be visible, not silently ignored
+- Avoid unnecessary metadata requiring manual maintenance
+- Consider optional dependency reporting
+- Keep capability contracts flexible
+- Capability machine identity should be separate from display name
