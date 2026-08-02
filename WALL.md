@@ -25,8 +25,9 @@ Not commitments. Not a schedule.
 - Improve error handling for missing external tools
 - Improve capability reporting
 - Capability providers
-  - Each module is responsible for reporting its own capability and state
-  - Central capability system discovers and aggregates providers
+  - Modules advertise capabilities through a standard interface
+  - Capability system discovers providers dynamically
+  - Providers are responsible for their own state reporting
   
 ## Memory
 
