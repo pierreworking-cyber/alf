@@ -28,6 +28,9 @@ Not commitments. Not a schedule.
   - Capability system discovers providers dynamically
   - Providers are responsible for their own state reporting
   - Initial dynamic discovery implemented
+  - Consider module self-description
+  - Allow ALF to understand its own internal structure
+  - Separate module identity from user-facing capabilities
   
 ## Memory
 
@@ -81,3 +84,4 @@ Not commitments. Not a schedule.
 - Consider optional dependency reporting
 - Keep capability contracts flexible
 - Capability machine identity should be separate from display name
+- Capability discovery should preserve both available capabilities and discovery warnings
