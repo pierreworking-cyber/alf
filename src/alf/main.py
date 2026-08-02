@@ -9,6 +9,7 @@ from .identity import describe_identity
 from .commands import run
 from .time import get_greeting
 
+
 def introduce():
     print()
     print()
@@ -16,11 +17,11 @@ def introduce():
 
     describe_identity()
 
+
 def main():
     import sys
 
     if len(sys.argv) > 1:
-
         command = sys.argv[1]
         arguments = sys.argv[2:]
         if run(command, arguments):
@@ -31,6 +32,7 @@ def main():
         return
 
     introduce()
+
 
 if __name__ == "__main__":
     main()

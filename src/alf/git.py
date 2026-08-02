@@ -27,17 +27,13 @@ def run_git_command(arguments):
 
 
 def get_git_branch():
-    result = run_git_command(
-        ["branch", "--show-current"]
-    )
+    result = run_git_command(["branch", "--show-current"])
 
     return result if result else "Unavailable"
 
 
 def get_git_status():
-    result = run_git_command(
-        ["status", "--porcelain"]
-    )
+    result = run_git_command(["status", "--porcelain"])
 
     if result is None:
         return "Unavailable"
@@ -49,9 +45,7 @@ def get_git_status():
 
 
 def get_last_commit():
-    result = run_git_command(
-        ["log", "-1", "--pretty=%s"]
-    )
+    result = run_git_command(["log", "-1", "--pretty=%s"])
 
     return result if result else "Unavailable"
 
@@ -68,6 +62,7 @@ def get_git_information():
     information["last_commit"] = get_last_commit()
 
     return information
+
 
 def get_capability():
     """

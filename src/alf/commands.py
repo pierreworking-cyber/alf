@@ -6,10 +6,12 @@ from .status import get_status_report
 from .memory import remember, get_memories, get_memory_categories
 from .identity import get_identity, describe_identity
 
+
 def status_command(argument=None):
     print()
     print(get_status_report())
     print()
+
 
 def hello_command(argument=None):
     print()
@@ -30,6 +32,7 @@ def help_command(argument=None):
         print(f"    {description}")
         print(f"    Usage: {usage}")
         print()
+
 
 def remember_command(category=None, content=None):
     if not category or not content:
@@ -56,6 +59,7 @@ def remember_command(category=None, content=None):
     print(f"I'll remember that Peter [{category}].")
     print()
 
+
 def memories_command(argument=None):
     memories = get_memories()
 
@@ -75,9 +79,11 @@ def memories_command(argument=None):
         print(f"  {content}")
         print()
 
+
 def about_command(argument=None):
     print()
     describe_identity()
+
 
 def version_command(argument=None):
     identity = get_identity()
@@ -93,31 +99,26 @@ commands = {
         "help": "Show system information.",
         "usage": "alf status",
     },
-
     "hello": {
         "function": hello_command,
         "help": "Show welcome message.",
         "usage": "alf hello",
     },
-
     "help": {
         "function": help_command,
         "help": "List available abilities.",
         "usage": "alf help",
     },
-
     "remember": {
         "function": remember_command,
         "help": "Add a memory.",
         "usage": 'alf remember <category> "text"',
     },
-
     "memories": {
         "function": memories_command,
         "help": "Recall previous memories.",
         "usage": "alf memories",
     },
-
     "about": {
         "function": about_command,
         "help": "Explain what ALF is.",
@@ -130,10 +131,10 @@ commands = {
     },
 }
 
+
 def run(command: str, arguments=None):
 
     if command in commands:
-
         if arguments:
             commands[command]["function"](*arguments)
         else:
@@ -143,6 +144,7 @@ def run(command: str, arguments=None):
 
     return False
 
+
 def get_command_catalog():
     """
     Return public command information.
@@ -151,12 +153,11 @@ def get_command_catalog():
 
     for name, command in commands.items():
         catalog[name] = {
-            key: value
-            for key, value in command.items()
-            if key != "function"
+            key: value for key, value in command.items() if key != "function"
         }
 
     return catalog
+
 
 def get_capability():
     """
@@ -166,7 +167,5 @@ def get_capability():
     return {
         "name": "Command discovery",
         "description": "Reports available ALF commands",
-        "details": {
-            "commands": get_command_catalog()
-        },
+        "details": {"commands": get_command_catalog()},
     }

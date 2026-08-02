@@ -4,11 +4,11 @@ ALF self-awareness.
 Combines information from ALF's various capabilities.
 """
 
-
 from .identity import get_identity
 from .system import get_system_information
 from .memory import get_memory_information
 from .git import get_git_information
+
 
 def get_status_information():
     """
@@ -23,6 +23,7 @@ def get_status_information():
     status["git"] = get_git_information()
 
     return status
+
 
 def get_status_report():
     """
@@ -56,8 +57,6 @@ def get_status_report():
     report.append(f"Last commit: {git['last_commit']}")
     report.append("")
     report.append(f"Stored memories: {memory['total_memories']}")
-    report.append(
-        f"Memory categories: {', '.join(memory['categories'])}"
-    )
+    report.append(f"Memory categories: {', '.join(memory['categories'])}")
 
     return "\n".join(report)

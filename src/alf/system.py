@@ -6,6 +6,7 @@ Provides information about the machine ALF is running on.
 
 import platform
 
+
 def get_uptime():
     """
     Return system uptime as a friendly string.
@@ -41,6 +42,7 @@ def get_system_report():
         report.append(f"Available memory: {information['available_memory']}")
     return "\n".join(report)
 
+
 def get_available_memory():
     """
     Return available memory if available.
@@ -58,6 +60,7 @@ def get_available_memory():
     except Exception:
         pass
     return None
+
 
 def get_total_memory():
     """
@@ -78,6 +81,7 @@ def get_total_memory():
 
     return None
 
+
 def get_system_information():
     """
     Return system information as structured data.
@@ -96,6 +100,7 @@ def get_system_information():
     information["available_memory"] = get_available_memory()
 
     return information
+
 
 def get_capability():
     """

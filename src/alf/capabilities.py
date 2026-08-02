@@ -6,7 +6,6 @@ Discovers modules that advertise capabilities.
 
 import importlib
 import pkgutil
-
 import alf
 
 
@@ -36,8 +35,31 @@ def get_capabilities():
     capabilities = []
 
     for provider in get_provider_modules():
-        capabilities.append(
-            provider.get_capability()
-        )
+        capabilities.append(provider.get_capability())
 
     return capabilities
+
+
+def discover_capabilities():
+    """
+    Discover available capabilities and warnings.
+    """
+
+    capabilities = []
+    warnings = []
+
+    for provider in get_provider_modules():
+        try:
+            capabilities.append(provider.get_capability())
+        except Exception as error:
+            warnings.append(
+                {
+                    "module": provider.__name__,
+                    "message": str(error),
+                }
+            )
+
+    return {
+        "capabilities": capabilities,
+        "warnings": warnings,
+    }

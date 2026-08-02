@@ -134,6 +134,7 @@ def get_memory_information():
 
     return information
 
+
 def get_capability():
     """
     Return memory capability information.
