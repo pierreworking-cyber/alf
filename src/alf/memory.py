@@ -5,7 +5,6 @@ Persistent memory stored in SQLite.
 """
 
 import sqlite3
-from pathlib import Path
 from datetime import datetime
 from .paths import get_data_directory
 

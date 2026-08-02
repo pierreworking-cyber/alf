@@ -142,3 +142,31 @@ def run(command: str, arguments=None):
         return True
 
     return False
+
+def get_command_catalog():
+    """
+    Return public command information.
+    """
+    catalog = {}
+
+    for name, command in commands.items():
+        catalog[name] = {
+            key: value
+            for key, value in command.items()
+            if key != "function"
+        }
+
+    return catalog
+
+def get_capability():
+    """
+    Return command discovery capability information.
+    """
+
+    return {
+        "name": "Command discovery",
+        "description": "Reports available ALF commands",
+        "details": {
+            "commands": get_command_catalog()
+        },
+    }
