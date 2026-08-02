@@ -135,3 +135,13 @@ def get_memory_information():
 
     return information
 
+def get_capability():
+    """
+    Return memory capability information.
+    """
+
+    return {
+        "name": "Persistent memory",
+        "description": "SQLite-backed memory storage",
+        "details": get_memory_information(),
+    }
