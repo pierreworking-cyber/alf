@@ -24,7 +24,8 @@ def describe_identity():
     print("Current capabilities:")
 
     for capability in get_capabilities():
-        print(f"- {capability}")
+        print(f"- {capability['name']}")
+        print(f"  {capability['description']}")
 
     print()
     print("Current limitations:")

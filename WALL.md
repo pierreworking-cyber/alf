@@ -44,9 +44,12 @@ Not commitments. Not a schedule.
 - Local AI integration
 - Natural conversation layer
 - Automatic capability reporting
-- Capability reporting system
-  - Replace static capability list with dynamic capability providers
----
+- Capability providers
+  - Each module is responsible for reporting its own capability and state
+  - Central capability system discovers and aggregates providers
+  - Initial dynamic discovery implemented
+  
+  ---
 
 ## Interfaces
 
