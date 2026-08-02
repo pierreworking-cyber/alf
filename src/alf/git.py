@@ -68,3 +68,14 @@ def get_git_information():
     information["last_commit"] = get_last_commit()
 
     return information
+
+def get_capability():
+    """
+    Return Git capability information.
+    """
+
+    return {
+        "name": "Git repository awareness",
+        "description": "Reports repository state and history",
+        "details": get_git_information(),
+    }
