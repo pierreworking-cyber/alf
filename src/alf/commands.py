@@ -165,6 +165,7 @@ def get_capability():
     """
 
     return {
+        "id": "commands",
         "name": "Command discovery",
         "description": "Reports available ALF commands",
         "details": {"commands": get_command_catalog()},

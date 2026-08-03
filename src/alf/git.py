@@ -70,6 +70,7 @@ def get_capability():
     """
 
     return {
+        "id": "git",
         "name": "Git repository awareness",
         "description": "Reports repository state and history",
         "details": get_git_information(),

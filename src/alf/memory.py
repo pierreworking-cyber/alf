@@ -141,6 +141,7 @@ def get_capability():
     """
 
     return {
+        "id": "memory",
         "name": "Persistent memory",
         "description": "SQLite-backed memory storage",
         "details": get_memory_information(),

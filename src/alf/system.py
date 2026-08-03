@@ -108,6 +108,7 @@ def get_capability():
     """
 
     return {
+        "id": "system",
         "name": "System awareness",
         "description": "Reports information about the machine ALF is running on",
     }
