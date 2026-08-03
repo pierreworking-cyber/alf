@@ -164,7 +164,7 @@ def validate_commands():
     return warnings
 
 
-def get_command_catalog():
+def get_commands():
     """
     Return public command information.
     """
@@ -188,7 +188,7 @@ def get_capability():
         "name": "Command discovery",
         "description": "Reports available ALF commands",
         "details": {
-            "commands": get_command_catalog(),
+            "commands": get_commands(),
             "warnings": validate_commands(),
         },
     }
