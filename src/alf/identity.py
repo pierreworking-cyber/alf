@@ -13,6 +13,7 @@ def get_identity():
     with open(identity_file, "rb") as file:
         return tomllib.load(file)
 
+
 def get_about_information():
     """
     Return ALF about information as structured data.
@@ -26,6 +27,7 @@ def get_about_information():
         "warnings": report["warnings"],
         "limitations": identity["limitations"],
     }
+
 
 def describe_identity():
     about = get_about_information()
@@ -57,4 +59,3 @@ def describe_identity():
         print(f"- {limitation}")
 
     print()
-
