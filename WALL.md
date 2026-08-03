@@ -31,6 +31,9 @@ Not commitments. Not a schedule.
   - Consider module self-description
   - Allow ALF to understand its own internal structure
   - Separate module identity from user-facing capabilities
+- Review small utility modules
+  - Some modules may contain behaviour rather than a true domain responsibility
+  - Revisit time.py / greeting ownership as ALF personality develops
   
 ## Memory
 
@@ -52,6 +55,8 @@ Not commitments. Not a schedule.
 ## Interfaces
 
 - SSH access from MacBook Pro
+- Add expandable capability detail reporting
+- Consider verbose output modes for structured capability information
 
 ---
 
