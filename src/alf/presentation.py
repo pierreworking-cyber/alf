@@ -45,3 +45,21 @@ def render_about(about, show_details=False):
         print(f"- {limitation}")
 
     print()
+
+def render_commands(commands):
+    """
+    Render available ALF commands.
+    """
+
+    print()
+    print("Available commands:")
+    print()
+
+    for command in sorted(commands):
+        description = commands[command]["help"]
+        usage = commands[command]["usage"]
+
+        print(f"- {command}")
+        print(f"    {description}")
+        print(f"    Usage: {usage}")
+        print()

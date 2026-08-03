@@ -5,7 +5,8 @@ ALF command dispatcher.
 from .status import get_status_report
 from .memory import remember, get_memories, get_memory_categories
 from .identity import get_identity, get_about_information
-from .presentation import render_about
+from .presentation import render_about, render_commands
+
 
 def status_command(argument=None):
     print()
@@ -20,18 +21,7 @@ def hello_command(argument=None):
 
 
 def help_command(argument=None):
-    print()
-    print("Available commands:")
-    print()
-
-    for command in sorted(commands):
-        description = commands[command]["help"]
-        usage = commands[command]["usage"]
-
-        print(f"- {command}")
-        print(f"    {description}")
-        print(f"    Usage: {usage}")
-        print()
+    render_commands(get_command_catalog())
 
 
 def remember_command(category=None, content=None):
@@ -104,42 +94,36 @@ commands = {
         "help": "Show system information.",
         "usage": "alf status",
     },
-
     "hello": {
         "id": "identity.greeting",
         "function": hello_command,
         "help": "Show welcome message.",
         "usage": "alf hello",
     },
-
     "help": {
         "id": "command.list",
         "function": help_command,
         "help": "List available commands.",
         "usage": "alf help",
     },
-
     "remember": {
         "id": "memory.add",
         "function": remember_command,
         "help": "Add a memory.",
         "usage": 'alf remember <category> "text"',
     },
-
     "memories": {
         "id": "memory.list",
         "function": memories_command,
         "help": "Recall previous memories.",
         "usage": "alf memories",
     },
-
     "about": {
         "id": "identity.about",
         "function": about_command,
         "help": "Explain what ALF is.",
         "usage": "alf about [--details]",
     },
-
     "version": {
         "id": "identity.version",
         "function": version_command,
@@ -223,4 +207,4 @@ def get_capability():
             "commands": get_command_catalog(),
             "warnings": validate_commands(),
         },
-}
+    }
