@@ -95,36 +95,49 @@ def version_command(argument=None):
 
 commands = {
     "status": {
+        "id": "system.status",
         "function": status_command,
         "help": "Show system information.",
         "usage": "alf status",
     },
+
     "hello": {
+        "id": "identity.greeting",
         "function": hello_command,
         "help": "Show welcome message.",
         "usage": "alf hello",
     },
+
     "help": {
+        "id": "command.list",
         "function": help_command,
-        "help": "List available abilities.",
+        "help": "List available commands.",
         "usage": "alf help",
     },
+
     "remember": {
+        "id": "memory.add",
         "function": remember_command,
         "help": "Add a memory.",
         "usage": 'alf remember <category> "text"',
     },
+
     "memories": {
+        "id": "memory.list",
         "function": memories_command,
         "help": "Recall previous memories.",
         "usage": "alf memories",
     },
+
     "about": {
+        "id": "identity.about",
         "function": about_command,
         "help": "Explain what ALF is.",
-        "usage": "alf about",
+        "usage": "alf about [--details]",
     },
+
     "version": {
+        "id": "identity.version",
         "function": version_command,
         "help": "Show ALF version.",
         "usage": "alf version",
