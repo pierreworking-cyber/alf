@@ -33,8 +33,8 @@ def render_about(about, show_details=False):
             print()
             print("Warnings:")
 
-        for warning in about["warnings"]:
-            print(f"- {warning}")
+            for warning in about["warnings"]:
+                print(f"- {warning}")
 
     print()
     print("Current limitations:")
@@ -146,3 +146,49 @@ def render_capability_details(capability):
 
     for key, value in capability["details"].items():
         print(f"    {key}: {value}")
+
+
+def render_greeting():
+    """
+    Render ALF greeting.
+    """
+
+    print()
+    print("Hello Peter.")
+    print()
+
+
+def render_memory_saved(category):
+    """
+    Render memory confirmation.
+    """
+
+    print()
+    print(f"I'll remember that Peter [{category}].")
+    print()
+
+
+def render_memory_usage(usage):
+    """
+    Render memory command usage.
+    """
+
+    print()
+    print(f"Usage: {usage}")
+    print()
+
+
+def render_invalid_memory_category(category, categories):
+    """
+    Render invalid memory category error.
+    """
+
+    print()
+    print(f"Unknown category: {category}")
+    print()
+    print("Valid categories:")
+
+    for valid_category in categories:
+        print(f"- {valid_category}")
+
+    print()

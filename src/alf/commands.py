@@ -11,6 +11,10 @@ from .presentation import (
     render_memories,
     render_version,
     render_status,
+    render_greeting,
+    render_memory_saved,
+    render_memory_usage,
+    render_invalid_memory_category,
 )
 
 
@@ -19,9 +23,7 @@ def status_command(argument=None):
 
 
 def hello_command(argument=None):
-    print()
-    print("Hello Peter.")
-    print()
+    render_greeting()
 
 
 def help_command(argument=None):
@@ -30,28 +32,17 @@ def help_command(argument=None):
 
 def remember_command(category=None, content=None):
     if not category or not content:
-        print()
-        print(f"Usage: {commands['remember']['usage']}")
-        print()
+        render_memory_usage(commands["remember"]["usage"])
         return
 
-    if category not in get_memory_categories():
-        print()
-        print(f"Unknown category: {category}")
-        print()
-        print("Valid categories:")
+    categories = get_memory_categories()
 
-        for valid_category in get_memory_categories():
-            print(f"- {valid_category}")
-
-        print()
+    if category not in categories:
+        render_invalid_memory_category(category, categories)
         return
 
     remember(category, content)
-
-    print()
-    print(f"I'll remember that Peter [{category}].")
-    print()
+    render_memory_saved(category)
 
 
 def memories_command(argument=None):
