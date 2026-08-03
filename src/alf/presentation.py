@@ -86,3 +86,13 @@ def render_memories(memories):
         print(f"{created} [{category}]")
         print(f"  {content}")
         print()
+
+
+def render_version(identity):
+    """
+    Render ALF version information.
+    """
+
+    print()
+    print(f"ALF version {identity['version']}")
+    print()

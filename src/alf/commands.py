@@ -5,7 +5,7 @@ ALF command dispatcher.
 from .status import get_status_report
 from .memory import remember, get_memories, get_memory_categories
 from .identity import get_identity, get_about_information
-from .presentation import render_about, render_commands, render_memories
+from .presentation import render_about, render_commands, render_memories, render_version
 
 
 def status_command(argument=None):
@@ -64,11 +64,7 @@ def about_command(argument=None):
 
 
 def version_command(argument=None):
-    identity = get_identity()
-
-    print()
-    print(f"ALF version {identity['version']}")
-    print()
+    render_version(get_identity())
 
 
 commands = {
