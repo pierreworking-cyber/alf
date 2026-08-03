@@ -36,12 +36,16 @@ Not commitments. Not a schedule.
   - Revisit time.py / greeting ownership as ALF personality develops
   - Review naming of presentation functions as reports grow
     - describe_identity may become describe_about or similar
-  - Review command metadata
-    Review command metadata
+ - Review command metadata
+  - Commands use namespaced IDs
+  - Consider richer command descriptions and argument metadata
+  - Allow ALF to explain command usage dynamically
+  - Review naming consistency
+    - Decide singular/plural conventions for IDs
+    - Examples: command vs commands, memory vs memories
   - Usage strings should expose optional arguments
     - Consider richer command descriptions and argument metadata
     - Allow ALF to explain command usage dynamically
-  - Usage strings should expose optional arguments
   
 ## Memory
 

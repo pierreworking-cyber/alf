@@ -157,6 +157,39 @@ def run(command: str, arguments=None):
 
     return False
 
+def validate_commands():
+    """
+    Validate command metadata.
+    """
+
+    warnings = []
+    command_ids = set()
+
+    for name, command in commands.items():
+        command_id = command.get("id")
+
+        if not command_id:
+            warnings.append(
+                {
+                    "command": name,
+                    "message": "Command has no id",
+                }
+            )
+            continue
+
+        if command_id in command_ids:
+            warnings.append(
+                {
+                    "command": name,
+                    "message": f"Duplicate command id: {command_id}",
+                }
+            )
+            continue
+
+        command_ids.add(command_id)
+
+    return warnings
+
 
 def get_command_catalog():
     """
@@ -181,5 +214,8 @@ def get_capability():
         "id": "commands",
         "name": "Command discovery",
         "description": "Reports available ALF commands",
-        "details": {"commands": get_command_catalog()},
-    }
+        "details": {
+            "commands": get_command_catalog(),
+            "warnings": validate_commands(),
+        },
+}
