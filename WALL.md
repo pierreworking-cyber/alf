@@ -34,6 +34,8 @@ Not commitments. Not a schedule.
 - Review small utility modules
   - Some modules may contain behaviour rather than a true domain responsibility
   - Revisit time.py / greeting ownership as ALF personality develops
+  - Review naming of presentation functions as reports grow
+    - describe_identity may become describe_about or similar
   
 ## Memory
 

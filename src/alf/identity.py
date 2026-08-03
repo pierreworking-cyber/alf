@@ -29,7 +29,13 @@ def get_about_information():
     }
 
 
-def describe_identity():
+def describe_identity(show_details=False):
+    """
+    Display ALF identity and capability information.
+
+    Args:
+        show_details: Include capability detail information when available.
+    """
     about = get_about_information()
 
     identity = about["identity"]
@@ -44,6 +50,12 @@ def describe_identity():
     for capability in about["capabilities"]:
         print(f"- {capability['name']}")
         print(f"  {capability['description']}")
+
+        if show_details and "details" in capability:
+            print("  Details:")
+
+            for key, value in capability["details"].items():
+                print(f"    {key}: {value}")
 
     if about["warnings"]:
         print()

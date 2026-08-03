@@ -82,7 +82,7 @@ def memories_command(argument=None):
 
 def about_command(argument=None):
     print()
-    describe_identity()
+    describe_identity(show_details=argument == "--details")
 
 
 def version_command(argument=None):
