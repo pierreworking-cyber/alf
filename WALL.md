@@ -105,3 +105,9 @@ Not commitments. Not a schedule.
 - Keep capability contracts flexible
 - Capability machine identity should be separate from display name
 - Capability discovery should preserve both available capabilities and discovery warnings
+
+## Presentation
+
+- Continue moving user-visible formatting into presentation.py
+- presentation.py should expose a stable rendering API
+- Consider generic render helpers once several renderers share structure

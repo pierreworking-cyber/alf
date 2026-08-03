@@ -2,16 +2,20 @@
 ALF command dispatcher.
 """
 
-from .status import get_status_report
+from .status import get_status_information
 from .memory import remember, get_memories, get_memory_categories
 from .identity import get_identity, get_about_information
-from .presentation import render_about, render_commands, render_memories, render_version
+from .presentation import (
+    render_about,
+    render_commands,
+    render_memories,
+    render_version,
+    render_status,
+)
 
 
 def status_command(argument=None):
-    print()
-    print(get_status_report())
-    print()
+    render_status(get_status_information())
 
 
 def hello_command(argument=None):
