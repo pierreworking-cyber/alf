@@ -36,20 +36,26 @@ Not commitments. Not a schedule.
   - Revisit time.py / greeting ownership as ALF personality develops
   - Review naming of presentation functions as reports grow
     - describe_identity may become describe_about or similar
- - Review command metadata
-  - Commands use namespaced IDs
+- Review command metadata
+- Commands use namespaced IDs
+- Consider richer command descriptions and argument metadata
+- Allow ALF to explain command usage dynamically
+- Review naming consistency
+  - Decide singular/plural conventions for IDs
+  - Examples: command vs commands, memory vs memories
+- Usage strings should expose optional arguments
   - Consider richer command descriptions and argument metadata
   - Allow ALF to explain command usage dynamically
-  - Review naming consistency
-    - Decide singular/plural conventions for IDs
-    - Examples: command vs commands, memory vs memories
-  - Usage strings should expose optional arguments
-    - Consider richer command descriptions and argument metadata
-    - Allow ALF to explain command usage dynamically
-  - Review command catalogue structure
-    - Consider whether discovered objects should use list-based representations
-    - Keep lookup structures separate from presentation structures
-  
+- Review command catalogue structure
+  - Consider whether discovered objects should use list-based representations
+  - Keep lookup structures separate from presentation structures
+- Keep information gathering separate from presentation
+  - Capability modules should return structured data, never formatted text
+  - Presentation should be the only place responsible for user-visible output
+  - Prefer passing structured data into renderers rather than preformatted strings
+- Capability detail rendering may eventually belong with capability providers
+- Presentation should avoid accumulating capability-specific knowledge
+ 
 ## Memory
 
 - Forget/delete commands
@@ -111,3 +117,6 @@ Not commitments. Not a schedule.
 - Continue moving user-visible formatting into presentation.py
 - presentation.py should expose a stable rendering API
 - Consider generic render helpers once several renderers share structure
+- Avoid exposing raw Python structures to the user
+- Presentation should describe ALF, not Python objects
+- Keep renderers focused on one responsibility each

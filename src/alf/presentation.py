@@ -27,13 +27,11 @@ def render_about(about, show_details=False):
 
         if show_details and "details" in capability:
             print("  Details:")
+            render_capability_details(capability)
 
-            for key, value in capability["details"].items():
-                print(f"    {key}: {value}")
-
-    if about["warnings"]:
-        print()
-        print("Warnings:")
+        if about["warnings"]:
+            print()
+            print("Warnings:")
 
         for warning in about["warnings"]:
             print(f"- {warning}")
@@ -130,3 +128,21 @@ def render_status(status):
     report.append(f"Memory categories: {', '.join(memory['categories'])}")
 
     return "\n".join(report)
+
+
+def render_capability_details(capability):
+    """
+    Render capability-specific detail information.
+    """
+    if capability["id"] == "commands":
+        commands = capability["details"]["commands"]
+
+        for command in sorted(commands):
+            print(f"    {command}")
+            print(f"      {commands[command]['help']}")
+            print(f"      Usage: {commands[command]['usage']}")
+
+        return
+
+    for key, value in capability["details"].items():
+        print(f"    {key}: {value}")
