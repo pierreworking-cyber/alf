@@ -5,7 +5,7 @@ ALF command dispatcher.
 from .status import get_status_report
 from .memory import remember, get_memories, get_memory_categories
 from .identity import get_identity, get_about_information
-from .presentation import render_about, render_commands
+from .presentation import render_about, render_commands, render_memories
 
 
 def status_command(argument=None):
@@ -51,23 +51,7 @@ def remember_command(category=None, content=None):
 
 
 def memories_command(argument=None):
-    memories = get_memories()
-
-    print()
-    print("ALF memories")
-    print("------------")
-
-    if not memories:
-        print("No memories stored.")
-        print()
-        return
-
-    for memory in memories:
-        _, created, category, content = memory
-
-        print(f"{created} [{category}]")
-        print(f"  {content}")
-        print()
+    render_memories(get_memories())
 
 
 def about_command(argument=None):

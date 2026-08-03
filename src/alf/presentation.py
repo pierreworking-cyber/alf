@@ -46,6 +46,7 @@ def render_about(about, show_details=False):
 
     print()
 
+
 def render_commands(commands):
     """
     Render available ALF commands.
@@ -62,4 +63,26 @@ def render_commands(commands):
         print(f"- {command}")
         print(f"    {description}")
         print(f"    Usage: {usage}")
+        print()
+
+
+def render_memories(memories):
+    """
+    Render stored ALF memories.
+    """
+
+    print()
+    print("ALF memories")
+    print("------------")
+
+    if not memories:
+        print("No memories stored.")
+        print()
+        return
+
+    for memory in memories:
+        _, created, category, content = memory
+
+        print(f"{created} [{category}]")
+        print(f"  {content}")
         print()
