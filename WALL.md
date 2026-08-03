@@ -46,6 +46,9 @@ Not commitments. Not a schedule.
   - Usage strings should expose optional arguments
     - Consider richer command descriptions and argument metadata
     - Allow ALF to explain command usage dynamically
+  - Review command catalogue structure
+    - Consider whether discovered objects should use list-based representations
+    - Keep lookup structures separate from presentation structures
   
 ## Memory
 

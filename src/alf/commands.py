@@ -157,6 +157,7 @@ def run(command: str, arguments=None):
 
     return False
 
+
 def validate_commands():
     """
     Validate command metadata.
