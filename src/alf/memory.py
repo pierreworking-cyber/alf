@@ -104,7 +104,19 @@ def get_memories():
         """
     )
 
-    memories = cursor.fetchall()
+    rows = cursor.fetchall()
+
+    memories = []
+
+    for row in rows:
+        memories.append(
+            {
+                "id": row[0],
+                "created": row[1],
+                "category": row[2],
+                "content": row[3],
+            }
+        )
 
     connection.close()
 
@@ -125,7 +137,7 @@ def get_memory_information():
     categories = []
 
     for memory in memories:
-        category = memory[2]
+        category = memory["category"]
 
         if category not in categories:
             categories.append(category)

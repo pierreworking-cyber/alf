@@ -79,10 +79,8 @@ def render_memories(memories):
         return
 
     for memory in memories:
-        _, created, category, content = memory
-
-        print(f"{created} [{category}]")
-        print(f"  {content}")
+        print(f"(id: {memory['id']}) {memory['created']} [{memory['category']}]")
+        print(f"  {memory['content']}")
         print()
 
 
