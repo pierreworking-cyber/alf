@@ -13,10 +13,24 @@ def get_identity():
     with open(identity_file, "rb") as file:
         return tomllib.load(file)
 
-
-def describe_identity():
+def get_about_information():
+    """
+    Return ALF about information as structured data.
+    """
     identity = get_identity()
     report = discover_capabilities()
+
+    return {
+        "identity": identity,
+        "capabilities": report["capabilities"],
+        "warnings": report["warnings"],
+        "limitations": identity["limitations"],
+    }
+
+def describe_identity():
+    about = get_about_information()
+
+    identity = about["identity"]
 
     print(f"I am {identity['name']}.")
     print(f"Version: {identity['version']}")
@@ -25,21 +39,22 @@ def describe_identity():
     print()
     print("Current capabilities:")
 
-    for capability in report["capabilities"]:
+    for capability in about["capabilities"]:
         print(f"- {capability['name']}")
         print(f"  {capability['description']}")
 
-    if report["warnings"]:
+    if about["warnings"]:
         print()
         print("Warnings:")
 
-        for warning in report["warnings"]:
+        for warning in about["warnings"]:
             print(f"- {warning}")
 
     print()
     print("Current limitations:")
 
-    for limitation in identity["limitations"]:
+    for limitation in about["limitations"]:
         print(f"- {limitation}")
 
     print()
+
