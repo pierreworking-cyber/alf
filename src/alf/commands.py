@@ -21,7 +21,7 @@ def hello_command(argument=None):
 
 
 def help_command(argument=None):
-    render_commands(get_command_catalog())
+    render_commands(get_commands())
 
 
 def remember_command(category=None, content=None):
