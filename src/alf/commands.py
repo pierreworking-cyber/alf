@@ -4,8 +4,8 @@ ALF command dispatcher.
 
 from .status import get_status_report
 from .memory import remember, get_memories, get_memory_categories
-from .identity import get_identity, describe_identity
-
+from .identity import get_identity, get_about_information
+from .presentation import render_about
 
 def status_command(argument=None):
     print()
@@ -82,7 +82,11 @@ def memories_command(argument=None):
 
 def about_command(argument=None):
     print()
-    describe_identity(show_details=argument == "--details")
+
+    render_about(
+        get_about_information(),
+        show_details=argument == "--details",
+    )
 
 
 def version_command(argument=None):
