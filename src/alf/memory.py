@@ -125,6 +125,40 @@ def get_memories():
     return memories
 
 
+def get_memory(memory_id: int):
+    """
+    Retrieve a single memory by ID.
+    """
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, created, category, status, content
+        FROM memories
+        WHERE id = ?
+        """,
+        (memory_id,),
+    )
+
+    row = cursor.fetchone()
+
+    connection.close()
+
+    if row is None:
+        return None
+
+    return {
+        "id": row[0],
+        "created": row[1],
+        "category": row[2],
+        "status": row[3],
+        "content": row[4],
+    }
+
+
 def get_memory_information():
     """
     Return information about ALF's memory system.

@@ -3,7 +3,7 @@ ALF command dispatcher.
 """
 
 from .status import get_status_information
-from .memory import remember, get_memories, get_memory_categories
+from .memory import remember, get_memories, get_memory_categories, get_memory
 from .identity import get_identity, get_about_information
 from .presentation import (
     render_about,
@@ -15,6 +15,7 @@ from .presentation import (
     render_memory_saved,
     render_memory_usage,
     render_invalid_memory_category,
+    render_memory,
 )
 
 
@@ -47,6 +48,15 @@ def remember_command(category=None, content=None):
 
 def memories_command(argument=None):
     render_memories(get_memories())
+
+
+def memory_command(memory_id=None):
+    if not memory_id:
+        return
+
+    memory = get_memory(int(memory_id))
+
+    render_memory(memory)
 
 
 def about_command(argument=None):
@@ -92,6 +102,12 @@ commands = {
         "function": memories_command,
         "help": "Recall previous memories.",
         "usage": "alf memories",
+    },
+    "memory": {
+        "id": "memory.show",
+        "function": memory_command,
+        "help": "Show a single memory.",
+        "usage": "alf memory <id>",
     },
     "about": {
         "id": "identity.about",

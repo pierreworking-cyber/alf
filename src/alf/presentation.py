@@ -87,6 +87,26 @@ def render_memories(memories):
         print()
 
 
+def render_memory(memory):
+    """
+    Render a single ALF memory.
+    """
+
+    print()
+
+    if memory is None:
+        print("Memory not found.")
+        print()
+        return
+
+    print(
+        f"(id: {memory['id']}) {memory['created']} "
+        f"[{memory['category']}] [{memory['status']}]"
+    )
+    print(f"  {memory['content']}")
+    print()
+
+
 def render_version(identity):
     """
     Render ALF version information.
