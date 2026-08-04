@@ -41,6 +41,8 @@ Current implementation:
 - Relationships are currently one-directional
 - previous_memory_id is implemented
 - richer relationships are deferred
+- ALF preserves memory evolution by creating new records linked to previous memories rather than editing existing records.
+- ALF memories are append-only records. New memories may reference previous memories to preserve the evolution of knowledge without modifying history.
 
 Design intent:
 - Preserve historical context rather than overwrite old knowledge
