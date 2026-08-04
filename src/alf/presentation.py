@@ -214,6 +214,16 @@ def render_memory_saved(category):
     print()
 
 
+def render_memory_archived(memory_id):
+    """
+    Render archive confirmation.
+    """
+
+    print()
+    print(f"Memory {memory_id} archived.")
+    print()
+
+
 def render_memory_not_numeric():
     """
     Render invalid memory ID message.
@@ -247,4 +257,25 @@ def render_invalid_memory_category(category, categories):
     for valid_category in categories:
         print(f"- {valid_category}")
 
+    print()
+
+
+def render_memory_help():
+    """
+    Render memory command help.
+    """
+
+    print()
+    print("Usage: alf memories [options]")
+    print()
+    print("Options:")
+    print()
+    print("  --all")
+    print("      Include archived memories.")
+    print()
+    print("  --category <name>")
+    print("      Show only memories in a category.")
+    print()
+    print("  --group category")
+    print("      Group memories by category.")
     print()

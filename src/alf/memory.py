@@ -88,16 +88,17 @@ def remember(category: str, content: str):
     connection.close()
 
 
-def get_memories(category=None):
+def get_memories(category=None, include_archived=False):
     """
     Retrieve ALF memories, optionally filtered by category.
+    Archived memories are not displayed by default.
     """
 
     connection = get_connection()
 
     cursor = connection.cursor()
 
-    if category:
+    if category and include_archived:
         cursor.execute(
             """
             SELECT id, created, category, status, content
@@ -107,7 +108,19 @@ def get_memories(category=None):
             """,
             (category,),
         )
-    else:
+
+    elif category:
+        cursor.execute(
+            """
+            SELECT id, created, category, status, content
+            FROM memories
+            WHERE category = ? AND status = 'active'
+            ORDER BY id
+            """,
+            (category,),
+        )
+
+    elif include_archived:
         cursor.execute(
             """
             SELECT id, created, category, status, content
@@ -116,7 +129,17 @@ def get_memories(category=None):
             """
         )
 
-    rows = cursor.fetchall()
+    else:
+        cursor.execute(
+            """
+            SELECT id, created, category, status, content
+            FROM memories
+            WHERE status = 'active'
+            ORDER BY id
+            """
+        )
+
+        rows = cursor.fetchall()
 
     memories = []
 
@@ -168,6 +191,28 @@ def get_memory(memory_id: int):
         "status": row[3],
         "content": row[4],
     }
+
+
+def archive_memory(memory_id: int):
+    """
+    Mark a memory as archived.
+    """
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE memories
+        SET status = 'archived'
+        WHERE id = ?
+        """,
+        (memory_id,),
+    )
+
+    connection.commit()
+    connection.close()
 
 
 def get_memory_information():

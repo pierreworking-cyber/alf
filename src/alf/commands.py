@@ -3,7 +3,13 @@ ALF command dispatcher.
 """
 
 from .status import get_status_information
-from .memory import remember, get_memories, get_memory_categories, get_memory
+from .memory import (
+    remember,
+    get_memories,
+    get_memory_categories,
+    get_memory,
+    archive_memory,
+)
 from .identity import get_identity, get_about_information
 from .presentation import (
     render_about,
@@ -19,6 +25,8 @@ from .presentation import (
     render_invalid_memory_category,
     render_memory,
     render_memory_categories,
+    render_memory_archived,
+    render_memory_help,
 )
 
 
@@ -53,6 +61,10 @@ def memories_command(*arguments):
     category = None
 
     if arguments:
+        if arguments[0] == "--help":
+            render_memory_help()
+            return
+
         if len(arguments) == 2 and arguments[0] == "--category":
             category = arguments[1]
 
@@ -79,6 +91,25 @@ def memory_command(memory_id=None):
         return
 
     render_memory(get_memory(memory_id))
+
+
+def archive_command(memory_id=None):
+    if not memory_id:
+        render_memory_usage(commands["archive"]["usage"])
+        return
+
+    try:
+        memory_id = int(memory_id)
+    except ValueError:
+        render_memory_not_numeric()
+        return
+
+    if memory_id <= 0:
+        render_memory_positive()
+        return
+
+    archive_memory(memory_id)
+    render_memory_archived(memory_id)
 
 
 def about_command(argument=None):
@@ -142,6 +173,12 @@ commands = {
         "function": about_command,
         "help": "Explain what ALF is.",
         "usage": "alf about [--details]",
+    },
+    "archive": {
+        "id": "memory.archive",
+        "function": archive_command,
+        "help": "Archive a memory.",
+        "usage": "alf archive <id>",
     },
     "version": {
         "id": "identity.version",
