@@ -32,7 +32,8 @@ def initialise_database(connection):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             created TEXT NOT NULL,
             category TEXT NOT NULL,
-            content TEXT NOT NULL
+            content TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active'
         )
         """
     )
@@ -77,10 +78,10 @@ def remember(category: str, content: str):
 
     cursor.execute(
         """
-        INSERT INTO memories (created, category, content)
-        VALUES (?, ?, ?)
+        INSERT INTO memories (created, category, status, content)
+        VALUES (?, ?, ?, ?)
         """,
-        (created, category, content),
+        (created, category, "active", content),
     )
 
     connection.commit()
@@ -98,7 +99,7 @@ def get_memories():
 
     cursor.execute(
         """
-        SELECT id, created, category, content
+        SELECT id, created, category, status, content
         FROM memories
         ORDER BY id
         """
@@ -114,7 +115,8 @@ def get_memories():
                 "id": row[0],
                 "created": row[1],
                 "category": row[2],
-                "content": row[3],
+                "status": row[3],
+                "content": row[4],
             }
         )
 

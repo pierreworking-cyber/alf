@@ -1,122 +1,112 @@
-# ALF Development Wall
+# WALL
 
-Ideas and possibilities for future development.
-Not commitments. Not a schedule.
+Working notes only.
+
+This document is intentionally temporary.
+
+It records design direction, current priorities and architectural boundaries.
+Once an idea becomes established it should move into ALF's persistent memory and be removed from this file.
 
 ---
-## Principles
 
-- Separate discourse from direction.
+# Current priorities
+
+## Memory
+
+* Implement soft deletion using a status field.
+* Add commands to forget, restore and review memories.
+* Preserve permanent memory IDs.
+* Introduce relationships between memories rather than editing old ones.
+
+Possible relationship types:
+
+* related_to
+* parent_of
+* follows
+* reviews
+* supersedes
+* derived_from
+
+---
+
+## Presentation
+
+Presentation is responsible only for displaying information.
+
+Rules:
+
+* Business logic belongs outside renderers.
+* Renderers receive structured data, not formatted strings.
+* Avoid capability-specific logic inside presentation.
+* Never expose Python implementation details to the user.
 
 ---
 
 ## Architecture
 
-- Move runtime data from project directory to user data directory
-- Separate configuration from identity
-- Add application logging
-- Review current module responsibilities
-- Decide whether ALF runs as:
-  - manual application
-  - user service
-  - daemon
-- Improve error handling for missing external tools
-- Consider automatic capability discovery
-- Improve capability reporting
-- Capability providers
-  - Modules advertise capabilities through a standard interface
-  - Capability system discovers providers dynamically
-  - Providers are responsible for their own state reporting
-  - Initial dynamic discovery implemented
-  - Consider module self-description
-  - Allow ALF to understand its own internal structure
-  - Separate module identity from user-facing capabilities
-- Review small utility modules
-  - Some modules may contain behaviour rather than a true domain responsibility
-  - Revisit time.py / greeting ownership as ALF personality develops
-  - Review naming of presentation functions as reports grow
-    - describe_identity may become describe_about or similar
-- Review command metadata
-- Commands use namespaced IDs
-- Consider richer command descriptions and argument metadata
-- Allow ALF to explain command usage dynamically
-- Review naming consistency
-  - Decide singular/plural conventions for IDs
-  - Examples: command vs commands, memory vs memories
-- Usage strings should expose optional arguments
-  - Consider richer command descriptions and argument metadata
-  - Allow ALF to explain command usage dynamically
-- Review command catalogue structure
-  - Consider whether discovered objects should use list-based representations
-  - Keep lookup structures separate from presentation structures
-- Keep information gathering separate from presentation
-  - Capability modules should return structured data, never formatted text
-  - Presentation should be the only place responsible for user-visible output
-  - Prefer passing structured data into renderers rather than preformatted strings
-- Capability detail rendering may eventually belong with capability providers
-- Presentation should avoid accumulating capability-specific knowledge
- 
-## Memory
+Keep modules focused on a single responsibility.
 
-- Forget/delete commands
-- Memory search
-- Duplicate detection
-- Memory metadata
-- Memory maintenance tools
+Current direction:
+
+* identity.py — ALF identity
+* memory.py — persistent memory
+* presentation.py — user output
+* status.py — runtime status
+* system.py — operating system information
+* git.py — repository awareness
+* commands.py — command dispatch
+
+Prefer simple modules over clever abstractions.
 
 ---
 
 ## Intelligence
 
-- Local AI integration
-- Natural conversation layer
-  
-  ---
+Current priority is building infrastructure.
 
-## Interfaces
+Natural-language reasoning, planning and higher intelligence come later.
 
-- SSH access from MacBook Pro
-- Add expandable capability detail reporting
-- Consider verbose output modes for structured capability information
+First make ALF:
+
+* reliable
+* understandable
+* maintainable
+* predictable
 
 ---
 
-## Future Architecture
-- Consider replacing WALL.md with structured project database
-  Possible fields:
-    - importance
-    - difficulty
-    - complexity
-    - status
-    - dependencies
-    - notes
-- Remote ALF client
-- Possible graphical interface
-- Voice interface
-- Capability providers should report their own state.
+## Data
+
+User data belongs in the user data directory.
+
+Examples:
+
+* SQLite database
+* identity.toml
+* future configuration
+
+The project directory should contain only source code and project assets.
+
 ---
 
-## Personality
+## Development principles
 
-- Terminal presentation improvements
-- Configurable greeting style
-- Optional personality settings
+When uncertain:
 
-## Capability system thoughts
+* Choose the simpler design.
+* Prefer explicit code over abstraction.
+* Preserve backwards compatibility where practical.
+* Keep changes small and testable.
+* Refactor only after duplication becomes obvious.
 
-- Capability identity should eventually be separate from display name
-- Capability failures should be visible, not silently ignored
-- Avoid unnecessary metadata requiring manual maintenance
-- Consider optional dependency reporting
-- Keep capability contracts flexible
-- Capability machine identity should be separate from display name
-- Capability discovery should preserve both available capabilities and discovery warnings
+If something is difficult to explain, it is probably too complicated.
 
-## Presentation
+---
 
-- Continue moving user-visible formatting into presentation.py
-- presentation.py should expose a stable rendering API
-- Consider generic render helpers once several renderers share structure
-- Avoid exposing raw Python structures to the user
-- Presentation should describe ALF, not Python objects
-- Keep renderers focused on one responsibility each
+# Long-term vision
+
+ALF is not intended to become another chatbot.
+
+It is intended to become a long-lived personal computing companion whose knowledge accumulates over years.
+
+The memory system should preserve not only facts, but the reasoning, decisions and evolution of ideas that produced them.
