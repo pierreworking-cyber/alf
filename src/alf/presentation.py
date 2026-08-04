@@ -224,13 +224,6 @@ def render_memory(memory):
         print()
         return
 
-    print()
-
-    if memory is None:
-        print("Memory not found.")
-        print()
-        return
-
     print(
         f"(id: {memory['id']}) {memory['created']} "
         f"[{memory['category']}] [{memory['status']}]"
