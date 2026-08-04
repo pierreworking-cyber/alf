@@ -81,26 +81,28 @@ def memories_command(*arguments):
         else:
             print(f"Unknown option: {argument}")
             return
-        if options["group"]:
-            print("Grouping is recognised but not yet implemented.")
-            return
 
         index += 1
 
-    render_memories(get_memories(options))
+    memories = get_memories(options)
+    render_memories(memories, options)
 
 
 def categories_command(argument=None):
     render_memory_categories(get_memory_categories())
 
 
-def memory_command(memory_id=None):
-    if not memory_id:
+def memory_command(*arguments):
+
+    if len(arguments) != 1:
         render_memory_usage(commands["memory"]["usage"])
         return
 
+    memory_id = arguments[0]
+
     try:
         memory_id = int(memory_id)
+
     except ValueError:
         render_memory_not_numeric()
         return
