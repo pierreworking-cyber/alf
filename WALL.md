@@ -13,24 +13,22 @@ Once an idea becomes established it should move into ALF's persistent memory and
 
 ## Memory
 
-* Implement soft deletion using a status field.
-* Add commands to forget, restore and review memories.
-* Preserve permanent memory IDs.
-* Introduce relationships between memories rather than editing old ones.
+- Implement soft deletion using a status field.
+- Add commands to forget, restore and review memories.
+- Preserve permanent memory IDs.
+- Introduce relationships between memories rather than editing old ones.
 
 Possible relationship types:
 
-* related_to
-* parent_of
-* follows
-* reviews
-* supersedes
-* derived_from
+- related_to
+- parent_of
+- follows
+- reviews
+- supersedes
+- derived_from
 
 Implementation deferred until memory identity model is reviewed.
 ---
-
-## Memory history
 
 ## Memory history
 
@@ -41,6 +39,8 @@ Current implementation:
 - New memories can preserve the history of changing knowledge
 - Existing memories are not modified when new memories are created
 - Relationships are currently one-directional
+- previous_memory_id is implemented
+- richer relationships are deferred
 
 Design intent:
 - Preserve historical context rather than overwrite old knowledge
@@ -51,6 +51,7 @@ Future considerations:
 - Memory history views
 - Schema versioning and migrations
 - Richer relationship types if required
+- exploration of relationship traversal
 
 ## Memory schema evolution
 
@@ -67,10 +68,10 @@ Presentation is responsible only for displaying information.
 
 Rules:
 
-* Business logic belongs outside renderers.
-* Renderers receive structured data, not formatted strings.
-* Avoid capability-specific logic inside presentation.
-* Never expose Python implementation details to the user.
+- Business logic belongs outside renderers.
+- Renderers receive structured data, not formatted strings.
+- Avoid capability-specific logic inside presentation.
+- Never expose Python implementation details to the user.
 
 ---
 
@@ -80,23 +81,23 @@ Keep modules focused on a single responsibility.
 
 Current direction:
 
-* identity.py — ALF identity
-* memory.py — persistent memory
-* presentation.py — user output
-* status.py — runtime status
-* system.py — operating system information
-* git.py — repository awareness
-* commands.py — command dispatch
+- identity.py — ALF identity
+- memory.py — persistent memory
+- presentation.py — user output
+- status.py — runtime status
+- system.py — operating system information
+- git.py — repository awareness
+- commands.py — command dispatch
 
 Prefer simple modules over clever abstractions.
 
 ---
 ## Memory relationships
 
-* Do not overwrite old memories.
-* Allow newer memories to supersede older ones.
-* Preserve history.
-* Expose relationships in future UI.
+- Do not overwrite old memories.
+- Allow newer memories to supersede older ones.
+- Preserve history.
+- Expose relationships in future UI.
 
 ---
 
@@ -108,10 +109,10 @@ Natural-language reasoning, planning and higher intelligence come later.
 
 First make ALF:
 
-* reliable
-* understandable
-* maintainable
-* predictable
+- reliable
+- understandable
+- maintainable
+- predictable
 
 ---
 
@@ -121,9 +122,9 @@ User data belongs in the user data directory.
 
 Examples:
 
-* SQLite database
-* identity.toml
-* future configuration
+- SQLite database
+- identity.toml
+- future configuration
 
 The project directory should contain only source code and project assets.
 
@@ -133,11 +134,11 @@ The project directory should contain only source code and project assets.
 
 When uncertain:
 
-* Choose the simpler design.
-* Prefer explicit code over abstraction.
-* Preserve backwards compatibility where practical.
-* Keep changes small and testable.
-* Refactor only after duplication becomes obvious.
+- Choose the simpler design.
+- Prefer explicit code over abstraction.
+- Preserve backwards compatibility where practical.
+- Keep changes small and testable.
+- Refactor only after duplication becomes obvious.
 
 If something is difficult to explain, it is probably too complicated.
 
