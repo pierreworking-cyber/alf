@@ -48,8 +48,14 @@ def remember_command(category=None, content=None):
     render_memory_saved(category)
 
 
-def memories_command(argument=None):
-    render_memories(get_memories())
+def memories_command(*arguments):
+    category = None
+
+    if arguments:
+        if len(arguments) == 2 and arguments[0] == "--category":
+            category = arguments[1]
+
+    render_memories(get_memories(category))
 
 
 def memory_command(memory_id=None):

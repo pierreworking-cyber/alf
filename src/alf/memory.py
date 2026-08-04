@@ -88,22 +88,33 @@ def remember(category: str, content: str):
     connection.close()
 
 
-def get_memories():
+def get_memories(category=None):
     """
-    Retrieve all ALF memories.
+    Retrieve ALF memories, optionally filtered by category.
     """
 
     connection = get_connection()
 
     cursor = connection.cursor()
 
-    cursor.execute(
-        """
-        SELECT id, created, category, status, content
-        FROM memories
-        ORDER BY id
-        """
-    )
+    if category:
+        cursor.execute(
+            """
+            SELECT id, created, category, status, content
+            FROM memories
+            WHERE category = ?
+            ORDER BY id
+            """,
+            (category,),
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT id, created, category, status, content
+            FROM memories
+            ORDER BY id
+            """
+        )
 
     rows = cursor.fetchall()
 
