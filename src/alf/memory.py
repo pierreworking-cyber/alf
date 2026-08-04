@@ -209,14 +209,20 @@ def get_memory(memory_id: int):
     if row is None:
         return None
 
-    return {
+    memory = {
         "id": row[0],
         "created": row[1],
         "category": row[2],
         "status": row[3],
         "content": row[4],
         "previous_memory_id": row[5],
+        "previous_memory": None,
     }
+
+    if memory["previous_memory_id"]:
+        memory["previous_memory"] = get_memory(memory["previous_memory_id"])
+
+    return memory
 
 
 def archive_memory(memory_id: int):
