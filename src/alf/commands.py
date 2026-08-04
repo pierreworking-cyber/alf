@@ -14,6 +14,8 @@ from .presentation import (
     render_greeting,
     render_memory_saved,
     render_memory_usage,
+    render_memory_not_numeric,
+    render_memory_positive,
     render_invalid_memory_category,
     render_memory,
 )
@@ -52,11 +54,20 @@ def memories_command(argument=None):
 
 def memory_command(memory_id=None):
     if not memory_id:
+        render_memory_usage(commands["memory"]["usage"])
         return
 
-    memory = get_memory(int(memory_id))
+    try:
+        memory_id = int(memory_id)
+    except ValueError:
+        render_memory_not_numeric()
+        return
 
-    render_memory(memory)
+    if memory_id <= 0:
+        render_memory_positive()
+        return
+
+    render_memory(get_memory(memory_id))
 
 
 def about_command(argument=None):

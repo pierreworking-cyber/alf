@@ -87,26 +87,6 @@ def render_memories(memories):
         print()
 
 
-def render_memory(memory):
-    """
-    Render a single ALF memory.
-    """
-
-    print()
-
-    if memory is None:
-        print("Memory not found.")
-        print()
-        return
-
-    print(
-        f"(id: {memory['id']}) {memory['created']} "
-        f"[{memory['category']}] [{memory['status']}]"
-    )
-    print(f"  {memory['content']}")
-    print()
-
-
 def render_version(identity):
     """
     Render ALF version information.
@@ -179,6 +159,36 @@ def render_greeting():
     print()
 
 
+def render_memory_usage(usage):
+    """
+    Render memory command usage.
+    """
+
+    print()
+    print(f"Usage: {usage}")
+    print()
+
+
+def render_memory(memory):
+    """
+    Render a single ALF memory.
+    """
+
+    print()
+
+    if memory is None:
+        print("Memory not found.")
+        print()
+        return
+
+    print(
+        f"(id: {memory['id']}) {memory['created']} "
+        f"[{memory['category']}] [{memory['status']}]"
+    )
+    print(f"  {memory['content']}")
+    print()
+
+
 def render_memory_saved(category):
     """
     Render memory confirmation.
@@ -189,13 +199,23 @@ def render_memory_saved(category):
     print()
 
 
-def render_memory_usage(usage):
+def render_memory_not_numeric():
     """
-    Render memory command usage.
+    Render invalid memory ID message.
     """
 
     print()
-    print(f"Usage: {usage}")
+    print("Memory ID must be a number.")
+    print()
+
+
+def render_memory_positive():
+    """
+    Render invalid positive memory ID message.
+    """
+
+    print()
+    print("Memory IDs must be positive.")
     print()
 
 
