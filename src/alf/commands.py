@@ -59,16 +59,33 @@ def remember_command(category=None, content=None):
 
 def memories_command(*arguments):
     category = None
+    include_archived = False
 
-    if arguments:
-        if arguments[0] == "--help":
-            render_memory_help()
+    index = 0
+
+    while index < len(arguments):
+        argument = arguments[index]
+
+        if argument == "--all":
+            include_archived = True
+
+        elif argument == "--category":
+            index += 1
+            if index < len(arguments):
+                category = arguments[index]
+
+        else:
+            print(f"Unknown option: {argument}")
             return
 
-        if len(arguments) == 2 and arguments[0] == "--category":
-            category = arguments[1]
+        index += 1
 
-    render_memories(get_memories(category))
+    render_memories(
+        get_memories(
+            category,
+            include_archived
+        )
+    )
 
 
 def categories_command(argument=None):

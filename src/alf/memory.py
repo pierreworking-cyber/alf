@@ -139,7 +139,7 @@ def get_memories(category=None, include_archived=False):
             """
         )
 
-        rows = cursor.fetchall()
+    rows = cursor.fetchall()
 
     memories = []
 
