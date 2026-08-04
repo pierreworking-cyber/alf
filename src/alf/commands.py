@@ -20,7 +20,7 @@ from .presentation import (
 
 
 def status_command(argument=None):
-    render_status(get_status_information())
+    print(render_status(get_status_information()))
 
 
 def hello_command(argument=None):
