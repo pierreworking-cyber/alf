@@ -65,6 +65,17 @@ def get_memory_categories():
     return VALID_MEMORY_CATEGORIES
 
 
+def get_memory_query_options():
+    """
+    Return default memory query options.
+    """
+
+    return {
+        "category": None,
+        "include_archived": False,
+    }
+
+
 def remember(category: str, content: str):
     """
     Store a memory in ALF's database.
@@ -88,14 +99,19 @@ def remember(category: str, content: str):
     connection.close()
 
 
-def get_memories(category=None, include_archived=False):
+def get_memories(options=None):
     """
-    Retrieve ALF memories, optionally filtered by category.
+    Retrieve ALF memories using query options.
     Archived memories are not displayed by default.
     """
 
-    connection = get_connection()
+    if options is None:
+        options = get_memory_query_options()
 
+    category = options["category"]
+    include_archived = options["include_archived"]
+
+    connection = get_connection()
     cursor = connection.cursor()
 
     if category and include_archived:

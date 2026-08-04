@@ -9,6 +9,7 @@ from .memory import (
     get_memory_categories,
     get_memory,
     archive_memory,
+    get_memory_query_options,
 )
 from .identity import get_identity, get_about_information
 from .presentation import (
@@ -26,7 +27,6 @@ from .presentation import (
     render_memory,
     render_memory_categories,
     render_memory_archived,
-    render_memory_help,
 )
 
 
@@ -58,8 +58,7 @@ def remember_command(category=None, content=None):
 
 
 def memories_command(*arguments):
-    category = None
-    include_archived = False
+    options = get_memory_query_options()
 
     index = 0
 
@@ -67,12 +66,12 @@ def memories_command(*arguments):
         argument = arguments[index]
 
         if argument == "--all":
-            include_archived = True
+            options["include_archived"] = True
 
         elif argument == "--category":
             index += 1
             if index < len(arguments):
-                category = arguments[index]
+                options["category"] = arguments[index]
 
         else:
             print(f"Unknown option: {argument}")
@@ -80,12 +79,7 @@ def memories_command(*arguments):
 
         index += 1
 
-    render_memories(
-        get_memories(
-            category,
-            include_archived
-        )
-    )
+    render_memories(get_memories(options))
 
 
 def categories_command(argument=None):
