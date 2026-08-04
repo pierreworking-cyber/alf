@@ -2,6 +2,13 @@
 ALF presentation helpers.
 """
 
+MEMORY_CATEGORY_PRIORITY = [
+    "decision",
+    "preference",
+    "fact",
+    "note",
+]
+
 
 def render_about(about, show_details=False):
     """
@@ -64,7 +71,7 @@ def render_commands(commands):
         print()
 
 
-def render_memories(memories):
+def render_memories(memories, options=None):
     """
     Render stored ALF memories.
     """
@@ -78,6 +85,10 @@ def render_memories(memories):
         print()
         return
 
+    if options and options.get("group") == "category":
+        render_grouped_memories(memories)
+        return
+
     for memory in memories:
         print(
             f"(id: {memory['id']}) {memory['created']} "
@@ -85,6 +96,38 @@ def render_memories(memories):
         )
         print(f"  {memory['content']}")
         print()
+
+
+def render_grouped_memories(memories):
+    """
+    Render ALF memories grouped by category.
+    """
+
+    grouped = {}
+
+    for memory in memories:
+        category = memory["category"]
+
+        if category not in grouped:
+            grouped[category] = []
+
+        grouped[category].append(memory)
+
+    for category in MEMORY_CATEGORY_PRIORITY:
+        if category not in grouped:
+            continue
+
+        print()
+        print(category.upper())
+        print("-" * len(category))
+
+        for memory in grouped[category]:
+            print(
+                f"(id: {memory['id']}) {memory['created']} "
+                f"[{memory['category']}] [{memory['status']}]"
+            )
+            print(f"  {memory['content']}")
+            print()
 
 
 def render_version(identity):
