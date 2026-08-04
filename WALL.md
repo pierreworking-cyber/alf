@@ -27,7 +27,39 @@ Possible relationship types:
 * supersedes
 * derived_from
 
+Implementation deferred until memory identity model is reviewed.
 ---
+
+## Memory history
+
+## Memory history
+
+ALF memories may optionally reference a previous memory.
+
+Current implementation:
+- Memories contain an optional `previous_memory_id`
+- New memories can preserve the history of changing knowledge
+- Existing memories are not modified when new memories are created
+- Relationships are currently one-directional
+
+Design intent:
+- Preserve historical context rather than overwrite old knowledge
+- Avoid a complex relationship graph in early versions
+- Allow future interfaces to present memory evolution
+
+Future considerations:
+- Memory history views
+- Schema versioning and migrations
+- Richer relationship types if required
+
+## Memory schema evolution
+
+Current:
+- Development database may require manual changes
+
+Future:
+- Add schema version tracking
+- Add migration support when ALF becomes persistent across upgrades
 
 ## Presentation
 
@@ -57,6 +89,14 @@ Current direction:
 * commands.py — command dispatch
 
 Prefer simple modules over clever abstractions.
+
+---
+## Memory relationships
+
+* Do not overwrite old memories.
+* Allow newer memories to supersede older ones.
+* Preserve history.
+* Expose relationships in future UI.
 
 ---
 
