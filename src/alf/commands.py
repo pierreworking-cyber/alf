@@ -10,6 +10,7 @@ from .memory import (
     get_memory,
     archive_memory,
     get_memory_query_options,
+    search_memories,
 )
 from .identity import get_identity, get_about_information
 from .presentation import (
@@ -87,6 +88,16 @@ def memories_command(*arguments):
 
     memories = get_memories(options)
     render_memories(memories, options)
+
+
+def search_command(*arguments):
+    if len(arguments) != 1 or not arguments[0].strip():
+        render_memory_usage(commands["search"]["usage"])
+        return
+
+    results = search_memories(arguments[0].strip())
+
+    render_memories(results)
 
 
 def categories_command(argument=None):
@@ -207,6 +218,12 @@ commands = {
         "function": version_command,
         "help": "Show ALF version.",
         "usage": "alf version",
+    },
+    "search": {
+        "id": "memory.search",
+        "function": search_command,
+        "help": "Search memories.",
+        "usage": 'alf search "text"',
     },
 }
 

@@ -184,6 +184,47 @@ def get_memories(options=None):
     return memories
 
 
+def search_memories(term: str):
+    """
+    Search active memories by content.
+    """
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, created, category, status, content, previous_memory_id
+        FROM memories
+        WHERE status = 'active'
+        AND content LIKE ?
+        ORDER BY id
+        """,
+        (f"%{term}%",),
+    )
+
+    rows = cursor.fetchall()
+
+    memories = []
+
+    for row in rows:
+        memories.append(
+            {
+                "id": row[0],
+                "created": row[1],
+                "category": row[2],
+                "status": row[3],
+                "content": row[4],
+                "previous_memory_id": row[5],
+            }
+        )
+
+    connection.close()
+
+    return memories
+
+
 def get_memory(memory_id: int):
     """
     Retrieve a single memory by ID.
