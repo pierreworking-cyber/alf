@@ -189,6 +189,21 @@ def render_memory(memory):
     print()
 
 
+def render_memory_categories(categories):
+    """
+    Render available ALF memory categories.
+    """
+
+    print()
+    print("ALF memory categories")
+    print("---------------------")
+
+    for category in categories:
+        print(f"- {category}")
+
+    print()
+
+
 def render_memory_saved(category):
     """
     Render memory confirmation.

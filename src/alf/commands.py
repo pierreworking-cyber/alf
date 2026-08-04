@@ -18,6 +18,7 @@ from .presentation import (
     render_memory_positive,
     render_invalid_memory_category,
     render_memory,
+    render_memory_categories,
 )
 
 
@@ -56,6 +57,10 @@ def memories_command(*arguments):
             category = arguments[1]
 
     render_memories(get_memories(category))
+
+
+def categories_command(argument=None):
+    render_memory_categories(get_memory_categories())
 
 
 def memory_command(memory_id=None):
@@ -119,6 +124,12 @@ commands = {
         "function": memories_command,
         "help": "Recall previous memories.",
         "usage": "alf memories",
+    },
+    "categories": {
+        "id": "memory.categories",
+        "function": categories_command,
+        "help": "Show memory categories.",
+        "usage": "alf categories",
     },
     "memory": {
         "id": "memory.show",
