@@ -43,7 +43,7 @@ def help_command(argument=None):
 
 
 def remember_command(category=None, content=None):
-    if not category or not content:
+    if not category or not content or not content.strip():
         render_memory_usage(commands["remember"]["usage"])
         return
 
@@ -53,6 +53,7 @@ def remember_command(category=None, content=None):
         render_invalid_memory_category(category, categories)
         return
 
+    content = content.strip()
     remember(category, content)
     render_memory_saved(category)
 
