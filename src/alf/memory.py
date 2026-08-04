@@ -33,7 +33,8 @@ def initialise_database(connection):
             created TEXT NOT NULL,
             category TEXT NOT NULL,
             content TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'active'
+            status TEXT NOT NULL DEFAULT 'active',
+            previous_memory_id INTEGER
         )
         """
     )
@@ -77,7 +78,7 @@ def get_memory_query_options():
     }
 
 
-def remember(category: str, content: str):
+def remember(category: str, content: str, previous_memory_id=None):
     """
     Store a memory in ALF's database.
     """
@@ -90,10 +91,16 @@ def remember(category: str, content: str):
 
     cursor.execute(
         """
-        INSERT INTO memories (created, category, status, content)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO memories (
+            created,
+            category,
+            status,
+            content,
+            previous_memory_id
+    )
+        VALUES (?, ?, ?, ?, ?)
         """,
-        (created, category, "active", content),
+        (created, category, "active", content, previous_memory_id),
     )
 
     connection.commit()
@@ -118,7 +125,7 @@ def get_memories(options=None):
     if category and include_archived:
         cursor.execute(
             """
-            SELECT id, created, category, status, content
+            SELECT id, created, category, status, content, previous_memory_id
             FROM memories
             WHERE category = ?
             ORDER BY id
@@ -129,7 +136,7 @@ def get_memories(options=None):
     elif category:
         cursor.execute(
             """
-            SELECT id, created, category, status, content
+            SELECT id, created, category, status, content, previous_memory_id
             FROM memories
             WHERE category = ? AND status = 'active'
             ORDER BY id
@@ -140,7 +147,7 @@ def get_memories(options=None):
     elif include_archived:
         cursor.execute(
             """
-            SELECT id, created, category, status, content
+            SELECT id, created, category, status, content, previous_memory_id
             FROM memories
             ORDER BY id
             """
@@ -149,7 +156,7 @@ def get_memories(options=None):
     else:
         cursor.execute(
             """
-            SELECT id, created, category, status, content
+            SELECT id, created, category, status, content, previous_memory_id
             FROM memories
             WHERE status = 'active'
             ORDER BY id
@@ -168,6 +175,7 @@ def get_memories(options=None):
                 "category": row[2],
                 "status": row[3],
                 "content": row[4],
+                "previous_memory_id": row[5],
             }
         )
 
@@ -187,7 +195,7 @@ def get_memory(memory_id: int):
 
     cursor.execute(
         """
-        SELECT id, created, category, status, content
+        SELECT id, created, category, status, content, previous_memory_id
         FROM memories
         WHERE id = ?
         """,
@@ -207,6 +215,7 @@ def get_memory(memory_id: int):
         "category": row[2],
         "status": row[3],
         "content": row[4],
+        "previous_memory_id": row[5],
     }
 
 
