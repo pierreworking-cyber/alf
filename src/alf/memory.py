@@ -73,6 +73,7 @@ def get_memory_query_options():
     return {
         "category": None,
         "include_archived": False,
+        "group": None,
     }
 
 

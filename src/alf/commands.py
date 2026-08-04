@@ -73,8 +73,16 @@ def memories_command(*arguments):
             if index < len(arguments):
                 options["category"] = arguments[index]
 
+        elif argument == "--group":
+            index += 1
+            if index < len(arguments):
+                options["group"] = arguments[index]
+
         else:
             print(f"Unknown option: {argument}")
+            return
+        if options["group"]:
+            print("Grouping is recognised but not yet implemented.")
             return
 
         index += 1
