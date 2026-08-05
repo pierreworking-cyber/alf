@@ -5,9 +5,9 @@ ALF - Peter's local computing companion.
 
 """
 
+from .commands import run
 from .identity import get_about_information
 from .presentation import render_about
-from .commands import run
 from .time import get_greeting
 
 

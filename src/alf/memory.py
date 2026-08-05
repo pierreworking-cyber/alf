@@ -6,8 +6,8 @@ Persistent memory stored in SQLite.
 
 import sqlite3
 from datetime import datetime
-from .paths import get_data_directory
 
+from .paths import get_data_directory
 
 DATABASE = get_data_directory() / "alf.db"
 

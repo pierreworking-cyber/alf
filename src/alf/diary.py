@@ -7,7 +7,6 @@ Stores events and notes about ALF's journey.
 from datetime import datetime
 from pathlib import Path
 
-
 DIARY_FILE = Path("logs/diary.md")
 
 

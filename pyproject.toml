@@ -10,3 +10,15 @@ requires-python = ">=3.11"
 
 [project.scripts]
 alf = "alf.main:main"
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+]

@@ -3,8 +3,9 @@ ALF identity management.
 """
 
 import tomllib
-from .paths import get_data_directory
+
 from .capabilities import discover_capabilities
+from .paths import get_data_directory
 
 
 def get_identity():

@@ -2,36 +2,36 @@
 ALF command dispatcher.
 """
 
-from .status import get_status_information
-from .memory import (
-    remember,
-    get_memories,
-    get_memory_categories,
-    get_memory,
-    archive_memory,
-    get_memory_query_options,
-    search_memories,
-)
 from .identity import (
-    get_identity,
     get_about_information,
+    get_identity,
+)
+from .memory import (
+    archive_memory,
+    get_memories,
+    get_memory,
+    get_memory_categories,
+    get_memory_query_options,
+    remember,
+    search_memories,
 )
 from .presentation import (
     render_about,
     render_commands,
-    render_memories,
-    render_version,
-    render_status,
     render_greeting,
-    render_memory_saved,
-    render_memory_usage,
+    render_invalid_memory_category,
+    render_memories,
+    render_memory,
+    render_memory_archived,
+    render_memory_categories,
     render_memory_not_numeric,
     render_memory_positive,
-    render_invalid_memory_category,
-    render_memory,
-    render_memory_categories,
-    render_memory_archived,
+    render_memory_saved,
+    render_memory_usage,
+    render_status,
+    render_version,
 )
+from .status import get_status_information
 
 
 def status_command(argument=None):
