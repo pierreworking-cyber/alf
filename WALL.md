@@ -150,3 +150,14 @@ The memory system should preserve not only facts, but the reasoning, decisions a
 - Current help output is suitable for early development.
 - As commands gain options, consider hierarchical help:
 - Avoid turning top-level help into a full command reference.
+
+## Future interface direction
+
+The command line interface is currently capability based.
+
+As ALF grows, consider:
+- grouped commands for discoverability
+- interactive shell mode
+- natural language command interpretation
+
+The CLI should remain a stable foundation rather than requiring users to memorise commands.
