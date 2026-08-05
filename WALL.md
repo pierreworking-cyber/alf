@@ -7,11 +7,9 @@ This document is intentionally temporary.
 It records design direction, current priorities and architectural boundaries.
 Once an idea becomes established it should move into ALF's persistent memory and be removed from this file.
 
----
+## Current priorities
 
-# Current priorities
-
-## Memory
+# Memory
 
 - Implement soft deletion using a status field.
 - Add commands to forget, restore and review memories.
@@ -27,14 +25,14 @@ Possible relationship types:
 - supersedes
 - derived_from
 
-Implementation deferred until memory identity model is reviewed.
----
+Implementation deferred until memory identity model is reviewed
 
 ## Memory history
 
 ALF memories may optionally reference a previous memory.
 
 Current implementation:
+
 - Memories contain an optional `previous_memory_id`
 - New memories can preserve the history of changing knowledge
 - Existing memories are not modified when new memories are created
@@ -45,11 +43,13 @@ Current implementation:
 - ALF memories are append-only records. New memories may reference previous memories to preserve the evolution of knowledge without modifying history.
 
 Design intent:
+
 - Preserve historical context rather than overwrite old knowledge
 - Avoid a complex relationship graph in early versions
 - Allow future interfaces to present memory evolution
 
 Future considerations:
+
 - Memory history views
 - Schema versioning and migrations
 - Richer relationship types if required
@@ -58,9 +58,11 @@ Future considerations:
 ## Memory schema evolution
 
 Current:
+
 - Development database may require manual changes
 
 Future:
+
 - Add schema version tracking
 - Add migration support when ALF becomes persistent across upgrades
 
@@ -74,8 +76,6 @@ Rules:
 - Renderers receive structured data, not formatted strings.
 - Avoid capability-specific logic inside presentation.
 - Never expose Python implementation details to the user.
-
----
 
 ## Architecture
 
@@ -93,15 +93,12 @@ Current direction:
 
 Prefer simple modules over clever abstractions.
 
----
 ## Memory relationships
 
 - Do not overwrite old memories.
 - Allow newer memories to supersede older ones.
 - Preserve history.
 - Expose relationships in future UI.
-
----
 
 ## Intelligence
 
@@ -116,8 +113,6 @@ First make ALF:
 - maintainable
 - predictable
 
----
-
 ## Data
 
 User data belongs in the user data directory.
@@ -129,8 +124,6 @@ Examples:
 - future configuration
 
 The project directory should contain only source code and project assets.
-
----
 
 ## Development principles
 
@@ -144,12 +137,16 @@ When uncertain:
 
 If something is difficult to explain, it is probably too complicated.
 
----
-
-# Long-term vision
+## Long-term vision
 
 ALF is not intended to become another chatbot.
 
 It is intended to become a long-lived personal computing companion whose knowledge accumulates over years.
 
 The memory system should preserve not only facts, but the reasoning, decisions and evolution of ideas that produced them.
+
+## Future CLI improvements
+
+- Current help output is suitable for early development.
+- As commands gain options, consider hierarchical help:
+- Avoid turning top-level help into a full command reference.
