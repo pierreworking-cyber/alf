@@ -244,6 +244,17 @@ commands = {
         "function": memories_command,
         "help": "Recall previous memories.",
         "usage": "alf memories",
+        "options": {
+            "--all": "Include archived memories.",
+            "--category <name>": "Restrict results to a memory category.",
+            "--group <name>": "Group memories by a field.",
+        },
+        "examples": [
+            "alf memories",
+            "alf memories --all",
+            "alf memories --category preference",
+            "alf memories --group category",
+        ],
     },
     "categories": {
         "id": "memory.categories",
