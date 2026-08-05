@@ -9,7 +9,7 @@ Once an idea becomes established it should move into ALF's persistent memory and
 
 ## Current priorities
 
-# Memory
+## Memory
 
 - Implement soft deletion using a status field.
 - Add commands to forget, restore and review memories.

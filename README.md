@@ -33,13 +33,13 @@ ALF currently has:
 
 After activating the Python environment:
 
-```bash
+```text
 alf
 ```
 
 ALF can also be run with specific commands:
 
-```bash
+```text
 alf help
 ```
 
@@ -67,7 +67,7 @@ Memory entries currently support categories:
 
 Example:
 
-```bash
+```text
 alf remember preference "Peter prefers structured data"
 ```
 
@@ -87,7 +87,8 @@ This separation allows ALF's code and personal data to evolve independently.
 
 Current structure:
 
-```
+```text
+
 ALF
  |
  +-- Identity
@@ -105,6 +106,7 @@ ALF
  +-- System awareness
         |
         +-- Operating system information
+
 ```
 
 ## Current limitations
@@ -140,4 +142,3 @@ ALF is learning.
 The goal is not to create another chatbot.
 
 The goal is to create a personal computing companion that is reliable, understandable, and evolves alongside its owner.
-
