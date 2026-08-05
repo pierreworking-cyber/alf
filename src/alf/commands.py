@@ -36,6 +36,13 @@ from .presentation import (
 )
 from .status import get_status_information
 
+REQUIRED_COMMAND_FIELDS = [
+    "id",
+    "function",
+    "help",
+    "usage",
+]
+
 
 def status_command(argument=None):
     print(render_status(get_status_information()))
@@ -359,6 +366,15 @@ def validate_commands():
     command_ids = set()
 
     for name, command in commands.items():
+        for field in REQUIRED_COMMAND_FIELDS:
+            if field not in command:
+                warnings.append(
+                    {
+                        "command": name,
+                        "message": f"Command has no {field}",
+                    }
+                )
+
         command_id = command.get("id")
 
         if not command_id:
@@ -368,7 +384,7 @@ def validate_commands():
                     "message": "Command has no id",
                 }
             )
-            continue
+        continue
 
         if command_id in command_ids:
             warnings.append(
