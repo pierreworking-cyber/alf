@@ -273,6 +273,9 @@ commands = {
         "function": history_command,
         "help": "Show memory history.",
         "usage": "alf history <id>",
+        "examples": [
+            "alf history 11",
+        ],
     },
     "about": {
         "id": "identity.about",
@@ -285,6 +288,9 @@ commands = {
         "function": archive_command,
         "help": "Archive a memory.",
         "usage": "alf archive <id>",
+        "examples": [
+            "alf archive 11",
+        ],
     },
     "version": {
         "id": "identity.version",
