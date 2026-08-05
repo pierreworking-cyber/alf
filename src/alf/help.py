@@ -27,12 +27,17 @@ def render_command_help(command_name, command):
             print(f"    {option}")
             print(f"        {description}")
 
-    print()
+
+    if "notes" in command:
+        print()
+        print("Notes:")
+
+        for note in command["notes"]:
+            print(f"    {note}")
 
     if "examples" in command:
         print()
         print("Examples:")
 
         for example in command["examples"]:
-            print()
             print(f"    {example}")

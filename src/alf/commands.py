@@ -238,6 +238,12 @@ commands = {
         "function": remember_command,
         "help": "Add a memory.",
         "usage": 'alf remember <category> "text"',
+        "notes": [
+            "View available categories with: alf categories",
+        ],
+        "examples": [
+            'alf remember preference "Peter prefers dogs"',
+        ],
     },
     "memories": {
         "id": "memory.list",
