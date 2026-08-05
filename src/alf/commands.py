@@ -282,6 +282,13 @@ commands = {
         "function": about_command,
         "help": "Explain what ALF is.",
         "usage": "alf about [--details]",
+        "options": {
+            "--details": "Show extended identity information.",
+        },
+        "examples": [
+            "alf about",
+            "alf about --details",
+        ],
     },
     "archive": {
         "id": "memory.archive",
