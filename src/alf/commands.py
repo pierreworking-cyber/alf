@@ -267,6 +267,9 @@ commands = {
         "function": memory_command,
         "help": "Show a single memory.",
         "usage": "alf memory <id>",
+        "examples": [
+            "alf memory 11",
+        ],
     },
     "history": {
         "id": "memory.history",
