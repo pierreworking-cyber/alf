@@ -232,6 +232,11 @@ commands = {
         "function": help_command,
         "help": "Show command help.",
         "usage": "alf help [command]",
+        "examples": [
+            "alf help",
+            "alf help search",
+            "alf help remember",
+        ],
     },
     "remember": {
         "id": "memory.add",
