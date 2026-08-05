@@ -12,7 +12,10 @@ from .memory import (
     get_memory_query_options,
     search_memories,
 )
-from .identity import get_identity, get_about_information
+from .identity import (
+    get_identity,
+    get_about_information,
+)
 from .presentation import (
     render_about,
     render_commands,
@@ -59,7 +62,7 @@ def remember_command(category=None, content=None):
     render_memory_saved(category)
 
 
-def memories_command(*arguments):
+def parse_memory_query_options(arguments):
     options = get_memory_query_options()
 
     index = 0
@@ -72,32 +75,51 @@ def memories_command(*arguments):
 
         elif argument == "--category":
             index += 1
+
             if index < len(arguments):
                 options["category"] = arguments[index]
 
         elif argument == "--group":
             index += 1
+
             if index < len(arguments):
                 options["group"] = arguments[index]
 
         else:
             print(f"Unknown option: {argument}")
-            return
+            return None
 
         index += 1
 
+    return options
+
+
+def memories_command(*arguments):
+    options = parse_memory_query_options(arguments)
+
+    if options is None:
+        return
+
     memories = get_memories(options)
+
     render_memories(memories, options)
 
 
 def search_command(*arguments):
-    if len(arguments) != 1 or not arguments[0].strip():
+    if not arguments:
         render_memory_usage(commands["search"]["usage"])
         return
 
-    results = search_memories(arguments[0].strip())
+    term = arguments[0]
 
-    render_memories(results)
+    options = parse_memory_query_options(arguments[1:])
+
+    if options is None:
+        return
+
+    memories = search_memories(term, options)
+
+    render_memories(memories, options)
 
 
 def categories_command(argument=None):

@@ -184,25 +184,39 @@ def get_memories(options=None):
     return memories
 
 
-def search_memories(term: str):
+def search_memories(term, options=None):
     """
-    Search active memories by content.
+    Search memories by content using query options.
     """
+
+    if options is None:
+        options = get_memory_query_options()
+
+    category = options["category"]
+    include_archived = options["include_archived"]
 
     connection = get_connection()
 
     cursor = connection.cursor()
 
-    cursor.execute(
-        """
+    query = """
         SELECT id, created, category, status, content, previous_memory_id
         FROM memories
-        WHERE status = 'active'
-        AND content LIKE ?
-        ORDER BY id
-        """,
-        (f"%{term}%",),
-    )
+        WHERE content LIKE ?
+    """
+
+    parameters = [f"%{term}%"]
+
+    if not include_archived:
+        query += " AND status = 'active'"
+
+    if category:
+        query += " AND category = ?"
+        parameters.append(category)
+
+    query += " ORDER BY id"
+
+    cursor.execute(query, parameters)
 
     rows = cursor.fetchall()
 
