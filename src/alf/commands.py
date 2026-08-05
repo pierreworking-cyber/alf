@@ -2,6 +2,7 @@
 ALF command dispatcher.
 """
 
+from .help import render_command_help
 from .identity import (
     get_about_information,
     get_identity,
@@ -45,6 +46,10 @@ def hello_command(argument=None):
 
 
 def help_command(argument=None):
+    if argument and argument in commands:
+        render_command_help(argument, commands[argument])
+        return
+
     render_commands(get_commands())
 
 
@@ -223,10 +228,10 @@ commands = {
         "usage": "alf hello",
     },
     "help": {
-        "id": "command.list",
+        "id": "command.help",
         "function": help_command,
-        "help": "List available commands.",
-        "usage": "alf help",
+        "help": "Show command help.",
+        "usage": "alf help [command]",
     },
     "remember": {
         "id": "memory.add",
@@ -281,6 +286,15 @@ commands = {
         "function": search_command,
         "help": "Search memories.",
         "usage": 'alf search "text"',
+        "options": {
+            "--all": "Include archived memories.",
+            "--category <name>": "Restrict results to a memory category.",
+        },
+        "examples": [
+            "alf search bananas",
+            "alf search bananas --all",
+            "alf search Peter --category preference",
+        ],
     },
 }
 
