@@ -11,6 +11,7 @@ from .memory import (
     get_memories,
     get_memory,
     get_memory_categories,
+    get_memory_history,
     get_memory_query_options,
     remember,
     search_memories,
@@ -24,6 +25,7 @@ from .presentation import (
     render_memory,
     render_memory_archived,
     render_memory_categories,
+    render_memory_history,
     render_memory_not_numeric,
     render_memory_positive,
     render_memory_saved,
@@ -148,6 +150,33 @@ def memory_command(*arguments):
     render_memory(get_memory(memory_id))
 
 
+def history_command(*arguments):
+    if len(arguments) != 1:
+        render_memory_usage(commands["history"]["usage"])
+        return
+
+    memory_id = arguments[0]
+
+    try:
+        memory_id = int(memory_id)
+
+    except ValueError:
+        render_memory_not_numeric()
+        return
+
+    if memory_id <= 0:
+        render_memory_positive()
+        return
+
+    history = get_memory_history(memory_id)
+
+    if not history:
+        render_memory(None)
+        return
+
+    render_memory_history(history)
+
+
 def archive_command(memory_id=None):
     if not memory_id:
         render_memory_usage(commands["archive"]["usage"])
@@ -222,6 +251,12 @@ commands = {
         "function": memory_command,
         "help": "Show a single memory.",
         "usage": "alf memory <id>",
+    },
+    "history": {
+        "id": "memory.history",
+        "function": history_command,
+        "help": "Show memory history.",
+        "usage": "alf history <id>",
     },
     "about": {
         "id": "identity.about",

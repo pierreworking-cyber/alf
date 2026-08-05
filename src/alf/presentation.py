@@ -288,6 +288,26 @@ def render_memory_not_numeric():
     print()
 
 
+def render_memory_history(history):
+    """
+    Render memory history chain.
+    """
+
+    print()
+    print("Memory history")
+    print("--------------")
+
+    for memory in history:
+        print()
+        print(
+            f"(id: {memory['id']}) {memory['created']} "
+            f"[{memory['category']}] [{memory['status']}]"
+        )
+        print(f"  {memory['content']}")
+
+    print()
+
+
 def render_memory_positive():
     """
     Render invalid positive memory ID message.
