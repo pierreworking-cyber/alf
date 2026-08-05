@@ -27,7 +27,6 @@ def render_command_help(command_name, command):
             print(f"    {option}")
             print(f"        {description}")
 
-
     if "notes" in command:
         print()
         print("Notes:")
