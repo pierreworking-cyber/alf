@@ -264,20 +264,36 @@ def get_memory(memory_id: int):
     if row is None:
         return None
 
-    memory = {
+    return {
         "id": row[0],
         "created": row[1],
         "category": row[2],
         "status": row[3],
         "content": row[4],
         "previous_memory_id": row[5],
-        "previous_memory": None,
     }
 
-    if memory["previous_memory_id"]:
-        memory["previous_memory"] = get_memory(memory["previous_memory_id"])
 
-    return memory
+def get_memory_history(memory_id: int):
+    """
+    Retrieve the history chain for a memory.
+    """
+
+    history = []
+
+    memory = get_memory(memory_id)
+
+    while memory:
+        history.insert(0, memory)
+
+        previous_id = memory["previous_memory_id"]
+
+        if previous_id is None:
+            break
+
+        memory = get_memory(previous_id)
+
+    return history
 
 
 def archive_memory(memory_id: int):
