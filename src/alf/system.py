@@ -111,4 +111,5 @@ def get_capability():
         "id": "system",
         "name": "System awareness",
         "description": "Reports information about the machine ALF is running on",
+        "details": get_system_information(),
     }
