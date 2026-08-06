@@ -2,6 +2,7 @@
 ALF command dispatcher.
 """
 
+from .command_catalogue import commands
 from .healthcheck import get_health_report
 from .help import render_command_help
 from .identity import (
@@ -39,7 +40,6 @@ from .status import get_status_information
 
 REQUIRED_COMMAND_FIELDS = [
     "id",
-    "function",
     "help",
     "usage",
 ]
@@ -228,142 +228,30 @@ def version_command(argument=None):
     render_version(get_identity())
 
 
-commands = {
-    "status": {
-        "id": "system.status",
-        "function": status_command,
-        "help": "Show system information.",
-        "usage": "alf status",
-    },
-    "hello": {
-        "id": "identity.greeting",
-        "function": hello_command,
-        "help": "Show welcome message.",
-        "usage": "alf hello",
-    },
-    "help": {
-        "id": "command.help",
-        "function": help_command,
-        "help": "Show command help.",
-        "usage": "alf help [command]",
-        "examples": [
-            "alf help",
-            "alf help search",
-            "alf help remember",
-        ],
-    },
-    "remember": {
-        "id": "memory.add",
-        "function": remember_command,
-        "help": "Add a memory.",
-        "usage": 'alf remember <category> "text"',
-        "notes": [
-            "View available categories with: alf categories",
-        ],
-        "examples": [
-            'alf remember preference "Peter prefers dogs"',
-        ],
-    },
-    "memories": {
-        "id": "memory.list",
-        "function": memories_command,
-        "help": "Recall previous memories.",
-        "usage": "alf memories",
-        "options": {
-            "--all": "Include archived memories.",
-            "--category <name>": "Restrict results to a memory category.",
-            "--group <name>": "Group memories by a field.",
-        },
-        "examples": [
-            "alf memories",
-            "alf memories --all",
-            "alf memories --category preference",
-            "alf memories --group category",
-        ],
-    },
-    "categories": {
-        "id": "memory.categories",
-        "function": categories_command,
-        "help": "Show memory categories.",
-        "usage": "alf categories",
-    },
-    "memory": {
-        "id": "memory.show",
-        "function": memory_command,
-        "help": "Show a single memory.",
-        "usage": "alf memory <id>",
-        "examples": [
-            "alf memory 11",
-        ],
-    },
-    "history": {
-        "id": "memory.history",
-        "function": history_command,
-        "help": "Show memory history.",
-        "usage": "alf history <id>",
-        "examples": [
-            "alf history 11",
-        ],
-    },
-    "health": {
-        "id": "system.health",
-        "function": health_command,
-        "help": "Show ALF internal health information.",
-        "usage": "alf health",
-    },
-    "about": {
-        "id": "identity.about",
-        "function": about_command,
-        "help": "Explain what ALF is.",
-        "usage": "alf about [--details]",
-        "options": {
-            "--details": "Show extended identity information.",
-        },
-        "examples": [
-            "alf about",
-            "alf about --details",
-        ],
-    },
-    "archive": {
-        "id": "memory.archive",
-        "function": archive_command,
-        "help": "Archive a memory.",
-        "usage": "alf archive <id>",
-        "examples": [
-            "alf archive 11",
-        ],
-    },
-    "version": {
-        "id": "identity.version",
-        "function": version_command,
-        "help": "Show ALF version.",
-        "usage": "alf version",
-    },
-    "search": {
-        "id": "memory.search",
-        "function": search_command,
-        "help": "Search memories.",
-        "usage": 'alf search "text"',
-        "options": {
-            "--all": "Include archived memories.",
-            "--category <name>": "Restrict results to a memory category.",
-        },
-        "examples": [
-            "alf search bananas",
-            "alf search bananas --all",
-            "alf search Peter --category preference",
-        ],
-    },
+command_handlers = {
+    "status": status_command,
+    "hello": hello_command,
+    "help": help_command,
+    "remember": remember_command,
+    "memories": memories_command,
+    "categories": categories_command,
+    "memory": memory_command,
+    "history": history_command,
+    "health": health_command,
+    "about": about_command,
+    "archive": archive_command,
+    "version": version_command,
+    "search": search_command,
 }
 
 
 def run(command: str, arguments=None):
 
-    if command in commands:
+    if command in command_handlers:
         if arguments:
-            commands[command]["function"](*arguments)
+            command_handlers[command](*arguments)
         else:
-            commands[command]["function"]()
+            command_handlers[command]()
 
         return True
 
@@ -420,9 +308,7 @@ def get_commands():
     catalog = {}
 
     for name, command in commands.items():
-        catalog[name] = {
-            key: value for key, value in command.items() if key != "function"
-        }
+        catalog[name] = command.copy()
 
     return catalog
 

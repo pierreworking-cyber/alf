@@ -1,0 +1,120 @@
+"""
+ALF command catalogue.
+
+Contains command metadata exposed by ALF.
+"""
+
+commands = {
+    "status": {
+        "id": "system.status",
+        "help": "Show system information.",
+        "usage": "alf status",
+    },
+    "hello": {
+        "id": "identity.greeting",
+        "help": "Show welcome message.",
+        "usage": "alf hello",
+    },
+    "help": {
+        "id": "command.help",
+        "help": "Show command help.",
+        "usage": "alf help [command]",
+        "examples": [
+            "alf help",
+            "alf help search",
+            "alf help remember",
+        ],
+    },
+    "remember": {
+        "id": "memory.add",
+        "help": "Add a memory.",
+        "usage": 'alf remember <category> "text"',
+        "notes": [
+            "View available categories with: alf categories",
+        ],
+        "examples": [
+            'alf remember preference "Peter prefers dogs"',
+        ],
+    },
+    "memories": {
+        "id": "memory.list",
+        "help": "Recall previous memories.",
+        "usage": "alf memories",
+        "options": {
+            "--all": "Include archived memories.",
+            "--category <name>": "Restrict results to a memory category.",
+            "--group <name>": "Group memories by a field.",
+        },
+        "examples": [
+            "alf memories",
+            "alf memories --all",
+            "alf memories --category preference",
+            "alf memories --group category",
+        ],
+    },
+    "categories": {
+        "id": "memory.categories",
+        "help": "Show memory categories.",
+        "usage": "alf categories",
+    },
+    "memory": {
+        "id": "memory.show",
+        "help": "Show a single memory.",
+        "usage": "alf memory <id>",
+        "examples": [
+            "alf memory 11",
+        ],
+    },
+    "history": {
+        "id": "memory.history",
+        "help": "Show memory history.",
+        "usage": "alf history <id>",
+        "examples": [
+            "alf history 11",
+        ],
+    },
+    "health": {
+        "id": "system.health",
+        "help": "Show ALF internal health information.",
+        "usage": "alf health",
+    },
+    "about": {
+        "id": "identity.about",
+        "help": "Explain what ALF is.",
+        "usage": "alf about [--details]",
+        "options": {
+            "--details": "Show extended identity information.",
+        },
+        "examples": [
+            "alf about",
+            "alf about --details",
+        ],
+    },
+    "archive": {
+        "id": "memory.archive",
+        "help": "Archive a memory.",
+        "usage": "alf archive <id>",
+        "examples": [
+            "alf archive 11",
+        ],
+    },
+    "version": {
+        "id": "identity.version",
+        "help": "Show ALF version.",
+        "usage": "alf version",
+    },
+    "search": {
+        "id": "memory.search",
+        "help": "Search memories.",
+        "usage": 'alf search "text"',
+        "options": {
+            "--all": "Include archived memories.",
+            "--category <name>": "Restrict results to a memory category.",
+        },
+        "examples": [
+            "alf search bananas",
+            "alf search bananas --all",
+            "alf search Peter --category preference",
+        ],
+    },
+}
