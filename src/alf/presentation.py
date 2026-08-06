@@ -387,13 +387,13 @@ def render_health(report):
     print("Capability reporting modules:")
 
     for module in modules["advertising_modules"]:
-        print(f"- {module}")
+        print(f"- {module.removeprefix('alf.')}")
 
     print()
 
     print("Non-reporting modules:")
 
     for module in modules["non_reporting_modules"]:
-        print(f"- {module}")
+        print(f"- {module.removeprefix('alf.')}")
 
     print()
