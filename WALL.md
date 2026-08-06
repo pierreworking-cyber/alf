@@ -150,14 +150,24 @@ The memory system should preserve not only facts, but the reasoning, decisions a
 - Current help output is suitable for early development.
 - As commands gain options, consider hierarchical help:
 - Avoid turning top-level help into a full command reference.
+- Support `alf command --help`
+- Consider `alf memory <id> --history`
+- Improve invalid argument messages
+- Consider command argument parsing layer
 
 ## Future interface direction
 
 The command line interface is currently capability based.
 
 As ALF grows, consider:
+
 - grouped commands for discoverability
 - interactive shell mode
 - natural language command interpretation
 
 The CLI should remain a stable foundation rather than requiring users to memorise commands.
+
+## Command registry direction
+
+The command registry is becoming ALF's capability catalogue.
+Future interfaces should consume command metadata rather than duplicate command knowledge.
