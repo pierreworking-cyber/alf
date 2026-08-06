@@ -9,6 +9,23 @@ MEMORY_CATEGORY_PRIORITY = [
     "note",
 ]
 
+def render_ready(status):
+    """
+    Render ALF startup summary.
+    """
+
+    identity = status["identity"]
+    memory = status["memory"]
+    git = status["git"]
+
+    print()
+    print(f"ALF {identity['version']} ready.")
+    print()
+    print(f"Memories: {memory['total_memories']}")
+    print(f"Git: {git['branch']} ({git['status']})")
+    print("System: OK")
+    print()
+
 
 def render_about(about, show_details=False):
     """
