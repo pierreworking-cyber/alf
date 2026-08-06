@@ -79,6 +79,9 @@ Rules:
 
 ## Architecture
 
+ALF is composed of self-describing subsystems.
+Each subsystem owns its own knowledge and advertises its capabilities.
+Interfaces consume those capabilities rather than maintaining duplicated knowledge.
 Keep modules focused on a single responsibility.
 
 Current direction:
@@ -89,7 +92,7 @@ Current direction:
 - status.py — runtime status
 - system.py — operating system information
 - git.py — repository awareness
-- commands.py — command dispatch
+- commands.py — command registry, dispatch and metadata
 
 Prefer simple modules over clever abstractions.
 
@@ -157,8 +160,6 @@ The memory system should preserve not only facts, but the reasoning, decisions a
 
 ## Future interface direction
 
-The command line interface is currently capability based.
-
 As ALF grows, consider:
 
 - grouped commands for discoverability
@@ -169,5 +170,4 @@ The CLI should remain a stable foundation rather than requiring users to memoris
 
 ## Command registry direction
 
-The command registry is becoming ALF's capability catalogue.
 Future interfaces should consume command metadata rather than duplicate command knowledge.

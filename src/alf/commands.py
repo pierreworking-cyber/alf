@@ -384,7 +384,7 @@ def validate_commands():
                     "message": "Command has no id",
                 }
             )
-        continue
+            continue
 
         if command_id in command_ids:
             warnings.append(
