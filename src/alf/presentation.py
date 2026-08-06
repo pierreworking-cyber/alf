@@ -9,6 +9,7 @@ MEMORY_CATEGORY_PRIORITY = [
     "note",
 ]
 
+
 def render_ready(status):
     """
     Render ALF startup summary.
@@ -369,4 +370,30 @@ def render_memory_help():
     print()
     print("  --group category")
     print("      Group memories by category.")
+    print()
+
+
+def render_health(report):
+    """
+    Render ALF health information.
+    """
+
+    print()
+    print("ALF health")
+    print()
+
+    modules = report["modules"]
+
+    print("Capability reporting modules:")
+
+    for module in modules["advertising_modules"]:
+        print(f"- {module}")
+
+    print()
+
+    print("Non-reporting modules:")
+
+    for module in modules["non_reporting_modules"]:
+        print(f"- {module}")
+
     print()

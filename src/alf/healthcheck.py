@@ -12,15 +12,9 @@ def get_module_introspection():
     Report ALF module capability participation.
     """
 
-    all_modules = {
-        module.__name__
-        for module in get_alf_modules()
-    }
+    all_modules = {module.__name__ for module in get_alf_modules()}
 
-    providers = {
-        module.__name__
-        for module in get_provider_modules()
-    }
+    providers = {module.__name__ for module in get_provider_modules()}
 
     return {
         "advertising_modules": sorted(providers),

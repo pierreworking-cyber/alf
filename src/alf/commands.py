@@ -2,6 +2,7 @@
 ALF command dispatcher.
 """
 
+from .healthcheck import get_health_report
 from .help import render_command_help
 from .identity import (
     get_about_information,
@@ -42,6 +43,12 @@ REQUIRED_COMMAND_FIELDS = [
     "help",
     "usage",
 ]
+
+
+def health_command(argument=None):
+    from .presentation import render_health
+
+    render_health(get_health_report())
 
 
 def status_command(argument=None):
@@ -297,6 +304,12 @@ commands = {
         "examples": [
             "alf history 11",
         ],
+    },
+    "health": {
+        "id": "system.health",
+        "function": health_command,
+        "help": "Show ALF internal health information.",
+        "usage": "alf health",
     },
     "about": {
         "id": "identity.about",
