@@ -95,6 +95,8 @@ Current direction:
 - commands.py — command registry, dispatch and metadata
 
 Prefer simple modules over clever abstractions.
+Capability discovery currently identifies reporting subsystems.
+Future introspection may distinguish between capability-reporting modules and internal helper modules.
 
 ## Memory relationships
 
@@ -171,3 +173,23 @@ The CLI should remain a stable foundation rather than requiring users to memoris
 ## Command registry direction
 
 Future interfaces should consume command metadata rather than duplicate command knowledge.
+
+## Health system
+
+ALF should be able to inspect its own internal health.
+
+Initial scope:
+
+- Audit capability providers
+- Report self-describing subsystems
+- Report non-reporting modules separately
+- Detect malformed capability metadata
+
+Health checks should consume subsystem self-description rather than duplicate subsystem knowledge.
+
+Future:
+
+- Database integrity checks
+- Configuration validation
+- Dependency checks
+- Migration status
