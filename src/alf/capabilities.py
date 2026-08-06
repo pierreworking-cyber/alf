@@ -10,18 +10,31 @@ import pkgutil
 import alf
 
 
-def get_provider_modules():
+def get_alf_modules():
     """
-    Find ALF modules that may provide capabilities.
+    Discover ALF modules.
     """
 
-    providers = []
+    modules = []
 
     for module_info in pkgutil.iter_modules(alf.__path__):
         module_name = f"alf.{module_info.name}"
 
         module = importlib.import_module(module_name)
 
+        modules.append(module)
+
+    return modules
+
+
+def get_provider_modules():
+    """
+    Find ALF modules that advertise capabilities.
+    """
+
+    providers = []
+
+    for module in get_alf_modules():
         if hasattr(module, "get_capability"):
             providers.append(module)
 
