@@ -373,7 +373,7 @@ def render_memory_help():
     print()
 
 
-def render_health(report):
+def render_health(report, show_details=False):
     """
     Render ALF health information.
     """
@@ -382,21 +382,42 @@ def render_health(report):
 
     failed_modules = modules["failed_modules"]
 
-    if not failed_modules:
+    if not failed_modules and not show_details:
         print()
         print("ALF health: OK")
         print()
         return
 
-    print()
-    print("ALF health issues")
-    print("-----------------")
-    print()
+    if failed_modules:
+        print()
+        print("ALF health issues")
+        print("-----------------")
+        print()
 
-    print("Failed modules:")
+        print("Failed modules:")
 
-    for failure in failed_modules:
-        print(f"- {failure['module'].removeprefix('alf.')}")
-        print(f"  {failure['error']}")
+        for failure in failed_modules:
+            print(f"- {failure['module'].removeprefix('alf.')}")
+            print(f"  {failure['error']}")
 
-    print()
+        print()
+
+    if show_details:
+        print()
+        print("ALF health details")
+        print("------------------")
+        print()
+
+        print("Capability reporting modules:")
+
+        for module in modules["advertising_modules"]:
+            print(f"- {module.removeprefix('alf.')}")
+
+        print()
+
+        print("Non-reporting modules:")
+
+        for module in modules["non_reporting_modules"]:
+            print(f"- {module.removeprefix('alf.')}")
+
+        print()

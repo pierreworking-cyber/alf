@@ -180,13 +180,15 @@ ALF should be able to inspect its own internal health.
 
 Initial scope:
 
+Health system
 - Audit capability providers
 - Report self-describing subsystems
 - Report non-reporting modules separately
 - Detect malformed capability metadata
+- Detect module import failures
 
 Health checks should consume subsystem self-description rather than duplicate subsystem knowledge.
-
+Health reports should record complete subsystem state, but user-facing health output should prioritise actionable problems over normal operation.
 Future:
 
 - Database integrity checks

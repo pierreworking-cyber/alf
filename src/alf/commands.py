@@ -23,6 +23,7 @@ from .presentation import (
     render_about,
     render_commands,
     render_greeting,
+    render_health,
     render_invalid_memory_category,
     render_memories,
     render_memory,
@@ -46,9 +47,10 @@ REQUIRED_COMMAND_FIELDS = [
 
 
 def health_command(argument=None):
-    from .presentation import render_health
-
-    render_health(get_health_report())
+    render_health(
+        get_health_report(),
+        show_details=argument == "--details",
+    )
 
 
 def status_command(argument=None):

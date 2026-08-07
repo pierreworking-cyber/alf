@@ -76,7 +76,10 @@ commands = {
     "health": {
         "id": "system.health",
         "help": "Show ALF internal health information.",
-        "usage": "alf health",
+        "usage": "alf health [--details]",
+        "options": {
+            "--details": "Show detailed health information.",
+        },
     },
     "about": {
         "id": "identity.about",

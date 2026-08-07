@@ -23,8 +23,6 @@ def check_modules():
     for module_info in pkgutil.iter_modules(alf.__path__):
         module_name = f"alf.{module_info.name}"
 
-        module = importlib.import_module(module_name)
-
         try:
             module = importlib.import_module(module_name)
 
