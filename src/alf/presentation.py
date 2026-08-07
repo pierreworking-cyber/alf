@@ -378,22 +378,25 @@ def render_health(report):
     Render ALF health information.
     """
 
+    modules = report["checks"][0]["details"]
+
+    failed_modules = modules["failed_modules"]
+
+    if not failed_modules:
+        print()
+        print("ALF health: OK")
+        print()
+        return
+
     print()
-    print("ALF health")
+    print("ALF health issues")
+    print("-----------------")
     print()
 
-    modules = report["modules"]
+    print("Failed modules:")
 
-    print("Capability reporting modules:")
-
-    for module in modules["advertising_modules"]:
-        print(f"- {module.removeprefix('alf.')}")
-
-    print()
-
-    print("Non-reporting modules:")
-
-    for module in modules["non_reporting_modules"]:
-        print(f"- {module.removeprefix('alf.')}")
+    for failure in failed_modules:
+        print(f"- {failure['module'].removeprefix('alf.')}")
+        print(f"  {failure['error']}")
 
     print()
