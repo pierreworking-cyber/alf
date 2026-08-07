@@ -342,6 +342,19 @@ def render_memory_usage(usage):
     console.print()
 
 
+def render_invalid_related_memory(memory_id, usage):
+    """
+    Render an invalid related memory error.
+    """
+
+    console.print()
+    info(f"Related memory ID is invalid or does not exist: {memory_id}")
+    console.print()
+    info("Please format as follows:")
+    info(f"    {usage}")
+    console.print()
+
+
 def render_memory(memory):
     """
     Render a single ALF memory.
@@ -355,6 +368,9 @@ def render_memory(memory):
         return
 
     render_memory_entry(memory)
+
+    if memory.get("related_memory_ids"):
+        info(f"Related memories: {memory['related_memory_ids']}")
 
     if memory.get("previous_memory"):
         previous = memory["previous_memory"]

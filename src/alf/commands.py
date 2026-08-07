@@ -25,6 +25,7 @@ from .presentation import (
     render_commands,
     render_health,
     render_invalid_memory_category,
+    render_invalid_related_memory,
     render_memories,
     render_memory,
     render_memory_archived,
@@ -67,10 +68,22 @@ def help_command(argument=None):
     render_commands(get_commands())
 
 
-def remember_command(category=None, content=None):
-    if not category or not content or not content.strip():
+def remember_command(*arguments):
+    if len(arguments) < 2:
         render_memory_usage(commands["remember"]["usage"])
         return
+
+    category = arguments[0]
+    content = arguments[1]
+
+    related_memory_ids = None
+
+    if len(arguments) > 2:
+        if arguments[2] != "--relate" or len(arguments) != 4:
+            render_memory_usage(commands["remember"]["usage"])
+            return
+
+        related_memory_ids = arguments[3]
 
     categories = get_memory_categories()
 
@@ -79,7 +92,19 @@ def remember_command(category=None, content=None):
         return
 
     content = content.strip()
-    remember(category, content)
+    result = remember(
+        category,
+        content,
+        related_memory_ids=related_memory_ids,
+    )
+
+    if result is not True:
+        render_invalid_related_memory(
+            related_memory_ids,
+            commands["remember"]["usage"],
+        )
+        return
+
     render_memory_saved(category)
 
 

@@ -23,12 +23,14 @@ commands = {
     "remember": {
         "id": "memory.add",
         "help": "Add a memory.",
-        "usage": 'alf remember <category> "text"',
+        "usage": 'alf remember <category> "text" [--relate <ids>]',
         "notes": [
             "View available categories with: alf categories",
+            "Relate this memory to existing memory IDs.",
         ],
         "examples": [
             'alf remember preference "Peter prefers dogs"',
+            'alf remember preference "Peter prefers Labradors" --relate 4,12',
         ],
     },
     "memories": {

@@ -79,10 +79,40 @@ def get_memory_query_options():
     }
 
 
-def remember(category: str, content: str, previous_memory_id=None):
+def validate_related_memory_ids(related_memory_ids):
+    """
+    Validate a comma-separated list of related memory IDs.
+    """
+
+    if not related_memory_ids:
+        return None
+
+    memory_ids = related_memory_ids.split(",")
+
+    for memory_id in memory_ids:
+        if not memory_id.isdigit() or int(memory_id) <= 0:
+            return False
+
+        if get_memory(int(memory_id)) is None:
+            return False
+
+    return ",".join(memory_ids)
+
+
+def remember(
+    category: str,
+    content: str,
+    previous_memory_id=None,
+    related_memory_ids=None,
+):
     """
     Store a memory in ALF's database.
     """
+
+    related_memory_ids = validate_related_memory_ids(related_memory_ids)
+
+    if related_memory_ids is False:
+        return False
 
     connection = get_connection()
 
@@ -97,15 +127,24 @@ def remember(category: str, content: str, previous_memory_id=None):
             category,
             status,
             content,
-            previous_memory_id
-    )
-        VALUES (?, ?, ?, ?, ?)
+            previous_memory_id,
+            related_memory_ids
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (created, category, "active", content, previous_memory_id),
+        (
+            created,
+            category,
+            "active",
+            content,
+            previous_memory_id,
+            related_memory_ids,
+        ),
     )
 
     connection.commit()
     connection.close()
+    return True
 
 
 def get_memories(options=None):
@@ -280,6 +319,7 @@ def get_memory(memory_id: int):
         "status": row[3],
         "content": row[4],
         "previous_memory_id": row[5],
+        "related_memory_ids": row[6],
     }
 
 
