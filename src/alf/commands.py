@@ -22,7 +22,6 @@ from .memory import (
 from .presentation import (
     render_about,
     render_commands,
-    render_greeting,
     render_health,
     render_invalid_memory_category,
     render_memories,
@@ -55,10 +54,6 @@ def health_command(argument=None):
 
 def status_command(argument=None):
     print(render_status(get_status_information()))
-
-
-def hello_command(argument=None):
-    render_greeting()
 
 
 def help_command(argument=None):
@@ -232,7 +227,6 @@ def version_command(argument=None):
 
 command_handlers = {
     "status": status_command,
-    "hello": hello_command,
     "help": help_command,
     "remember": remember_command,
     "memories": memories_command,

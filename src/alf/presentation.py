@@ -210,16 +210,6 @@ def render_capability_details(capability):
         print(f"    {key}: {value}")
 
 
-def render_greeting():
-    """
-    Render ALF greeting.
-    """
-
-    print()
-    print("Hello Peter.")
-    print()
-
-
 def render_memory_usage(usage):
     """
     Render memory command usage.

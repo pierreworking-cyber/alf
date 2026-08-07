@@ -50,7 +50,6 @@ to display available commands.
 Current commands include:
 
 - `alf about` — Explain what ALF is
-- `alf hello` — Show a welcome message
 - `alf help` — List available commands
 - `alf memories` — Recall stored memories
 - `alf remember <category> "text"` — Store a memory

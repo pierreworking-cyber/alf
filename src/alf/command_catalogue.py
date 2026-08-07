@@ -10,11 +10,6 @@ commands = {
         "help": "Show system information.",
         "usage": "alf status",
     },
-    "hello": {
-        "id": "identity.greeting",
-        "help": "Show welcome message.",
-        "usage": "alf hello",
-    },
     "help": {
         "id": "command.help",
         "help": "Show command help.",
