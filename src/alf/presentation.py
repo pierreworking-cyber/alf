@@ -10,11 +10,20 @@ console = Console(markup=False)
 
 def title(text):
     """
-    Render a section title.
+    Render a major ALF heading.
     """
 
-    line = "─" * (len(text) + 10)
-    console.print(f"{line} {text} {line}")
+    console.print(text, style="bold")
+    console.print("─" * len(text))
+
+
+def section(text):
+    """
+    Render a report section heading.
+    """
+
+    console.print(text)
+    console.print("─" * len(text))
 
 
 def success(text):
@@ -94,7 +103,7 @@ def render_about(about, show_details=False):
 
     console.print()
 
-    info("Current capabilities:")
+    section("Current capabilities:")
 
     for capability in about["capabilities"]:
         info(f"- {capability['name']}")
@@ -113,7 +122,7 @@ def render_about(about, show_details=False):
 
     console.print()
 
-    info("Current limitations:")
+    section("Current limitations:")
 
     for limitation in about["limitations"]:
         info(f"- {limitation}")
@@ -129,7 +138,7 @@ def render_commands(commands):
 
     title("ALF help")
     console.print()
-    info("Available commands:")
+    section("Available commands:")
 
     console.print()
 
@@ -311,14 +320,14 @@ def render_memory_categories(categories):
     Render available ALF memory categories.
     """
 
-    print()
-    print("ALF memory categories")
-    print("---------------------")
+    title("ALF memory categories")
+
+    console.print()
 
     for category in categories:
-        print(f"- {category}")
+        info(f"- {category}")
 
-    print()
+    console.print()
 
 
 def render_memory_saved(category):
