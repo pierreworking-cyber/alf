@@ -68,6 +68,7 @@ def render_about(about, show_details=False):
         print(f"- {limitation}")
 
     print()
+    print("Type 'alf help' to see available commands.")
 
 
 def render_commands(commands):
