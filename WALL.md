@@ -181,6 +181,7 @@ ALF should be able to inspect its own internal health.
 Initial scope:
 
 Health system
+
 - Audit capability providers
 - Report self-describing subsystems
 - Report non-reporting modules separately

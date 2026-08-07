@@ -24,10 +24,12 @@ ALF is designed as a personal computing companion that owns its identity, tools,
 ALF currently has:
 
 - System awareness
+- Git repository awareness
 - Persistent memory using SQLite
 - Categorised knowledge storage
 - Command discovery
-- Self-description through the `about` command
+- Capability discovery and self-description
+- Self-inspection through the `health` command
 
 ## Running ALF
 
@@ -52,7 +54,9 @@ Current commands include:
 - `alf help` — List available commands
 - `alf memories` — Recall stored memories
 - `alf remember <category> "text"` — Store a memory
+- `alf health` — Check ALF internal health
 - `alf status` — Show system information
+- `alf version` — Show ALF version
 
 ## Memory
 
@@ -83,37 +87,116 @@ ALF separates:
 
 This separation allows ALF's code and personal data to evolve independently.
 
-## Architecture
+## Design approach
 
-Current structure:
+ALF is built around small, independent capabilities.
 
-```text
+Where practical, components describe themselves rather than maintaining separate registration lists.
 
-ALF
- |
- +-- Identity
- |      |
- |      +-- identity.toml
- |
- +-- Commands
- |      |
- |      +-- Command registry
- |
- +-- Memory
- |      |
- |      +-- SQLite database
- |
- +-- System awareness
-        |
-        +-- Operating system information
+Examples:
 
-```
+- Commands provide metadata describing available actions
+- Subsystems can advertise capabilities
+- Health checks inspect ALF's internal structure
+- Runtime data is kept separate from source code
+
+The goal is not to create a complex framework, but to keep ALF understandable as it grows.
 
 ## Current limitations
 
 ALF is still early in development.
 
 Current limitations:
+(.venv) peter@bazzite:~/Projects/alf$ git diff
+diff --git a/README.md b/README.md
+index c46d9cf..f790fb9 100644
+--- a/README.md
++++ b/README.md
+@@ -24,10 +24,12 @@ ALF is designed as a personal computing companion that owns its identity, tools,
+ ALF currently has:
+ 
+ - System awareness
++- Git repository awareness
+ - Persistent memory using SQLite
+ - Categorised knowledge storage
+ - Command discovery
+ - Self-description through the `about` command
++- Self-inspection through the `health` command
+ 
+ ## Running ALF
+ 
+@@ -53,6 +55,9 @@ Current commands include:
+ - `alf memories` — Recall stored memories
+ - `alf remember <category> "text"` — Store a memory
+ - `alf status` — Show system information
++- `alf health` — Check ALF internal health
++- `alf status` — Show system information
++- `alf version` — Show ALF version
+ 
+ ## Memory
+ 
+@@ -83,31 +88,20 @@ ALF separates:
+ 
+ This separation allows ALF's code and personal data to evolve independently.
+ 
+-## Architecture
++## Design approach
+ 
+-Current structure:
++ALF is built around small, independent capabilities.
+ 
+-```text
++Where practical, components describe themselves rather than maintaining separate registration lists.
+ 
+-ALF
+- |
+- +-- Identity
+- |      |
+- |      +-- identity.toml
+- |
+- +-- Commands
+- |      |
+- |      +-- Command registry
+- |
+- +-- Memory
+- |      |
+- |      +-- SQLite database
+- |
+- +-- System awareness
+-        |
+-        +-- Operating system information
++Examples:
+ 
+-```
++- Commands provide metadata describing available actions
++- Subsystems can advertise capabilities
++- Health checks inspect ALF's internal structure
++- Runtime data is kept separate from source code
++
++The goal is not to create a complex framework, but to keep ALF understandable as it grows.
+ 
+ ## Current limitations
+ 
+@@ -126,7 +120,6 @@ Current limitations:
+ Potential future developments:
+ 
+ - Move runtime data to a standard user data location
+-- Automatic capability reporting
+ - Improved conversation interface
+ - Memory search and maintenance tools
+ - Local AI integration
+diff --git a/WALL.md b/WALL.md
+index 2afb680..e94fbdc 100644
+--- a/WALL.md
++++ b/WALL.md
+@@ -181,6 +181,7 @@ ALF should be able to inspect its own internal health.
+ Initial scope:
+ 
+ Health system
++
+ - Audit capability providers
+ - Report self-describing subsystems
+ - Report non-reporting modules separately
 
 - Limited conversation ability
 - No natural language understanding
@@ -126,7 +209,6 @@ Current limitations:
 Potential future developments:
 
 - Move runtime data to a standard user data location
-- Automatic capability reporting
 - Improved conversation interface
 - Memory search and maintenance tools
 - Local AI integration
