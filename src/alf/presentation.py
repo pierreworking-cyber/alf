@@ -5,7 +5,7 @@ ALF presentation helpers.
 from rich.console import Console
 from rich.table import Table
 
-console = Console()
+console = Console(markup=False)
 
 
 def title(text):
@@ -127,18 +127,20 @@ def render_commands(commands):
     Render available ALF commands.
     """
 
-    print()
-    print("Available commands:")
-    print()
+    title("ALF help")
+    console.print()
+    info("Available commands:")
+
+    console.print()
 
     for command in sorted(commands):
         description = commands[command]["help"]
         usage = commands[command]["usage"]
 
-        print(f"- {command}")
-        print(f"    {description}")
-        print(f"    Usage: {usage}")
-        print()
+        info(f"- {command}")
+        info(f"    {description}")
+        info(f"    Usage: {usage}")
+        console.print()
 
 
 def render_memories(memories, options=None):
