@@ -7,7 +7,7 @@ ALF - Peter's local computing companion.
 
 from .commands import run
 from .identity import get_about_information
-from .presentation import render_about
+from .presentation import error, info, render_about
 from .time import get_greeting
 
 
@@ -28,8 +28,8 @@ def main():
         if run(command, arguments):
             return
 
-        print(f"Unknown command: {command}")
-        print("Try: alf help")
+        error(f"Unknown command: {command}")
+        info("Try: alf help")
         return
 
     introduce()

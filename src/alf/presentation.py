@@ -31,6 +31,23 @@ def warning(text):
 
     console.print(f"! {text}")
 
+
+def error(text):
+    """
+    Render an error message.
+    """
+
+    console.print(f"✗ {text}")
+
+
+def info(text):
+    """
+    Render informational text.
+    """
+
+    console.print(text)
+
+
 MEMORY_CATEGORY_PRIORITY = [
     "decision",
     "preference",
