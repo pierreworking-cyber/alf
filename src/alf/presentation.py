@@ -13,7 +13,8 @@ def title(text):
     Render a section title.
     """
 
-    console.rule(text)
+    line = "─" * (len(text) + 10)
+    console.print(f"{line} {text} {line}")
 
 
 def success(text):
@@ -209,34 +210,35 @@ def render_status(status):
     """
     Render ALF status information.
     """
-    report = []
-
-    report.append("ALF status")
-    report.append("----------")
 
     identity = status["identity"]
     system = status["system"]
     memory = status["memory"]
     git = status["git"]
 
-    report.append(f"Name: {identity['name']}")
-    report.append(f"Version: {identity['version']}")
-    report.append(f"Purpose: {identity['purpose']}")
-    report.append("")
+    title("ALF status")
 
-    report.append(f"Operating system: {system['operating_system']}")
-    report.append(f"Hostname: {system['hostname']}")
-    report.append(f"Python: {system['python_version']}")
-    report.append(f"Uptime: {system['uptime']}")
-    report.append("")
-    report.append(f"Git branch: {git['branch']}")
-    report.append(f"Git status: {git['status']}")
-    report.append(f"Last commit: {git['last_commit']}")
-    report.append("")
-    report.append(f"Stored memories: {memory['total_memories']}")
-    report.append(f"Memory categories: {', '.join(memory['categories'])}")
+    info(f"Name: {identity['name']}")
+    info(f"Version: {identity['version']}")
+    info(f"Purpose: {identity['purpose']}")
 
-    return "\n".join(report)
+    console.print()
+
+    info(f"Operating system: {system['operating_system']}")
+    info(f"Hostname: {system['hostname']}")
+    info(f"Python: {system['python_version']}")
+    info(f"Uptime: {system['uptime']}")
+
+    console.print()
+
+    info(f"Git branch: {git['branch']}")
+    info(f"Git status: {git['status']}")
+    info(f"Last commit: {git['last_commit']}")
+
+    console.print()
+
+    info(f"Stored memories: {memory['total_memories']}")
+    info(f"Memory categories: {', '.join(memory['categories'])}")
 
 
 def render_capability_details(capability):
