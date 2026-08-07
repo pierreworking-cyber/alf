@@ -53,7 +53,7 @@ def health_command(argument=None):
 
 
 def status_command(argument=None):
-    print(render_status(get_status_information()))
+    render_status(get_status_information())
 
 
 def help_command(argument=None):
