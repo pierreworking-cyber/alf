@@ -4,7 +4,6 @@ ALF command dispatcher.
 
 from .command_catalogue import commands
 from .healthcheck import get_health_report
-from .help import render_command_help
 from .identity import (
     get_about_information,
     get_identity,
@@ -21,6 +20,7 @@ from .memory import (
 )
 from .presentation import (
     render_about,
+    render_command_help,
     render_commands,
     render_health,
     render_invalid_memory_category,

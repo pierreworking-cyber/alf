@@ -152,6 +152,44 @@ def render_commands(commands):
         console.print()
 
 
+def render_command_help(command_name, command):
+    console.print()
+
+    title(command_name)
+
+    console.print()
+
+    info(command["help"])
+
+    console.print()
+
+    section("Usage:")
+    info(f"    {command['usage']}")
+
+    if "options" in command:
+        console.print()
+        info("Options:")
+
+        for option, description in command["options"].items():
+            console.print()
+            info(f"    {option}")
+            info(f"        {description}")
+
+    if "notes" in command:
+        console.print()
+        info("Notes:")
+
+        for note in command["notes"]:
+            info(f"    {note}")
+
+    if "examples" in command:
+        console.print()
+        section("Examples:")
+
+        for example in command["examples"]:
+            info(f"    {example}")
+
+
 def render_memories(memories, options=None):
     """
     Render stored ALF memories.
