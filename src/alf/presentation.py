@@ -3,6 +3,7 @@ ALF presentation helpers.
 """
 
 from rich.console import Console
+from rich.table import Table
 
 console = Console()
 
@@ -399,21 +400,28 @@ def render_health(report, show_details=False):
         print()
 
     if show_details:
-        print()
-        print("ALF health details")
-        print("------------------")
-        print()
+        console.print()
+        console.print("ALF health details")
+        console.print()
 
-        print("Capability reporting modules:")
+        table = Table(
+            title="Module status",
+        )
+
+        table.add_column("Module")
+        table.add_column("Status")
 
         for module in modules["advertising_modules"]:
-            print(f"- {module.removeprefix('alf.')}")
-
-        print()
-
-        print("Non-reporting modules:")
+            table.add_row(
+                module.removeprefix("alf."),
+                "capability reporting",
+            )
 
         for module in modules["non_reporting_modules"]:
-            print(f"- {module.removeprefix('alf.')}")
+            table.add_row(
+                module.removeprefix("alf."),
+                "non-reporting",
+            )
 
-        print()
+        console.print(table)
+        console.print()
