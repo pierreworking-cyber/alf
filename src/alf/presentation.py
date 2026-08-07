@@ -2,6 +2,11 @@
 ALF presentation helpers.
 """
 
+from rich.console import Console
+
+console = Console()
+
+
 MEMORY_CATEGORY_PRIORITY = [
     "decision",
     "preference",
@@ -374,9 +379,9 @@ def render_health(report, show_details=False):
     failed_modules = modules["failed_modules"]
 
     if not failed_modules and not show_details:
-        print()
-        print("ALF health: OK")
-        print()
+        console.print()
+        console.print("ALF health: OK")
+        console.print()
         return
 
     if failed_modules:
