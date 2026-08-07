@@ -8,6 +8,29 @@ from rich.table import Table
 console = Console()
 
 
+def title(text):
+    """
+    Render a section title.
+    """
+
+    console.rule(text)
+
+
+def success(text):
+    """
+    Render a successful status message.
+    """
+
+    console.print(f"✓ {text}")
+
+
+def warning(text):
+    """
+    Render a warning message.
+    """
+
+    console.print(f"! {text}")
+
 MEMORY_CATEGORY_PRIORITY = [
     "decision",
     "preference",
