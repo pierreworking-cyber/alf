@@ -36,6 +36,7 @@ from .presentation import (
     render_memory_saved,
     render_memory_usage,
     render_status,
+    render_unknown_option,
     render_version,
 )
 from .status import get_status_information
@@ -106,7 +107,7 @@ def parse_memory_query_options(arguments):
                 options["group"] = arguments[index]
 
         else:
-            print(f"Unknown option: {argument}")
+            render_unknown_option(argument)
             return None
 
         index += 1
@@ -236,7 +237,6 @@ def forget_command(memory_id=None):
 
 
 def about_command(argument=None):
-    print()
 
     render_about(
         get_about_information(),

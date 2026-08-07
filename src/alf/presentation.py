@@ -66,6 +66,15 @@ MEMORY_CATEGORY_PRIORITY = [
 ]
 
 
+def render_greeting(greeting):
+    """
+    Render ALF startup greeting.
+    """
+
+    console.print()
+    console.print(greeting)
+
+
 def render_ready(status):
     """
     Render ALF startup summary.
@@ -75,13 +84,17 @@ def render_ready(status):
     memory = status["memory"]
     git = status["git"]
 
-    print()
-    print(f"ALF {identity['version']} ready.")
-    print()
-    print(f"Memories: {memory['total_memories']}")
-    print(f"Git: {git['branch']} ({git['status']})")
-    print("System: OK")
-    print()
+    console.print()
+
+    info(f"ALF {identity['version']} ready.")
+
+    console.print()
+
+    info(f"Memories: {memory['total_memories']}")
+    info(f"Git: {git['branch']} ({git['status']})")
+    info("System: OK")
+
+    console.print()
 
 
 def render_about(about, show_details=False):
@@ -190,18 +203,28 @@ def render_command_help(command_name, command):
             info(f"    {example}")
 
 
+def render_memory_entry(memory):
+    """
+    Render a single ALF memory entry.
+    """
+
+    info(
+        f"(id: {memory['id']}) {memory['created']} "
+        f"[{memory['category']}] [{memory['status']}]"
+    )
+    info(f"  {memory['content']}")
+    console.print()
+
+
 def render_memories(memories, options=None):
     """
     Render stored ALF memories.
     """
 
-    print()
-    print("ALF memories")
-    print("------------")
+    title("ALF memories")
 
     if not memories:
-        print("No memories stored.")
-        print()
+        info("No memories stored.")
         return
 
     if options and options.get("group") == "category":
@@ -209,12 +232,7 @@ def render_memories(memories, options=None):
         return
 
     for memory in memories:
-        print(
-            f"(id: {memory['id']}) {memory['created']} "
-            f"[{memory['category']}] [{memory['status']}]"
-        )
-        print(f"  {memory['content']}")
-        print()
+        render_memory_entry(memory)
 
 
 def render_grouped_memories(memories):
@@ -236,17 +254,10 @@ def render_grouped_memories(memories):
         if category not in grouped:
             continue
 
-        print()
-        print(category.upper())
-        print("-" * len(category))
+        section(category.upper())
 
         for memory in grouped[category]:
-            print(
-                f"(id: {memory['id']}) {memory['created']} "
-                f"[{memory['category']}] [{memory['status']}]"
-            )
-            print(f"  {memory['content']}")
-            print()
+            render_memory_entry(memory)
 
 
 def render_version(identity):
@@ -254,9 +265,9 @@ def render_version(identity):
     Render ALF version information.
     """
 
-    print()
-    print(f"ALF version {identity['version']}")
-    print()
+    console.print()
+    console.print(f"ALF version {identity['version']}")
+    console.print()
 
 
 def render_status(status):
@@ -294,22 +305,31 @@ def render_status(status):
     info(f"Memory categories: {', '.join(memory['categories'])}")
 
 
+def render_unknown_option(option):
+    """
+    Render an invalid command option.
+    """
+
+    console.print(f"Unknown option: {option}")
+
+
 def render_capability_details(capability):
     """
     Render capability-specific detail information.
     """
+
     if capability["id"] == "commands":
         commands = capability["details"]["commands"]
 
         for command in sorted(commands):
-            print(f"    {command}")
-            print(f"      {commands[command]['help']}")
-            print(f"      Usage: {commands[command]['usage']}")
+            info(f"    {command}")
+            info(f"      {commands[command]['help']}")
+            info(f"      Usage: {commands[command]['usage']}")
 
         return
 
     for key, value in capability["details"].items():
-        print(f"    {key}: {value}")
+        info(f"    {key}: {value}")
 
 
 def render_memory_usage(usage):
@@ -317,9 +337,9 @@ def render_memory_usage(usage):
     Render memory command usage.
     """
 
-    print()
-    print(f"Usage: {usage}")
-    print()
+    console.print()
+    info(f"Usage: {usage}")
+    console.print()
 
 
 def render_memory(memory):
@@ -327,30 +347,20 @@ def render_memory(memory):
     Render a single ALF memory.
     """
 
-    print()
+    console.print()
 
     if memory is None:
-        print("Memory not found.")
-        print()
+        info("Memory not found.")
+        console.print()
         return
 
-    print(
-        f"(id: {memory['id']}) {memory['created']} "
-        f"[{memory['category']}] [{memory['status']}]"
-    )
-    print(f"  {memory['content']}")
+    render_memory_entry(memory)
 
     if memory.get("previous_memory"):
         previous = memory["previous_memory"]
 
-        print()
-        print("Previous memory:")
-        print(
-            f"(id: {previous['id']}) {previous['created']} "
-            f"[{previous['category']}] [{previous['status']}]"
-        )
-        print(f"  {previous['content']}")
-    print()
+        section("Previous memory:")
+        render_memory_entry(previous)
 
 
 def render_memory_categories(categories):
@@ -368,24 +378,14 @@ def render_memory_categories(categories):
     console.print()
 
 
-def render_memory_saved(category):
-    """
-    Render memory confirmation.
-    """
-
-    print()
-    print(f"I'll remember that Peter [{category}].")
-    print()
-
-
 def render_memory_archived(memory_id):
     """
     Render archive confirmation.
     """
 
-    print()
-    print(f"Memory {memory_id} archived.")
-    print()
+    console.print()
+    success(f"Memory {memory_id} archived.")
+    console.print()
 
 
 def render_memory_forgotten(memory_id):
@@ -401,9 +401,9 @@ def render_memory_not_numeric():
     Render invalid memory ID message.
     """
 
-    print()
-    print("Memory ID must be a number.")
-    print()
+    console.print()
+    error("Memory ID must be a number.")
+    console.print()
 
 
 def render_memory_history(history):
@@ -411,19 +411,14 @@ def render_memory_history(history):
     Render memory history chain.
     """
 
-    print()
-    print("Memory history")
-    print("--------------")
+    console.print()
+
+    section("Memory history")
 
     for memory in history:
-        print()
-        print(
-            f"(id: {memory['id']}) {memory['created']} "
-            f"[{memory['category']}] [{memory['status']}]"
-        )
-        print(f"  {memory['content']}")
+        render_memory_entry(memory)
 
-    print()
+    console.print()
 
 
 def render_memory_positive():
@@ -431,9 +426,9 @@ def render_memory_positive():
     Render invalid positive memory ID message.
     """
 
-    print()
-    print("Memory IDs must be positive.")
-    print()
+    console.print()
+    error("Memory IDs must be positive.")
+    console.print()
 
 
 def render_invalid_memory_category(category, categories):
@@ -441,15 +436,17 @@ def render_invalid_memory_category(category, categories):
     Render invalid memory category error.
     """
 
-    print()
-    print(f"Unknown category: {category}")
-    print()
-    print("Valid categories:")
+    console.print()
+    error(f"Unknown category: {category}")
+
+    console.print()
+
+    info("Valid categories:")
 
     for valid_category in categories:
-        print(f"- {valid_category}")
+        info(f"- {valid_category}")
 
-    print()
+    console.print()
 
 
 def render_memory_help():
@@ -457,20 +454,31 @@ def render_memory_help():
     Render memory command help.
     """
 
-    print()
-    print("Usage: alf memories [options]")
-    print()
-    print("Options:")
-    print()
-    print("  --all")
-    print("      Include archived memories.")
-    print()
-    print("  --category <name>")
-    print("      Show only memories in a category.")
-    print()
-    print("  --group category")
-    print("      Group memories by category.")
-    print()
+    console.print()
+
+    section("Usage:")
+    info("    alf memories [options]")
+
+    console.print()
+
+    info("Options:")
+
+    console.print()
+
+    info("  --all")
+    info("      Include archived memories.")
+
+    console.print()
+
+    info("  --category <name>")
+    info("      Show only memories in a category.")
+
+    console.print()
+
+    info("  --group category")
+    info("      Group memories by category.")
+
+    console.print()
 
 
 def render_health(report, show_details=False):
@@ -489,18 +497,17 @@ def render_health(report, show_details=False):
         return
 
     if failed_modules:
-        print()
-        print("ALF health issues")
-        print("-----------------")
-        print()
+        console.print()
 
-        print("Failed modules:")
+        section("ALF health issues")
+
+        error("Failed modules:")
 
         for failure in failed_modules:
-            print(f"- {failure['module'].removeprefix('alf.')}")
-            print(f"  {failure['error']}")
+            error(f"- {failure['module'].removeprefix('alf.')}")
+            error(f"  {failure['error']}")
 
-        print()
+        console.print()
 
     if show_details:
         console.print()

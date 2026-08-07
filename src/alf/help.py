@@ -2,41 +2,36 @@
 ALF help system.
 """
 
+from .presentation import info, section
+
 
 def render_command_help(command_name, command):
-    print()
+    """
+    Render help for a single command.
+    """
 
-    print(command_name)
-    print("-" * len(command_name))
+    section(command_name)
 
-    print()
+    info(command["help"])
 
-    print(command["help"])
-
-    print()
-
-    print("Usage:")
-    print(f"    {command['usage']}")
+    section("Usage:")
+    info(f"    {command['usage']}")
 
     if "options" in command:
-        print()
-        print("Options:")
+        section("Options:")
 
         for option, description in command["options"].items():
-            print()
-            print(f"    {option}")
-            print(f"        {description}")
+            info(f"    {option}")
+            info(f"        {description}")
 
     if "notes" in command:
-        print()
-        print("Notes:")
+        section("Notes:")
 
         for note in command["notes"]:
-            print(f"    {note}")
+            info(f"    {note}")
 
     if "examples" in command:
-        print()
-        print("Examples:")
+        section("Examples:")
 
         for example in command["examples"]:
-            print(f"    {example}")
+            info(f"    {example}")
