@@ -1,32 +1,68 @@
+
 """
 ALF introspection and health checks.
 
 Provides information about ALF's internal structure and state.
 """
 
-from .capabilities import get_alf_modules, get_provider_modules
+import importlib
+import pkgutil
+
+import alf
 
 
-def get_module_introspection():
+def check_modules():
     """
-    Report ALF module capability participation.
+    Report ALF modules and their capability status.
     """
 
-    all_modules = {module.__name__ for module in get_alf_modules()}
+    advertising_modules = []
+    non_reporting_modules = []
+    failed_modules = []
 
-    providers = {module.__name__ for module in get_provider_modules()}
+    for module_info in pkgutil.iter_modules(alf.__path__):
+        module_name = f"alf.{module_info.name}"
+
+        module = importlib.import_module(module_name)
+
+        try:
+            module = importlib.import_module(module_name)
+
+        except Exception as exc:
+            failed_modules.append(
+                {
+                    "module": module_name,
+                    "error": str(exc),
+                }
+            )
+            continue
+
+        if hasattr(module, "get_capability"):
+            advertising_modules.append(module_name)
+        else:
+            non_reporting_modules.append(module_name)
 
     return {
-        "advertising_modules": sorted(providers),
-        "non_reporting_modules": sorted(all_modules - providers),
+        "name": "Modules",
+        "healthy": len(failed_modules) == 0,
+        "details": {
+            "advertising_modules": advertising_modules,
+            "non_reporting_modules": non_reporting_modules,
+            "failed_modules": failed_modules,
+        },
     }
 
 
 def get_health_report():
     """
-    Return ALF introspection information.
+    Run all health checks.
     """
 
+    checks = [
+        check_modules(),
+    ]
+
     return {
-        "modules": get_module_introspection(),
+        "healthy": all(check["healthy"] for check in checks),
+        "checks": checks,
     }
