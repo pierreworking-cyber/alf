@@ -86,36 +86,40 @@ def render_about(about, show_details=False):
 
     identity = about["identity"]
 
-    print(f"I am {identity['name']}.")
-    print(f"Version: {identity['version']}")
-    print(f"Purpose: {identity['purpose']}")
+    title("ALF")
 
-    print()
-    print("Current capabilities:")
+    info(f"I am {identity['name']}.")
+    info(f"Version: {identity['version']}")
+    info(f"Purpose: {identity['purpose']}")
+
+    console.print()
+
+    info("Current capabilities:")
 
     for capability in about["capabilities"]:
-        print(f"- {capability['name']}")
-        print(f"  {capability['description']}")
+        info(f"- {capability['name']}")
+        info(f"  {capability['description']}")
 
         if show_details and "details" in capability:
-            print("  Details:")
+            info("  Details:")
             render_capability_details(capability)
 
-        if about["warnings"]:
-            print()
-            print("Warnings:")
+    if about["warnings"]:
+        console.print()
+        info("Warnings:")
 
-            for warning in about["warnings"]:
-                print(f"- {warning}")
+        for warning in about["warnings"]:
+            error(f"- {warning}")
 
-    print()
-    print("Current limitations:")
+    console.print()
+
+    info("Current limitations:")
 
     for limitation in about["limitations"]:
-        print(f"- {limitation}")
+        info(f"- {limitation}")
 
-    print()
-    print("Type 'alf help' to see available commands.")
+    console.print()
+    info("Type 'alf help' to see available commands.")
 
 
 def render_commands(commands):
