@@ -34,7 +34,8 @@ def initialise_database(connection):
             category TEXT NOT NULL,
             content TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'active',
-            previous_memory_id INTEGER
+            previous_memory_id INTEGER,
+            related_memory_ids TEXT
         )
         """
     )
@@ -125,7 +126,8 @@ def get_memories(options=None):
     if category and include_archived:
         cursor.execute(
             """
-            SELECT id, created, category, status, content, previous_memory_id
+            SELECT id, created, category, status, content,
+            previous_memory_id, related_memory_ids
             FROM memories
             WHERE category = ?
             ORDER BY id
@@ -136,7 +138,8 @@ def get_memories(options=None):
     elif category:
         cursor.execute(
             """
-            SELECT id, created, category, status, content, previous_memory_id
+            SELECT id, created, category, status, content,
+            previous_memory_id, related_memory_ids
             FROM memories
             WHERE category = ? AND status = 'active'
             ORDER BY id
@@ -147,7 +150,8 @@ def get_memories(options=None):
     elif include_archived:
         cursor.execute(
             """
-            SELECT id, created, category, status, content, previous_memory_id
+            SELECT id, created, category, status, content,
+            previous_memory_id, related_memory_ids
             FROM memories
             ORDER BY id
             """
@@ -156,7 +160,8 @@ def get_memories(options=None):
     else:
         cursor.execute(
             """
-            SELECT id, created, category, status, content, previous_memory_id
+            SELECT id, created, category, status, content,
+            previous_memory_id, related_memory_ids
             FROM memories
             WHERE status = 'active'
             ORDER BY id
@@ -176,6 +181,7 @@ def get_memories(options=None):
                 "status": row[3],
                 "content": row[4],
                 "previous_memory_id": row[5],
+                "related_memory_ids": row[6],
             }
         )
 
@@ -200,7 +206,8 @@ def search_memories(term, options=None):
     cursor = connection.cursor()
 
     query = """
-        SELECT id, created, category, status, content, previous_memory_id
+        SELECT id, created, category, status, content,
+        previous_memory_id, related_memory_ids
         FROM memories
         WHERE content LIKE ?
     """
@@ -231,6 +238,7 @@ def search_memories(term, options=None):
                 "status": row[3],
                 "content": row[4],
                 "previous_memory_id": row[5],
+                "related_memory_ids": row[6],
             }
         )
 
@@ -250,7 +258,8 @@ def get_memory(memory_id: int):
 
     cursor.execute(
         """
-        SELECT id, created, category, status, content, previous_memory_id
+        SELECT id, created, category, status, content,
+        previous_memory_id, related_memory_ids
         FROM memories
         WHERE id = ?
         """,
