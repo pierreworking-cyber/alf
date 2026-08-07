@@ -318,6 +318,29 @@ def archive_memory(memory_id: int):
     connection.close()
 
 
+def forget_memory(memory_id):
+    """
+    Forget a memory while preserving its identity.
+    """
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE memories
+        SET status = 'forgotten',
+            content = '[forgotten]'
+        WHERE id = ?
+        """,
+        (memory_id,),
+    )
+
+    connection.commit()
+    connection.close()
+
+
 def get_memory_information():
     """
     Return information about ALF's memory system.

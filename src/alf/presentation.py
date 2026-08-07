@@ -388,6 +388,14 @@ def render_memory_archived(memory_id):
     print()
 
 
+def render_memory_forgotten(memory_id):
+    """
+    Confirm that a memory has been forgotten.
+    """
+
+    success(f"Memory {memory_id} forgotten.")
+
+
 def render_memory_not_numeric():
     """
     Render invalid memory ID message.

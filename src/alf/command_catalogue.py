@@ -96,6 +96,14 @@ commands = {
             "alf archive 11",
         ],
     },
+    "forget": {
+        "id": "command.forget",
+        "help": "Forget a memory while preserving its identity.",
+        "usage": "alf forget <id>",
+        "examples": [
+            "alf forget 12",
+        ],
+    },
     "version": {
         "id": "identity.version",
         "help": "Show ALF version.",

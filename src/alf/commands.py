@@ -10,6 +10,7 @@ from .identity import (
 )
 from .memory import (
     archive_memory,
+    forget_memory,
     get_memories,
     get_memory,
     get_memory_categories,
@@ -28,6 +29,7 @@ from .presentation import (
     render_memory,
     render_memory_archived,
     render_memory_categories,
+    render_memory_forgotten,
     render_memory_history,
     render_memory_not_numeric,
     render_memory_positive,
@@ -212,6 +214,27 @@ def archive_command(memory_id=None):
     render_memory_archived(memory_id)
 
 
+def forget_command(memory_id=None):
+    if not memory_id:
+        render_memory_usage(commands["forget"]["usage"])
+        return
+
+    try:
+        memory_id = int(memory_id)
+
+    except ValueError:
+        render_memory_not_numeric()
+        return
+
+    if memory_id <= 0:
+        render_memory_positive()
+        return
+
+    forget_memory(memory_id)
+    render_memory_forgotten(memory_id)
+
+
+
 def about_command(argument=None):
     print()
 
@@ -236,6 +259,7 @@ command_handlers = {
     "health": health_command,
     "about": about_command,
     "archive": archive_command,
+    "forget": forget_command,
     "version": version_command,
     "search": search_command,
 }
