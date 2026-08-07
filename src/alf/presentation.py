@@ -388,6 +388,16 @@ def render_memory_archived(memory_id):
     console.print()
 
 
+def render_memory_saved(category):
+    """
+    Render memory confirmation.
+    """
+
+    console.print()
+    success(f"I'll remember that Peter [{category}].")
+    console.print()
+
+
 def render_memory_forgotten(memory_id):
     """
     Confirm that a memory has been forgotten.
