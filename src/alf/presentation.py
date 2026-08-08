@@ -1,6 +1,7 @@
 """
 ALF presentation helpers.
 """
+from datetime import datetime
 
 from rich.console import Console
 from rich.table import Table
@@ -206,10 +207,18 @@ def render_command_help(command_name, command):
 def render_memory_entry(memory):
     """
     Render a single ALF memory entry.
+
+    The stored timestamp is converted from the database format
+    into ALF's human-readable UK-style display format.
     """
 
+    created = datetime.strptime(
+        memory["created"],
+        "%Y-%m-%d %H:%M:%S",
+    ).strftime("%d-%b-%Y %H:%M:%S")
+
     info(
-        f"(id: {memory['id']}) {memory['created']} "
+        f"(id: {memory['id']}) {created} "
         f"[{memory['category']}] [{memory['status']}]"
     )
     info(f"  {memory['content']}")
