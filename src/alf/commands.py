@@ -49,6 +49,26 @@ REQUIRED_COMMAND_FIELDS = [
 ]
 
 
+def run(command: str, arguments=None):
+    """
+    Route a command name and its arguments to the appropriate handler.
+
+    This is the entry point to ALF's command layer. The command handlers
+    themselves deal with the work; this function is responsible only for
+    dispatching the request to the right handler.
+    """
+
+    if command in command_handlers:
+        if arguments:
+            command_handlers[command](*arguments)
+        else:
+            command_handlers[command]()
+
+        return True
+
+    return False
+
+
 def health_command(argument=None):
     render_health(
         get_health_report(),
@@ -260,7 +280,6 @@ def forget_command(memory_id=None):
     render_memory_forgotten(memory_id)
 
 
-
 def about_command(argument=None):
 
     render_about(
@@ -273,6 +292,9 @@ def version_command(argument=None):
     render_version(get_identity())
 
 
+# Routing table: maps user-facing command names to their handler functions.
+# `run()` uses this table to dispatch each command without knowing
+# how the individual command is implemented.
 command_handlers = {
     "status": status_command,
     "help": help_command,
@@ -290,22 +312,13 @@ command_handlers = {
 }
 
 
-def run(command: str, arguments=None):
-
-    if command in command_handlers:
-        if arguments:
-            command_handlers[command](*arguments)
-        else:
-            command_handlers[command]()
-
-        return True
-
-    return False
-
-
 def validate_commands():
     """
-    Validate command metadata.
+    Check that the command catalogue is internally consistent.
+
+    The command catalogue contains metadata describing each command.
+    This function checks that required information exists and that
+    command IDs are not duplicated before ALF relies on that catalogue.
     """
 
     warnings = []
