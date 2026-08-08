@@ -375,21 +375,17 @@ def archive_memory(memory_id: int):
     Mark a memory as archived.
     """
 
-    connection = get_connection()
+    with get_connection() as connection:
+        cursor = connection.cursor()
 
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        UPDATE memories
-        SET status = 'archived'
-        WHERE id = ?
-        """,
-        (memory_id,),
-    )
-
-    connection.commit()
-    connection.close()
+        cursor.execute(
+            """
+            UPDATE memories
+            SET status = 'archived'
+            WHERE id = ?
+            """,
+            (memory_id,),
+        )
 
 
 def forget_memory(memory_id):
@@ -397,22 +393,18 @@ def forget_memory(memory_id):
     Forget a memory while preserving its identity.
     """
 
-    connection = get_connection()
+    with get_connection() as connection:
+        cursor = connection.cursor()
 
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        UPDATE memories
-        SET status = 'forgotten',
-            content = '[forgotten]'
-        WHERE id = ?
-        """,
-        (memory_id,),
-    )
-
-    connection.commit()
-    connection.close()
+        cursor.execute(
+            """
+            UPDATE memories
+            SET status = 'forgotten',
+                content = '[forgotten]'
+            WHERE id = ?
+            """,
+            (memory_id,),
+        )
 
 
 def get_memory_information():
