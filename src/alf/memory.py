@@ -299,6 +299,7 @@ def get_memory(memory_id: int):
 
         row = cursor.fetchone()
 
+
     if row is None:
         return None
 
