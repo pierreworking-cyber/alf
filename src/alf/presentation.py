@@ -1,6 +1,7 @@
 """
 ALF presentation helpers.
 """
+
 from datetime import datetime
 
 from rich.console import Console
@@ -217,10 +218,7 @@ def render_memory_entry(memory):
         "%Y-%m-%d %H:%M:%S",
     ).strftime("%d-%b-%Y %H:%M:%S")
 
-    info(
-        f"(id: {memory['id']}) {created} "
-        f"[{memory['category']}] [{memory['status']}]"
-    )
+    info(f"(id: {memory['id']}) {created} [{memory['category']}] [{memory['status']}]")
     info(f"  {memory['content']}")
     console.print()
 

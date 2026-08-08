@@ -16,7 +16,7 @@ from .time import get_greeting
 
 def introduce():
     render_greeting(f"{get_greeting()}, Peter.")
-    show_status,
+    (show_status,)
 
 
 def main():
