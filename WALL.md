@@ -11,60 +11,30 @@ Once an idea becomes established it should move into ALF's persistent memory and
 
 ## Memory
 
-- Implement soft deletion using a status field.
-- Add commands to forget, restore and review memories.
-- Preserve permanent memory IDs.
-- Introduce relationships between memories rather than editing old ones.
+ALF's memory system provides persistent, identifiable records that preserve
+the evolution of knowledge without modifying existing memories.
 
-Possible relationship types:
+Current capabilities:
 
-- related_to
-- parent_of
-- follows
-- reviews
-- supersedes
-- derived_from
-
-Implementation deferred until memory identity model is reviewed
-
-## Memory history
-
-ALF memories may optionally reference a previous memory.
-
-Current implementation:
-
-- Memories contain an optional `previous_memory_id`
-- New memories can preserve the history of changing knowledge
-- Existing memories are not modified when new memories are created
-- Relationships are currently one-directional
-- previous_memory_id is implemented
-- richer relationships are deferred
-- ALF preserves memory evolution by creating new records linked to previous memories rather than editing existing records.
-- ALF memories are append-only records. New memories may reference previous memories to preserve the evolution of knowledge without modifying history.
+- Persistent memory stored in SQLite.
+- Permanent memory IDs.
+- Soft deletion using a status field.
+- Commands to forget, restore and review memories.
+- Memories can reference previous memories to preserve history.
+- Relationships between memories are supported.
+- Forgotten memories retain their identity.
+- Existing memories are not modified when new memories are created.
 
 Design intent:
 
-- Preserve historical context rather than overwrite old knowledge
-- Avoid a complex relationship graph in early versions
-- Allow future interfaces to present memory evolution
-
-Future considerations:
-
-- Memory history views
-- Schema versioning and migrations
-- Richer relationship types if required
-- exploration of relationship traversal
-
-## Memory schema evolution
-
-Current:
-
-- Development database may require manual changes
+- Memories are append-only records.
+- Relationships are deliberately simple for now.
+- Richer relationship types are deferred until a concrete use case requires them.
 
 Future:
 
-- Add schema version tracking
-- Add migration support when ALF becomes persistent across upgrades
+- Add schema version tracking.
+- Add migration support when ALF becomes persistent across upgrades.
 
 ## Presentation
 
