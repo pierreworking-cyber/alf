@@ -77,7 +77,7 @@ def health_command(argument=None):
     )
 
 
-def status_command(argument=None):
+def show_status():
     render_status(get_status_information())
 
 
@@ -220,6 +220,7 @@ def memory_command(*arguments):
         related_memories=related_memories,
     )
 
+
 def history_command(*arguments):
     if len(arguments) != 1:
         render_memory_usage(commands["history"]["usage"])
@@ -302,7 +303,6 @@ def version_command(argument=None):
 # `run()` uses this table to dispatch each command without knowing
 # how the individual command is implemented.
 command_handlers = {
-    "status": status_command,
     "help": help_command,
     "remember": remember_command,
     "memories": memories_command,

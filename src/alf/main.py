@@ -5,12 +5,10 @@ ALF - Peter's local computing companion.
 
 """
 
-from .commands import run
-from .identity import get_about_information
+from .commands import run, show_status
 from .presentation import (
     error,
     info,
-    render_about,
     render_greeting,
 )
 from .time import get_greeting
@@ -18,8 +16,7 @@ from .time import get_greeting
 
 def introduce():
     render_greeting(f"{get_greeting()}, Peter.")
-
-    render_about(get_about_information())
+    show_status,
 
 
 def main():

@@ -5,11 +5,6 @@ Contains command metadata exposed by ALF.
 """
 
 commands = {
-    "status": {
-        "id": "system.status",
-        "help": "Show system information.",
-        "usage": "alf status",
-    },
     "help": {
         "id": "command.help",
         "help": "Show command help.",
