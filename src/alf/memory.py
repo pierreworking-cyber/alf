@@ -114,13 +114,13 @@ def remember(
     if related_memory_ids is False:
         return False
 
-    connection = get_connection()
+    with get_connection() as connection:
+        cursor = connection.cursor()
 
-    cursor = connection.cursor()
+        created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute(
 
-    cursor.execute(
         """
         INSERT INTO memories (
             created,
@@ -142,8 +142,6 @@ def remember(
         ),
     )
 
-    connection.commit()
-    connection.close()
     return True
 
 
@@ -159,72 +157,70 @@ def get_memories(options=None):
     category = options["category"]
     include_archived = options["include_archived"]
 
-    connection = get_connection()
-    cursor = connection.cursor()
-
-    if category and include_archived:
-        cursor.execute(
-            """
-            SELECT id, created, category, status, content,
-            previous_memory_id, related_memory_ids
-            FROM memories
-            WHERE category = ?
-            ORDER BY id
-            """,
-            (category,),
-        )
-
-    elif category:
-        cursor.execute(
-            """
-            SELECT id, created, category, status, content,
-            previous_memory_id, related_memory_ids
-            FROM memories
-            WHERE category = ? AND status = 'active'
-            ORDER BY id
-            """,
-            (category,),
-        )
-
-    elif include_archived:
-        cursor.execute(
-            """
-            SELECT id, created, category, status, content,
-            previous_memory_id, related_memory_ids
-            FROM memories
-            ORDER BY id
-            """
-        )
-
-    else:
-        cursor.execute(
-            """
-            SELECT id, created, category, status, content,
-            previous_memory_id, related_memory_ids
-            FROM memories
-            WHERE status = 'active'
-            ORDER BY id
-            """
-        )
-
-    rows = cursor.fetchall()
-
     memories = []
 
-    for row in rows:
-        memories.append(
-            {
-                "id": row[0],
-                "created": row[1],
-                "category": row[2],
-                "status": row[3],
-                "content": row[4],
-                "previous_memory_id": row[5],
-                "related_memory_ids": row[6],
-            }
-        )
+    with get_connection() as connection:
+        cursor = connection.cursor()
 
-    connection.close()
+        if category and include_archived:
+            cursor.execute(
+                """
+                SELECT id, created, category, status, content,
+                previous_memory_id, related_memory_ids
+                FROM memories
+                WHERE category = ?
+                ORDER BY id
+                """,
+                (category,),
+            )
+
+        elif category:
+            cursor.execute(
+                """
+                SELECT id, created, category, status, content,
+                previous_memory_id, related_memory_ids
+                FROM memories
+                WHERE category = ? AND status = 'active'
+                ORDER BY id
+                """,
+                (category,),
+            )
+
+        elif include_archived:
+            cursor.execute(
+                """
+                SELECT id, created, category, status, content,
+                previous_memory_id, related_memory_ids
+                FROM memories
+                ORDER BY id
+                """
+            )
+
+        else:
+            cursor.execute(
+                """
+                SELECT id, created, category, status, content,
+                previous_memory_id, related_memory_ids
+                FROM memories
+                WHERE status = 'active'
+                ORDER BY id
+                """
+            )
+
+        rows = cursor.fetchall()
+
+        for row in rows:
+            memories.append(
+                {
+                    "id": row[0],
+                    "created": row[1],
+                    "category": row[2],
+                    "status": row[3],
+                    "content": row[4],
+                    "previous_memory_id": row[5],
+                    "related_memory_ids": row[6],
+                }
+            )
 
     return memories
 
@@ -240,33 +236,32 @@ def search_memories(term, options=None):
     category = options["category"]
     include_archived = options["include_archived"]
 
-    connection = get_connection()
-
-    cursor = connection.cursor()
-
-    query = """
-        SELECT id, created, category, status, content,
-        previous_memory_id, related_memory_ids
-        FROM memories
-        WHERE content LIKE ?
-    """
-
-    parameters = [f"%{term}%"]
-
-    if not include_archived:
-        query += " AND status = 'active'"
-
-    if category:
-        query += " AND category = ?"
-        parameters.append(category)
-
-    query += " ORDER BY id"
-
-    cursor.execute(query, parameters)
-
-    rows = cursor.fetchall()
-
     memories = []
+
+    with get_connection() as connection:
+        cursor = connection.cursor()
+
+        query = """
+            SELECT id, created, category, status, content,
+            previous_memory_id, related_memory_ids
+            FROM memories
+            WHERE content LIKE ?
+        """
+
+        parameters = [f"%{term}%"]
+
+        if not include_archived:
+            query += " AND status = 'active'"
+
+        if category:
+            query += " AND category = ?"
+            parameters.append(category)
+
+        query += " ORDER BY id"
+
+        cursor.execute(query, parameters)
+
+        rows = cursor.fetchall()
 
     for row in rows:
         memories.append(
@@ -281,8 +276,6 @@ def search_memories(term, options=None):
             }
         )
 
-    connection.close()
-
     return memories
 
 
@@ -291,23 +284,20 @@ def get_memory(memory_id: int):
     Retrieve a single memory by ID.
     """
 
-    connection = get_connection()
+    with get_connection() as connection:
+        cursor = connection.cursor()
 
-    cursor = connection.cursor()
+        cursor.execute(
+            """
+            SELECT id, created, category, status, content,
+            previous_memory_id, related_memory_ids
+            FROM memories
+            WHERE id = ?
+            """,
+            (memory_id,),
+        )
 
-    cursor.execute(
-        """
-        SELECT id, created, category, status, content,
-        previous_memory_id, related_memory_ids
-        FROM memories
-        WHERE id = ?
-        """,
-        (memory_id,),
-    )
-
-    row = cursor.fetchone()
-
-    connection.close()
+        row = cursor.fetchone()
 
     if row is None:
         return None
