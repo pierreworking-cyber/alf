@@ -355,9 +355,9 @@ def render_invalid_related_memory(memory_id, usage):
     console.print()
 
 
-def render_memory(memory):
+def render_memory(memory, related_memories=None):
     """
-    Render a single ALF memory.
+    Render a single ALF memory and its direct relationships.
     """
 
     console.print()
@@ -369,8 +369,11 @@ def render_memory(memory):
 
     render_memory_entry(memory)
 
-    if memory.get("related_memory_ids"):
-        info(f"Related memories: {memory['related_memory_ids']}")
+    if related_memories:
+        section("Related memories:")
+
+        for related_memory in related_memories:
+            render_memory_entry(related_memory)
 
     if memory.get("previous_memory"):
         previous = memory["previous_memory"]

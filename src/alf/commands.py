@@ -16,6 +16,7 @@ from .memory import (
     get_memory_categories,
     get_memory_history,
     get_memory_query_options,
+    get_related_memories,
     remember,
     search_memories,
 )
@@ -211,8 +212,13 @@ def memory_command(*arguments):
         render_memory_positive()
         return
 
-    render_memory(get_memory(memory_id))
+    memory = get_memory(memory_id)
+    related_memories = get_related_memories(memory_id)
 
+    render_memory(
+        memory,
+        related_memories=related_memories,
+    )
 
 def history_command(*arguments):
     if len(arguments) != 1:

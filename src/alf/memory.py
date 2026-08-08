@@ -323,6 +323,31 @@ def get_memory(memory_id: int):
     }
 
 
+def get_related_memories(memory_id: int):
+    """
+    Retrieve the memories directly related to a memory.
+
+    Relationships are deliberately limited to one level. This function
+    retrieves the memories named by the stored relationship IDs but does
+    not follow relationships belonging to those memories.
+    """
+
+    memory = get_memory(memory_id)
+
+    if memory is None or not memory.get("related_memory_ids"):
+        return []
+
+    related_memories = []
+
+    for related_id in memory["related_memory_ids"].split(","):
+        related_memory = get_memory(int(related_id))
+
+        if related_memory is not None:
+            related_memories.append(related_memory)
+
+    return related_memories
+
+
 def get_memory_history(memory_id: int):
     """
     Retrieve the history chain for a memory.
