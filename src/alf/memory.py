@@ -11,6 +11,9 @@ from .paths import get_data_directory
 
 DATABASE = get_data_directory() / "alf.db"
 
+
+SCHEMA_VERSION = 1
+
 VALID_MEMORY_CATEGORIES = [
     "note",
     "fact",
@@ -40,6 +43,8 @@ def initialise_database(connection):
         """
     )
 
+    connection.commit()
+    connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
 
 
