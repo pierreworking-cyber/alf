@@ -323,8 +323,8 @@ def validate_commands():
     Check that the command catalogue is internally consistent.
 
     The command catalogue contains metadata describing each command.
-    This function checks that required information exists and that
-    command IDs are not duplicated before ALF relies on that catalogue.
+    This function checks that required information exists, command IDs
+    are not duplicated, and catalogue entries have matching handlers.
     """
 
     warnings = []
@@ -339,6 +339,14 @@ def validate_commands():
                         "message": f"Command has no {field}",
                     }
                 )
+
+        if name not in command_handlers:
+            warnings.append(
+                {
+                    "command": name,
+                    "message": "Command has no handler",
+                }
+            )
 
         command_id = command.get("id")
 
@@ -361,6 +369,15 @@ def validate_commands():
             continue
 
         command_ids.add(command_id)
+
+    for name in command_handlers:
+        if name not in commands:
+            warnings.append(
+                {
+                    "command": name,
+                    "message": "Handler has no catalogue entry",
+                }
+            )
 
     return warnings
 
