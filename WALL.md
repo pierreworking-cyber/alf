@@ -33,8 +33,9 @@ Design intent:
 
 Future:
 
-- Add schema version tracking.
-- Add migration support when ALF becomes persistent across upgrades.
+- Add migration support when the schema changes.
+- Migrations should be applied sequentially using the database schema version.
+- Do not introduce migration machinery until the first schema change requires it.
 
 ## Presentation
 
