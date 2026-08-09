@@ -522,11 +522,18 @@ def render_health(report, show_details=False):
     Render ALF health information.
     """
 
-    modules = report["checks"][0]["details"]
+    checks = {
+        check["name"]: check
+        for check in report["checks"]
+    }
+
+    modules = checks["Modules"]["details"]
+    commands = checks["Commands"]["details"]
 
     failed_modules = modules["failed_modules"]
+    command_warnings = commands["warnings"]
 
-    if not failed_modules and not show_details:
+    if not failed_modules and not command_warnings and not show_details:
         console.print()
         console.print("ALF health: OK")
         console.print()
@@ -542,6 +549,17 @@ def render_health(report, show_details=False):
         for failure in failed_modules:
             error(f"- {failure['module'].removeprefix('alf.')}")
             error(f"  {failure['error']}")
+
+        console.print()
+
+    if command_warnings:
+        console.print()
+
+        error("Command integrity issues:")
+
+        for warning in command_warnings:
+            error(f"- {warning['command']}")
+            error(f"  {warning['message']}")
 
         console.print()
 
@@ -568,6 +586,23 @@ def render_health(report, show_details=False):
                 module.removeprefix("alf."),
                 "non-reporting",
             )
+
+        console.print(table)
+        console.print()
+
+        console.print()
+
+        table = Table(
+            title="Command integrity",
+        )
+
+        table.add_column("Check")
+        table.add_column("Status")
+
+        table.add_row(
+            "Catalogue ↔ handlers",
+            "OK" if not command_warnings else "issues found",
+        )
 
         console.print(table)
         console.print()

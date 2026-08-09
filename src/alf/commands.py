@@ -43,12 +43,6 @@ from .presentation import (
 )
 from .status import get_status_information
 
-REQUIRED_COMMAND_FIELDS = [
-    "id",
-    "help",
-    "usage",
-]
-
 
 def run(command: str, arguments=None):
     """
@@ -318,70 +312,6 @@ command_handlers = {
 }
 
 
-def validate_commands():
-    """
-    Check that the command catalogue is internally consistent.
-
-    The command catalogue contains metadata describing each command.
-    This function checks that required information exists, command IDs
-    are not duplicated, and catalogue entries have matching handlers.
-    """
-
-    warnings = []
-    command_ids = set()
-
-    for name, command in commands.items():
-        for field in REQUIRED_COMMAND_FIELDS:
-            if field not in command:
-                warnings.append(
-                    {
-                        "command": name,
-                        "message": f"Command has no {field}",
-                    }
-                )
-
-        if name not in command_handlers:
-            warnings.append(
-                {
-                    "command": name,
-                    "message": "Command has no handler",
-                }
-            )
-
-        command_id = command.get("id")
-
-        if not command_id:
-            warnings.append(
-                {
-                    "command": name,
-                    "message": "Command has no id",
-                }
-            )
-            continue
-
-        if command_id in command_ids:
-            warnings.append(
-                {
-                    "command": name,
-                    "message": f"Duplicate command id: {command_id}",
-                }
-            )
-            continue
-
-        command_ids.add(command_id)
-
-    for name in command_handlers:
-        if name not in commands:
-            warnings.append(
-                {
-                    "command": name,
-                    "message": "Handler has no catalogue entry",
-                }
-            )
-
-    return warnings
-
-
 def get_commands():
     """
     Return public command information.
@@ -405,6 +335,5 @@ def get_capability():
         "description": "Reports available ALF commands",
         "details": {
             "commands": get_commands(),
-            "warnings": validate_commands(),
         },
     }
