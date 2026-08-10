@@ -267,6 +267,16 @@ def render_grouped_memories(memories):
             render_memory_entry(memory)
 
 
+def render_question(answer):
+    """
+    Render ALF's answer to a question.
+    """
+
+    console.print()
+    console.print(answer, markup=False)
+    console.print()
+
+
 def render_version(identity):
     """
     Render ALF version information.

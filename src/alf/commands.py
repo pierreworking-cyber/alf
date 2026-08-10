@@ -8,6 +8,7 @@ from .identity import (
     get_about_information,
     get_identity,
 )
+from .llm import ask
 from .memory import (
     archive_memory,
     forget_memory,
@@ -37,6 +38,7 @@ from .presentation import (
     render_memory_positive,
     render_memory_saved,
     render_memory_usage,
+    render_question,
     render_status,
     render_unknown_option,
     render_version,
@@ -281,6 +283,17 @@ def forget_command(memory_id=None):
     render_memory_forgotten(memory_id)
 
 
+def question_command(*arguments):
+    if not arguments:
+        render_memory_usage(commands["question"]["usage"])
+        return
+
+    question = " ".join(arguments).strip()
+    answer = ask(question)
+
+    render_question(answer)
+
+
 def about_command(argument=None):
 
     render_about(
@@ -309,6 +322,7 @@ command_handlers = {
     "forget": forget_command,
     "version": version_command,
     "search": search_command,
+    "question": question_command,
 }
 
 
