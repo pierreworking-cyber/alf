@@ -9,6 +9,7 @@ description = "Peter's local computing companion"
 requires-python = ">=3.11"
 dependencies = [
     "rich",
+    "trafilatura>=2.2.0",
 ]
 
 
