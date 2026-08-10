@@ -120,4 +120,13 @@ commands = {
             "alf search Peter --category preference",
         ],
     },
+    "question": {
+        "id": "llm.question",
+        "help": "Ask ALF a question.",
+        "usage": 'alf question "text"',
+        "examples": [
+            'alf question "What is the capital of Morocco?"',
+            'alf question "Why does the Moon look larger near the horizon?"',
+        ],
+    },
 }
