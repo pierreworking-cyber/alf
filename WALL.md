@@ -89,6 +89,26 @@ First make ALF:
 - maintainable
 - predictable
 
+### Knowledge routing
+
+ALF should determine which knowledge sources are appropriate for a question before invoking the LLM.
+
+Memory should be considered before external research where appropriate.
+
+Knowledge-source selection should be deterministic and implemented by ALF rather than delegated to the LLM.
+
+The LLM interprets and synthesises information supplied by ALF; it does not control ALF's information flow.
+
+Potential knowledge sources include:
+
+- Persistent memory
+- Current system information
+- Repository information
+- Fresh external research
+- The local LLM's existing knowledge
+
+The knowledge-routing layer should remain explicit, small and testable.
+
 ## Data
 
 User data belongs in the user data directory.
