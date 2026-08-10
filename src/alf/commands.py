@@ -43,6 +43,7 @@ from .presentation import (
     render_unknown_option,
     render_version,
 )
+from .research import research_wikipedia
 from .status import get_status_information
 
 
@@ -289,7 +290,8 @@ def question_command(*arguments):
         return
 
     question = " ".join(arguments).strip()
-    answer = ask(question)
+    research = research_wikipedia(question)
+    answer = ask(question, research)
 
     render_question(answer)
 
