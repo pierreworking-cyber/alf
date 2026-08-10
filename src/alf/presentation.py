@@ -273,7 +273,7 @@ def render_version(identity):
     """
 
     console.print()
-    console.print(f"ALF version {identity['version']}")
+    console.print(f"ALF version {identity['version']}", markup=False)
     console.print()
 
 
