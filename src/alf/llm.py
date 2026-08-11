@@ -10,6 +10,7 @@ from urllib.request import Request, urlopen
 from .personality import ALF_PERSONALITY
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
+OLLAMA_TAGS_URL = "http://127.0.0.1:11434/api/tags"
 OLLAMA_MODEL = "qwen3:8b"
 
 
@@ -56,3 +57,35 @@ User's question:
         result = json.load(response)
 
     return result["response"]
+
+
+def check_ollama():
+    """
+    Check whether Ollama is available and ALF's configured model is installed.
+    """
+
+    request = Request(OLLAMA_TAGS_URL)
+
+    try:
+        with urlopen(request, timeout=2) as response:
+            data = json.load(response)
+
+    except Exception as error:
+        return {
+            "available": False,
+            "model_available": False,
+            "model": OLLAMA_MODEL,
+            "error": str(error),
+        }
+
+    models = [
+        model.get("name")
+        for model in data.get("models", [])
+    ]
+
+    return {
+        "available": True,
+        "model_available": OLLAMA_MODEL in models,
+        "model": OLLAMA_MODEL,
+        "error": None,
+    }

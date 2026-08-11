@@ -1,0 +1,141 @@
+import json
+
+from alf import llm
+
+
+def test_check_ollama_when_service_and_model_are_available(monkeypatch):
+    response_data = {
+        "models": [
+            {"name": "qwen3:8b"},
+            {"name": "some-other-model"},
+        ],
+    }
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            pass
+
+        def read(self):
+            return json.dumps(response_data).encode("utf-8")
+
+    monkeypatch.setattr(
+        llm,
+        "urlopen",
+        lambda request, timeout: FakeResponse(),
+    )
+
+    result = llm.check_ollama()
+
+    assert result == {
+        "available": True,
+        "model_available": True,
+        "model": "qwen3:8b",
+        "error": None,
+    }
+
+
+def test_check_ollama_when_model_is_missing(monkeypatch):
+    response_data = {
+        "models": [
+            {"name": "some-other-model"},
+        ],
+    }
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            pass
+
+        def read(self):
+            return json.dumps(response_data).encode("utf-8")
+
+    monkeypatch.setattr(
+        llm,
+        "urlopen",
+        lambda request, timeout: FakeResponse(),
+    )
+
+    result = llm.check_ollama()
+
+    assert result == {
+        "available": True,
+        "model_available": False,
+        "model": "qwen3:8b",
+        "error": None,
+    }
+
+
+def test_check_ollama_when_service_is_unavailable(monkeypatch):
+    def fake_urlopen(request, timeout):
+        raise OSError("Connection refused")
+
+    monkeypatch.setattr(llm, "urlopen", fake_urlopen)
+
+    result = llm.check_ollama()
+
+    assert result["available"] is False
+    assert result["model_available"] is False
+    assert result["model"] == "qwen3:8b"
+    assert result["error"] == "Connection refused"
+
+def test_ask_returns_ollama_response(monkeypatch):
+    response_data = {
+        "response": "The answer from Ollama.",
+    }
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            pass
+
+        def read(self):
+            return json.dumps(response_data).encode("utf-8")
+
+    def fake_urlopen(request):
+        return FakeResponse()
+
+    monkeypatch.setattr(llm, "urlopen", fake_urlopen)
+
+    result = llm.ask(
+        "What is the capital of France?",
+        {
+            "source": "wikipedia",
+            "title": "France",
+            "page_id": 123,
+            "text": "France is a country in Europe.",
+        },
+    )
+
+    assert result == "The answer from Ollama."
+
+
+def test_ask_handles_no_research(monkeypatch):
+    response_data = {
+        "response": "An answer without research.",
+    }
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            pass
+
+        def read(self):
+            return json.dumps(response_data).encode("utf-8")
+
+    def fake_urlopen(request):
+        return FakeResponse()
+
+    monkeypatch.setattr(llm, "urlopen", fake_urlopen)
+
+    result = llm.ask("What is 2 + 2?", None)
+
+    assert result == "An answer without research."

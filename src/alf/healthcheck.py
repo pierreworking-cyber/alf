@@ -9,11 +9,14 @@ import pkgutil
 
 import alf
 
+from .llm import check_ollama
+
 REQUIRED_COMMAND_FIELDS = [
     "id",
     "help",
     "usage",
 ]
+
 
 def discover_modules():
     """
@@ -179,6 +182,37 @@ def check_command_integrity(modules):
     }
 
 
+def check_llm_service():
+    """
+    Check the local language model service used by ALF.
+    """
+
+    status = check_ollama()
+
+    if not status["available"]:
+        return {
+            "name": "Ollama",
+            "healthy": False,
+            "details": {
+                "service_available": False,
+                "model": status["model"],
+                "model_available": False,
+                "error": status["error"],
+            },
+        }
+
+    return {
+        "name": "Ollama",
+        "healthy": status["model_available"],
+        "details": {
+            "service_available": True,
+            "model": status["model"],
+            "model_available": status["model_available"],
+            "error": status["error"],
+        },
+    }
+
+
 def get_health_report():
     """
     Run all health checks.
@@ -189,6 +223,7 @@ def get_health_report():
     checks = [
         check_modules(modules),
         check_command_integrity(modules),
+        check_llm_service(),
     ]
 
     return {

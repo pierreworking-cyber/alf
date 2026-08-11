@@ -570,11 +570,17 @@ def render_health(report, show_details=False):
 
     modules = checks["Modules"]["details"]
     commands = checks["Commands"]["details"]
+    ollama = checks["Ollama"]
 
     failed_modules = modules["failed_modules"]
     command_warnings = commands["warnings"]
 
-    if not failed_modules and not command_warnings and not show_details:
+    if (
+        not failed_modules
+        and not command_warnings
+        and ollama["healthy"]
+        and not show_details
+    ):
         console.print()
         console.print("ALF health: OK")
         console.print()
@@ -601,6 +607,23 @@ def render_health(report, show_details=False):
         for warning in command_warnings:
             error(f"- {warning['command']}")
             error(f"  {warning['message']}")
+
+        console.print()
+
+    if not ollama["healthy"]:
+        console.print()
+
+        error("Ollama issues:")
+
+        details = ollama["details"]
+
+        if not details["service_available"]:
+            error("- Ollama service unavailable")
+        elif not details["model_available"]:
+            error(f"- Model not available: {details['model']}")
+
+        if details["error"]:
+            error(f"  {details['error']}")
 
         console.print()
 
@@ -631,8 +654,6 @@ def render_health(report, show_details=False):
         console.print(table)
         console.print()
 
-        console.print()
-
         table = Table(
             title="Command integrity",
         )
@@ -643,6 +664,30 @@ def render_health(report, show_details=False):
         table.add_row(
             "Catalogue ↔ handlers",
             "OK" if not command_warnings else "issues found",
+        )
+
+        console.print(table)
+        console.print()
+
+        table = Table(
+            title="External services",
+        )
+
+        table.add_column("Service")
+        table.add_column("Status")
+
+        ollama_details = ollama["details"]
+
+        if not ollama_details["service_available"]:
+            ollama_status = "unavailable"
+        elif not ollama_details["model_available"]:
+            ollama_status = f"model unavailable: {ollama_details['model']}"
+        else:
+            ollama_status = f"OK — {ollama_details['model']} available"
+
+        table.add_row(
+            "Ollama",
+            ollama_status,
         )
 
         console.print(table)

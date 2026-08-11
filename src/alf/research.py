@@ -12,11 +12,10 @@ import trafilatura
 
 from .identity import get_identity
 
-WIKIPEDIA_API = (
-    "https://en.wikipedia.org/w/api.php"
-)
+WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 
 MAX_RESEARCH_CHARS = 6000
+
 
 def fetch(url):
     """
