@@ -2,7 +2,7 @@
 ALF command dispatcher.
 """
 
-from .calc import calculate
+from .calc import CalculationError, calculate
 from .command_catalogue import commands
 from .healthcheck import get_health_report
 from .identity import (
@@ -24,6 +24,8 @@ from .memory import (
 )
 from .presentation import (
     render_about,
+    render_calculation,
+    render_calculation_error,
     render_command_help,
     render_commands,
     render_health,
@@ -81,11 +83,11 @@ def calc_command(*arguments):
 
     try:
         result = calculate(expression)
-    except (ValueError, SyntaxError, ZeroDivisionError) as error:
-        render_question(f"Could not calculate expression: {error}")
+    except CalculationError as error:
+        render_calculation_error(error)
         return
 
-    render_question(str(result))
+    render_calculation(result)
 
 
 def health_command(argument=None):

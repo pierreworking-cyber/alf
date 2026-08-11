@@ -1,7 +1,16 @@
 """
-ALF memory system.
+ALF's persistent memory data layer.
 
-Persistent memory stored in SQLite.
+This module manages the SQLite-backed store used to give ALF
+persistent memory across sessions. It is responsible for creating
+and maintaining the memory database, storing and retrieving memory
+entries, searching and filtering memories, and managing their
+lifecycle through active, archived, and forgotten states.
+
+It also manages relationships between memories and their revision
+history. Presentation and command-handling concerns remain outside
+this module; its responsibility is to provide the underlying memory
+data and memory-system information to the rest of ALF.
 """
 
 import sqlite3
@@ -43,7 +52,6 @@ def initialise_database(connection):
         """
     )
 
-    connection.commit()
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
 
@@ -55,7 +63,7 @@ def get_connection():
     Ensures the database structure exists.
     """
 
-    DATABASE.parent.mkdir(exist_ok=True)
+    DATABASE.parent.mkdir(parents=True, exist_ok=True)
 
     connection = sqlite3.connect(DATABASE)
 
@@ -69,7 +77,7 @@ def get_memory_categories():
     Return valid memory categories.
     """
 
-    return VALID_MEMORY_CATEGORIES
+    return VALID_MEMORY_CATEGORIES.copy()
 
 
 def get_memory_query_options():
@@ -114,6 +122,10 @@ def remember(
     Store a memory in ALF's database.
     """
 
+    if previous_memory_id is not None:
+        if previous_memory_id <= 0 or get_memory(previous_memory_id) is None:
+            return False
+
     related_memory_ids = validate_related_memory_ids(related_memory_ids)
 
     if related_memory_ids is False:
@@ -125,27 +137,26 @@ def remember(
         created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         cursor.execute(
-
-        """
-        INSERT INTO memories (
-            created,
-            category,
-            status,
-            content,
-            previous_memory_id,
-            related_memory_ids
+            """
+            INSERT INTO memories (
+                created,
+                category,
+                status,
+                content,
+                previous_memory_id,
+                related_memory_ids
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                created,
+                category,
+                "active",
+                content,
+                previous_memory_id,
+                related_memory_ids,
+            ),
         )
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (
-            created,
-            category,
-            "active",
-            content,
-            previous_memory_id,
-            related_memory_ids,
-        ),
-    )
 
     return True
 
@@ -159,75 +170,42 @@ def get_memories(options=None):
     if options is None:
         options = get_memory_query_options()
 
-    category = options["category"]
-    include_archived = options["include_archived"]
+    query = """
+        SELECT id, created, category, status, content,
+        previous_memory_id, related_memory_ids
+        FROM memories
+    """
 
-    memories = []
+    conditions = []
+    parameters = []
+
+    if not options["include_archived"]:
+        conditions.append("status = 'active'")
+
+    if options["category"]:
+        conditions.append("category = ?")
+        parameters.append(options["category"])
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += " ORDER BY id"
 
     with get_connection() as connection:
-        cursor = connection.cursor()
+        rows = connection.execute(query, parameters).fetchall()
 
-        if category and include_archived:
-            cursor.execute(
-                """
-                SELECT id, created, category, status, content,
-                previous_memory_id, related_memory_ids
-                FROM memories
-                WHERE category = ?
-                ORDER BY id
-                """,
-                (category,),
-            )
-
-        elif category:
-            cursor.execute(
-                """
-                SELECT id, created, category, status, content,
-                previous_memory_id, related_memory_ids
-                FROM memories
-                WHERE category = ? AND status = 'active'
-                ORDER BY id
-                """,
-                (category,),
-            )
-
-        elif include_archived:
-            cursor.execute(
-                """
-                SELECT id, created, category, status, content,
-                previous_memory_id, related_memory_ids
-                FROM memories
-                ORDER BY id
-                """
-            )
-
-        else:
-            cursor.execute(
-                """
-                SELECT id, created, category, status, content,
-                previous_memory_id, related_memory_ids
-                FROM memories
-                WHERE status = 'active'
-                ORDER BY id
-                """
-            )
-
-        rows = cursor.fetchall()
-
-        for row in rows:
-            memories.append(
-                {
-                    "id": row[0],
-                    "created": row[1],
-                    "category": row[2],
-                    "status": row[3],
-                    "content": row[4],
-                    "previous_memory_id": row[5],
-                    "related_memory_ids": row[6],
-                }
-            )
-
-    return memories
+    return [
+        {
+            "id": row[0],
+            "created": row[1],
+            "category": row[2],
+            "status": row[3],
+            "content": row[4],
+            "previous_memory_id": row[5],
+            "related_memory_ids": row[6],
+        }
+        for row in rows
+    ]
 
 
 def search_memories(term, options=None):
@@ -238,50 +216,39 @@ def search_memories(term, options=None):
     if options is None:
         options = get_memory_query_options()
 
-    category = options["category"]
-    include_archived = options["include_archived"]
+    query = """
+        SELECT id, created, category, status, content,
+        previous_memory_id, related_memory_ids
+        FROM memories
+        WHERE content LIKE ?
+    """
 
-    memories = []
+    parameters = [f"%{term}%"]
+
+    if not options["include_archived"]:
+        query += " AND status = 'active'"
+
+    if options["category"]:
+        query += " AND category = ?"
+        parameters.append(options["category"])
+
+    query += " ORDER BY id"
 
     with get_connection() as connection:
-        cursor = connection.cursor()
+        rows = connection.execute(query, parameters).fetchall()
 
-        query = """
-            SELECT id, created, category, status, content,
-            previous_memory_id, related_memory_ids
-            FROM memories
-            WHERE content LIKE ?
-        """
-
-        parameters = [f"%{term}%"]
-
-        if not include_archived:
-            query += " AND status = 'active'"
-
-        if category:
-            query += " AND category = ?"
-            parameters.append(category)
-
-        query += " ORDER BY id"
-
-        cursor.execute(query, parameters)
-
-        rows = cursor.fetchall()
-
-    for row in rows:
-        memories.append(
-            {
-                "id": row[0],
-                "created": row[1],
-                "category": row[2],
-                "status": row[3],
-                "content": row[4],
-                "previous_memory_id": row[5],
-                "related_memory_ids": row[6],
-            }
-        )
-
-    return memories
+    return [
+        {
+            "id": row[0],
+            "created": row[1],
+            "category": row[2],
+            "status": row[3],
+            "content": row[4],
+            "previous_memory_id": row[5],
+            "related_memory_ids": row[6],
+        }
+        for row in rows
+    ]
 
 
 def get_memory(memory_id: int):
@@ -303,7 +270,6 @@ def get_memory(memory_id: int):
         )
 
         row = cursor.fetchone()
-
 
     if row is None:
         return None
@@ -410,10 +376,6 @@ def get_memory_information():
 
     memories = get_memories()
 
-    information = {}
-
-    information["total_memories"] = len(memories)
-
     categories = []
 
     for memory in memories:
@@ -422,9 +384,10 @@ def get_memory_information():
         if category not in categories:
             categories.append(category)
 
-    information["categories"] = categories
-
-    return information
+    return {
+        "total_memories": len(memories),
+        "categories": categories,
+    }
 
 
 def get_capability():

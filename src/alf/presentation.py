@@ -1,5 +1,19 @@
 """
 ALF presentation helpers.
+
+Presentation is responsible for how ALF communicates with the user.
+Command handlers decide what happened; these helpers decide how it is shown.
+
+Common presentation helpers:
+    title()   - major headings
+    section() - subsection headings
+    success() - successful operations
+    warning() - warnings
+    error()   - errors
+    info()    - ordinary information
+
+Direct console output should be reserved for layout, tables, and output
+that does not naturally fit one of the semantic helpers.
 """
 
 from datetime import datetime
@@ -277,6 +291,26 @@ def render_question(answer):
     console.print()
 
 
+def render_calculation(result):
+    """
+    Render the result of a mathematical calculation.
+    """
+
+    console.print()
+    console.print(str(result), markup=False)
+    console.print()
+
+
+def render_calculation_error(exception):
+    """
+    Render a mathematical calculation error.
+    """
+
+    console.print()
+    error(f"Could not calculate expression: {exception}")
+    console.print()
+
+
 def render_version(identity):
     """
     Render ALF version information.
@@ -532,10 +566,7 @@ def render_health(report, show_details=False):
     Render ALF health information.
     """
 
-    checks = {
-        check["name"]: check
-        for check in report["checks"]
-    }
+    checks = {check["name"]: check for check in report["checks"]}
 
     modules = checks["Modules"]["details"]
     commands = checks["Commands"]["details"]

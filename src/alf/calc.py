@@ -1,48 +1,101 @@
 """
 Mathematical calculation support.
 
-Provides safe evaluation of basic mathematical expressions.
+Provides mathematical expression evaluation using SymPy.
 """
 
-import ast
-import operator
+import re
 
-OPERATORS = {
-    ast.Add: operator.add,
-    ast.Sub: operator.sub,
-    ast.Mult: operator.mul,
-    ast.Div: operator.truediv,
-    ast.Pow: operator.pow,
-    ast.USub: operator.neg,
-    ast.UAdd: operator.pos,
+from sympy import (
+    E,
+    Float,
+    Function,
+    I,
+    Integer,
+    Symbol,
+    cos,
+    diff,
+    expand,
+    factor,
+    integrate,
+    limit,
+    log,
+    pi,
+    sin,
+    solve,
+    sqrt,
+)
+from sympy.parsing.sympy_parser import (
+    convert_xor,
+    implicit_multiplication_application,
+    parse_expr,
+    standard_transformations,
+)
+
+
+class CalculationError(ValueError):
+    """
+    Raised when a mathematical expression cannot be calculated.
+    """
+
+
+TRANSFORMATIONS = standard_transformations + (
+    convert_xor,
+    implicit_multiplication_application,
+)
+
+
+PARSER_GLOBALS = {
+    "Integer": Integer,
+    "Float": Float,
+    "Symbol": Symbol,
+    "Function": Function,
 }
+
+
+LOCAL_DICT = {
+    "E": E,
+    "I": I,
+    "pi": pi,
+    "cos": cos,
+    "diff": diff,
+    "expand": expand,
+    "factor": factor,
+    "integrate": integrate,
+    "limit": limit,
+    "log": log,
+    "sin": sin,
+    "solve": solve,
+    "sqrt": sqrt,
+}
+
+
+def _validate_functions(expression):
+    """
+    Reject function calls outside ALF's allowed mathematical vocabulary.
+    """
+
+    for name in re.findall(r"\b[A-Za-z_]\w*\s*\(", expression):
+        name = name.rstrip("(").strip()
+
+        if name not in LOCAL_DICT:
+            raise CalculationError("unsupported expression")
 
 
 def calculate(expression):
     """
-    Evaluate a basic mathematical expression safely.
+    Evaluate a mathematical expression using the allowed SymPy vocabulary.
     """
 
     expression = expression.replace("^", "**")
+    _validate_functions(expression)
 
-    tree = ast.parse(expression, mode="eval")
-
-    return _evaluate(tree.body)
-
-
-def _evaluate(node):
-    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-        return node.value
-
-    if isinstance(node, ast.BinOp) and type(node.op) in OPERATORS:
-        left = _evaluate(node.left)
-        right = _evaluate(node.right)
-
-        return OPERATORS[type(node.op)](left, right)
-
-    if isinstance(node, ast.UnaryOp) and type(node.op) in OPERATORS:
-        operand = _evaluate(node.operand)
-
-        return OPERATORS[type(node.op)](operand)
-
-    raise ValueError("Unsupported expression")
+    try:
+        return parse_expr(
+            expression,
+            global_dict=PARSER_GLOBALS,
+            local_dict=LOCAL_DICT,
+            transformations=TRANSFORMATIONS,
+        )
+    except (SyntaxError, TypeError, ValueError) as error:
+        raise CalculationError("unsupported expression") from error

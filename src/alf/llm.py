@@ -15,28 +15,26 @@ OLLAMA_MODEL = "qwen3:8b"
 
 def ask(question, research):
     """
-    Send a question and Wikipedia research to the local language model.
+    Send a question and optional Wikipedia research to the local language model.
     """
+
+    if research is None:
+        research_text = "No Wikipedia research was available."
+    else:
+        research_text = research["text"]
 
     prompt = f"""
 {ALF_PERSONALITY}
 
-You are answering the user's question using Wikipedia research supplied by ALF.
+You are answering the user's question as the voice of ALF.
 
-Answer the user's actual question directly.
-Use the supplied research as evidence and context.
-Do not introduce unrelated information.
-Do not invent facts that are not supported by the supplied research.
-If the research does not contain enough information to answer confidently,
-say so.
+Wikipedia research supplied by ALF:
+
+{research_text}
 
 User's question:
 
 {question}
-
-Wikipedia research supplied by ALF:
-
-{research["text"]}
 """
 
     payload = json.dumps(
