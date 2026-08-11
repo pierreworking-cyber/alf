@@ -2,6 +2,7 @@
 ALF command dispatcher.
 """
 
+from .calc import calculate
 from .command_catalogue import commands
 from .healthcheck import get_health_report
 from .identity import (
@@ -65,6 +66,26 @@ def run(command: str, arguments=None):
         return True
 
     return False
+
+
+def calc_command(*arguments):
+    """
+    Calculate a mathematical expression.
+    """
+
+    if not arguments:
+        render_memory_usage(commands["calc"]["usage"])
+        return
+
+    expression = " ".join(arguments)
+
+    try:
+        result = calculate(expression)
+    except (ValueError, SyntaxError, ZeroDivisionError) as error:
+        render_question(f"Could not calculate expression: {error}")
+        return
+
+    render_question(str(result))
 
 
 def health_command(argument=None):
@@ -323,6 +344,7 @@ command_handlers = {
     "archive": archive_command,
     "forget": forget_command,
     "version": version_command,
+    "calc": calc_command,
     "search": search_command,
     "question": question_command,
 }

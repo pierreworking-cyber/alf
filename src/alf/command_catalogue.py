@@ -15,6 +15,15 @@ commands = {
             "alf help remember",
         ],
     },
+    "calc": {
+        "id": "math.calculate",
+        "help": "Calculate a mathematical expression.",
+        "usage": 'alf calc "expression"',
+        "examples": [
+            'alf calc "2^4.26"',
+            'alf calc "12 * 7"',
+        ],
+    },
     "remember": {
         "id": "memory.add",
         "help": "Add a memory.",
