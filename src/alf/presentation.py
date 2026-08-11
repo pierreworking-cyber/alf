@@ -20,6 +20,7 @@ from datetime import datetime
 
 from rich.console import Console
 from rich.table import Table
+from sympy import pretty
 
 console = Console(markup=False)
 
@@ -297,7 +298,7 @@ def render_calculation(result):
     """
 
     console.print()
-    console.print(str(result), markup=False)
+    console.print(pretty(result, use_unicode=True), markup=False)
     console.print()
 
 
