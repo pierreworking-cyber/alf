@@ -8,17 +8,12 @@ import json
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-import trafilatura
-from bs4 import BeautifulSoup
-
 from .identity import get_identity
 
 WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 
 MAX_RESEARCH_CHARS = 6000
-WEB_SEARCH_URL = "https://html.duckduckgo.com/html/"
 MAX_WEB_RESULTS = 3
-MAX_WEB_PAGE_CHARS = 1500
 
 
 def fetch(url):
@@ -34,15 +29,6 @@ def fetch(url):
 
     with urlopen(request, timeout=10) as response:
         return response.read().decode("utf-8")
-
-
-def extract_text(html):
-    """
-    Extract readable text from HTML content.
-    """
-    text = trafilatura.extract(html)
-
-    return text or ""
 
 
 def search_wikipedia(question):
@@ -138,31 +124,28 @@ def research_wikipedia_candidates(question):
 
 def search_web(question):
     """
-    Search the web and return a small set of candidate pages.
+    Search SearXNG and return a small set of candidate pages.
     """
+    url = f"http://127.0.0.1:8080/search?q={quote(question)}&format=json"
 
-    html = fetch(f"{WEB_SEARCH_URL}?q={quote(question)}")
-
-    soup = BeautifulSoup(html, "html.parser")
+    data = json.loads(fetch(url))
 
     results = []
 
-    for result in soup.select(".result")[:MAX_WEB_RESULTS]:
-        link = result.select_one(".result__a")
+    for result in data.get("results", [])[:MAX_WEB_RESULTS]:
+        title = result.get("title")
+        text = result.get("content", "")
+        result_url = result.get("url")
 
-        if link is None:
-            continue
-
-        href = link.get("href")
-
-        if not href:
+        if not title or not result_url:
             continue
 
         results.append(
             {
                 "source": "web",
-                "title": link.get_text(" ", strip=True),
-                "url": href,
+                "title": title,
+                "url": result_url,
+                "text": text,
             }
         )
 
@@ -179,12 +162,7 @@ def research_web(question):
     candidates = []
 
     for result in results:
-        try:
-            html = fetch(result["url"])
-        except Exception:
-            continue
-
-        text = extract_text(html)
+        text = result.get("text", "")
 
         if not text:
             continue
@@ -194,7 +172,7 @@ def research_web(question):
                 "source": "web",
                 "title": result["title"],
                 "url": result["url"],
-                "text": text[:MAX_WEB_PAGE_CHARS],
+                "text": text,
             }
         )
 

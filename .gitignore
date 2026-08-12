@@ -10,3 +10,6 @@ data/
 logs/
 *.kate-swp
 docs/
+# Local SearXNG configuration
+
+.searxng/

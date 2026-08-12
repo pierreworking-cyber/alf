@@ -109,6 +109,8 @@ Potential knowledge sources include:
 
 The knowledge-routing layer should remain explicit, small and testable.
 
+Search architecture: Use the local search service as ALF's general web-search interface. Do not create a separate Wikipedia search layer unless a specific requirement emerges that the general search service cannot satisfy.
+
 ## Data
 
 User data belongs in the user data directory.
