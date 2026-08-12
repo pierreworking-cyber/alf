@@ -14,6 +14,29 @@ OLLAMA_TAGS_URL = "http://127.0.0.1:11434/api/tags"
 OLLAMA_MODEL = "qwen3:4b"
 
 
+def _generate(prompt):
+    """Send a prompt to the configured local language model."""
+    payload = json.dumps(
+        {
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+        }
+    ).encode("utf-8")
+
+    request = Request(
+        OLLAMA_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urlopen(request) as response:
+        result = json.load(response)
+
+    return result["response"]
+
+
 def ask(question, research):
     """
     Send a question and optional Wikipedia research to the local language model.
@@ -38,25 +61,7 @@ User's question:
 {question}
 """
 
-    payload = json.dumps(
-        {
-            "model": OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-        }
-    ).encode("utf-8")
-
-    request = Request(
-        OLLAMA_URL,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    with urlopen(request) as response:
-        result = json.load(response)
-
-    return result["response"]
+    return _generate(prompt)
 
 
 def evaluate_research(question, candidates):
