@@ -69,6 +69,26 @@ Prefer simple modules over clever abstractions.
 Capability discovery currently identifies reporting subsystems.
 Future introspection may distinguish between capability-reporting modules and internal helper modules.
 
+### Answer routing
+
+ALF is responsible for deciding how a question should be answered.
+
+The LLM is a replaceable reasoning and presentation component, not ALF's source of truth.
+
+ALF may answer using:
+
+- system information
+- stored memory
+- external research
+- the LLM's general knowledge
+- a combination of these sources
+
+ALF may also decline to answer when no suitable capability or reliable source is available. An honest limitation is a valid outcome, not a failure.
+
+The routing mechanism should remain small, explicit and testable. Do not introduce confidence scoring, secondary LLM judges, semantic classification or other additional machinery unless simpler routing proves inadequate.
+
+The router should determine what evidence or capability is required before asking the LLM to formulate the final response.
+
 ## Memory relationships
 
 - Do not overwrite old memories.
