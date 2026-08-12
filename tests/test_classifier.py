@@ -1,5 +1,5 @@
 from alf.classifier import classify
-from alf.router import Route
+from alf.routes import Route
 
 
 def test_classify_system_question(monkeypatch):

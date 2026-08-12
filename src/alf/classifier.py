@@ -3,7 +3,7 @@ Question classification for ALF's answer router.
 """
 
 from . import llm
-from .router import Route
+from .routes import Route
 
 EXAMPLES = [
     ("What operating system am I running?", Route.SYSTEM),

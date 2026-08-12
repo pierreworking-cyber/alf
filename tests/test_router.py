@@ -1,4 +1,5 @@
-from alf.router import Route, route
+from alf.router import route
+from alf.routes import Route
 
 
 def test_route_system_question():
