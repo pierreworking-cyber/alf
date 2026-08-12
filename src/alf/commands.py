@@ -9,7 +9,7 @@ from .identity import (
     get_about_information,
     get_identity,
 )
-from .llm import ask
+from .llm import ask, evaluate_research
 from .memory import (
     archive_memory,
     forget_memory,
@@ -46,7 +46,7 @@ from .presentation import (
     render_unknown_option,
     render_version,
 )
-from .research import research_wikipedia
+from .research import research_web, research_wikipedia_candidates
 from .status import get_status_information
 
 
@@ -313,10 +313,41 @@ def question_command(*arguments):
         return
 
     question = " ".join(arguments).strip()
-    research = research_wikipedia(question)
-    answer = ask(question, research)
 
-    render_question(answer)
+    candidates = research_wikipedia_candidates(question)
+    evaluation = evaluate_research(question, candidates)
+
+    if evaluation["relevant"]:
+        relevant_candidates = [
+            candidates[index - 1]
+            for index in evaluation["candidates"]
+            if 1 <= index <= len(candidates)
+        ]
+
+        if relevant_candidates:
+            answer = ask(question, relevant_candidates[0])
+            render_question(answer)
+            return
+
+    web_candidates = research_web(question)
+    web_evaluation = evaluate_research(question, web_candidates)
+
+    if web_evaluation["relevant"]:
+        relevant_candidates = [
+            web_candidates[index - 1]
+            for index in web_evaluation["candidates"]
+            if 1 <= index <= len(web_candidates)
+        ]
+
+        if relevant_candidates:
+            answer = ask(question, relevant_candidates[0])
+            render_question(answer)
+            return
+
+    render_question(
+        "I couldn't find reliable research that answers your question. "
+        "I don't want to guess."
+    )
 
 
 def about_command(argument=None):

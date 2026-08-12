@@ -59,6 +59,71 @@ User's question:
     return result["response"]
 
 
+def evaluate_research(question, candidates):
+    """
+    Ask the local language model whether the supplied research is relevant.
+    """
+
+    research_text = "\n\n".join(
+        f"Candidate {index + 1}: {candidate['title']}\n{candidate['text']}"
+        for index, candidate in enumerate(candidates)
+    )
+
+    prompt = f"""
+You are evaluating research supplied to ALF.
+
+Determine whether any of the supplied research is genuinely relevant
+to answering the user's question.
+
+Do not guess.
+Do not infer relevance merely because words happen to overlap.
+If the research does not support the question, mark it as not relevant.
+
+Return JSON only in this form:
+
+{{
+    "relevant": true or false,
+    "candidates": [numbers of relevant candidates],
+    "reason": "brief explanation"
+}}
+
+User's question:
+{question}
+
+Research:
+{research_text}
+"""
+
+    payload = json.dumps(
+        {
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+        }
+    ).encode("utf-8")
+
+    request = Request(
+        OLLAMA_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urlopen(request) as response:
+        result = json.load(response)
+
+    try:
+        evaluation = json.loads(result["response"])
+    except (json.JSONDecodeError, TypeError, KeyError) as error:
+        raise ValueError("Invalid research evaluation response") from error
+
+    return {
+        "relevant": evaluation.get("relevant", False),
+        "candidates": evaluation.get("candidates", []),
+        "reason": evaluation.get("reason", ""),
+    }
+
+
 def check_ollama():
     """
     Check whether Ollama is available and ALF's configured model is installed.

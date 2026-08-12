@@ -9,12 +9,16 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 import trafilatura
+from bs4 import BeautifulSoup
 
 from .identity import get_identity
 
 WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 
 MAX_RESEARCH_CHARS = 6000
+WEB_SEARCH_URL = "https://html.duckduckgo.com/html/"
+MAX_WEB_RESULTS = 3
+MAX_WEB_PAGE_CHARS = 1500
 
 
 def fetch(url):
@@ -103,3 +107,97 @@ def research_wikipedia(question):
         "page_id": result["page_id"],
         "text": fetch_wikipedia_page(result["page_id"])[:MAX_RESEARCH_CHARS],
     }
+
+
+def research_wikipedia_candidates(question):
+    """
+    Search Wikipedia and return a small evidence set for evaluation.
+    """
+
+    results = search_wikipedia(question)
+
+    candidates = []
+
+    for result in results[:3]:
+        text = fetch_wikipedia_page(result["page_id"])
+
+        if not text:
+            continue
+
+        candidates.append(
+            {
+                "source": "wikipedia",
+                "title": result["title"],
+                "page_id": result["page_id"],
+                "text": text[:1500],
+            }
+        )
+
+    return candidates
+
+
+def search_web(question):
+    """
+    Search the web and return a small set of candidate pages.
+    """
+
+    html = fetch(f"{WEB_SEARCH_URL}?q={quote(question)}")
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    results = []
+
+    for result in soup.select(".result")[:MAX_WEB_RESULTS]:
+        link = result.select_one(".result__a")
+
+        if link is None:
+            continue
+
+        href = link.get("href")
+
+        if not href:
+            continue
+
+        results.append(
+            {
+                "source": "web",
+                "title": link.get_text(" ", strip=True),
+                "url": href,
+            }
+        )
+
+    return results
+
+
+def research_web(question):
+    """
+    Search the web and return a small evidence set for evaluation.
+    """
+
+    results = search_web(question)
+
+    candidates = []
+
+    for result in results:
+        try:
+            html = fetch(result["url"])
+        except Exception:
+            continue
+
+        text = extract_text(html)
+
+        if not text:
+            continue
+
+        candidates.append(
+            {
+                "source": "web",
+                "title": result["title"],
+                "url": result["url"],
+                "text": text[:MAX_WEB_PAGE_CHARS],
+            }
+        )
+
+    return candidates
+
+
