@@ -43,7 +43,6 @@ from .presentation import (
     render_memory_usage,
     render_question,
     render_status,
-    render_unknown_option,
     render_version,
 )
 from .research import research_web, research_wikipedia_candidates
@@ -193,23 +192,38 @@ def parse_memory_query_options(arguments):
     while index < len(arguments):
         argument = arguments[index]
 
-        if argument == "--all":
+        if argument in ("-a", "--all"):
             options["include_archived"] = True
 
-        elif argument == "--category":
+        elif argument in ("-c", "--category"):
             index += 1
 
-            if index < len(arguments):
-                options["category"] = arguments[index]
+            if index >= len(arguments):
+                render_command_structure_error("memories")
+                return None
 
-        elif argument == "--group":
+            category = resolve_category(arguments[index])
+
+            if category is None:
+                render_invalid_memory_category(
+                    arguments[index],
+                    get_memory_categories(),
+                )
+                return None
+
+            options["category"] = category
+
+        elif argument in ("-g", "--group"):
             index += 1
 
-            if index < len(arguments):
-                options["group"] = arguments[index]
+            if index >= len(arguments):
+                render_command_structure_error("memories")
+                return None
+
+            options["group"] = arguments[index]
 
         else:
-            render_unknown_option(argument)
+            render_command_structure_error("memories")
             return None
 
         index += 1

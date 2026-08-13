@@ -336,3 +336,138 @@ def test_remember_rejects_category_option_without_content(monkeypatch):
     ) is True
 
     assert output == ["remember"]
+
+
+def test_memories_accepts_short_category_option(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "get_memories",
+        lambda options: captured.setdefault("options", options) or [],
+    )
+    monkeypatch.setattr(
+        commands,
+        "render_memories",
+        lambda memories, options: None,
+    )
+
+    commands.memories_command(
+        "-c",
+        "pref",
+    )
+
+    assert captured["options"]["category"] == "preference"
+
+
+def test_search_accepts_short_category_option(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "search_memories",
+        lambda term, options: captured.setdefault("options", options) or [],
+    )
+    monkeypatch.setattr(
+        commands,
+        "render_memories",
+        lambda memories, options: None,
+    )
+
+    commands.search_command(
+        "Peter",
+        "-c",
+        "pref",
+    )
+
+    assert captured["options"]["category"] == "preference"
+
+
+def test_memories_accepts_short_all_option(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "get_memories",
+        lambda options: captured.setdefault("options", options) or [],
+    )
+    monkeypatch.setattr(
+        commands,
+        "render_memories",
+        lambda memories, options: None,
+    )
+
+    commands.memories_command("-a")
+
+    assert captured["options"]["include_archived"] is True
+
+
+def test_memories_accepts_short_group_option(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "get_memories",
+        lambda options: captured.setdefault("options", options) or [],
+    )
+    monkeypatch.setattr(
+        commands,
+        "render_memories",
+        lambda memories, options: None,
+    )
+
+    commands.memories_command(
+        "-g",
+        "category",
+    )
+
+    assert captured["options"]["group"] == "category"
+
+
+def test_memories_rejects_unknown_short_category_option(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_invalid_memory_category",
+        lambda category, categories: output.append(
+            (category, categories)
+        ),
+    )
+
+    commands.memories_command(
+        "-c",
+        "banana",
+    )
+
+    assert output == [
+        (
+            "banana",
+            ["note", "fact", "decision", "preference"],
+        )
+    ]
+
+
+def test_search_rejects_unknown_short_category_option(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_invalid_memory_category",
+        lambda category, categories: output.append(
+            (category, categories)
+        ),
+    )
+
+    commands.search_command(
+        "Peter",
+        "-c",
+        "banana",
+    )
+
+    assert output == [
+        (
+            "banana",
+            ["note", "fact", "decision", "preference"],
+        )
+    ]
