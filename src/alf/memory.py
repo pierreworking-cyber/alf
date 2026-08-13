@@ -112,6 +112,57 @@ def validate_related_memory_ids(related_memory_ids):
     return ",".join(memory_ids)
 
 
+def relate_memory(memory_id: int, related_memory_ids):
+    """
+    Add relationships to an existing memory.
+
+    Relationships are directional and additive. Existing relationships
+    are preserved and duplicate relationship IDs are ignored.
+    """
+
+    memory = get_memory(memory_id)
+
+    if memory is None:
+        return False
+
+    if not related_memory_ids:
+        return False
+
+    new_ids = related_memory_ids.split(",")
+
+    for related_id in new_ids:
+        if (
+            not related_id.isdigit()
+            or int(related_id) <= 0
+            or int(related_id) == memory_id
+        ):
+            return False
+
+        if get_memory(int(related_id)) is None:
+            return False
+
+    existing_ids = []
+
+    if memory["related_memory_ids"]:
+        existing_ids = memory["related_memory_ids"].split(",")
+
+    for related_id in new_ids:
+        if related_id not in existing_ids:
+            existing_ids.append(related_id)
+
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE memories
+            SET related_memory_ids = ?
+            WHERE id = ?
+            """,
+            (",".join(existing_ids), memory_id),
+        )
+
+    return ",".join(existing_ids)
+
+
 def remember(
     category: str,
     content: str,

@@ -18,6 +18,7 @@ from .memory import (
     get_memory_history,
     get_memory_query_options,
     get_related_memories,
+    relate_memory,
     remember,
     search_memories,
 )
@@ -39,6 +40,7 @@ from .presentation import (
     render_memory_history,
     render_memory_not_numeric,
     render_memory_positive,
+    render_memory_related,
     render_memory_saved,
     render_memory_usage,
     render_question,
@@ -318,6 +320,41 @@ def history_command(*arguments):
     render_memory_history(history)
 
 
+def relate_command(*arguments):
+    if len(arguments) != 2:
+        render_memory_usage(commands["relate"]["usage"])
+        return
+
+    memory_id, related_memory_ids = arguments
+
+    try:
+        memory_id = int(memory_id)
+    except ValueError:
+        render_memory_not_numeric()
+        return
+
+    if memory_id <= 0:
+        render_memory_positive()
+        return
+
+    result = relate_memory(
+        memory_id,
+        related_memory_ids,
+    )
+
+    if result is False:
+        render_invalid_related_memory(
+            related_memory_ids,
+            commands["relate"]["usage"],
+        )
+        return
+
+    render_memory_related(
+        memory_id,
+        result,
+    )
+
+
 def archive_command(memory_id=None):
     if not memory_id:
         render_memory_usage(commands["archive"]["usage"])
@@ -427,6 +464,7 @@ command_handlers = {
     "memories": memories_command,
     "categories": categories_command,
     "memory": memory_command,
+    "relate": relate_command,
     "history": history_command,
     "health": health_command,
     "about": about_command,

@@ -494,6 +494,16 @@ def render_memory_saved(category):
     console.print()
 
 
+def render_memory_related(memory_id, related_memory_ids):
+    """
+    Confirm that memory relationships were added.
+    """
+
+    success(
+        f"Memory {memory_id} related to {related_memory_ids}."
+    )
+
+
 def render_memory_forgotten(memory_id):
     """
     Confirm that a memory has been forgotten.

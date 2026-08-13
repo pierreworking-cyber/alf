@@ -45,6 +45,20 @@ commands = {
             'alf remember -c preference "Peter prefers Labradors" -r 4,12',
         ],
     },
+    "relate": {
+        "id": "memory.relate",
+        "help": "Relate an existing memory to other memories.",
+        "usage": "alf relate <id> <ids>",
+        "notes": [
+            "Relationships are directional.",
+            "Existing relationships are preserved.",
+            "Duplicate relationships are ignored.",
+        ],
+        "examples": [
+            "alf relate 47 46",
+            "alf relate 47 46,43",
+        ],
+    },
     "memories": {
         "id": "memory.list",
         "help": "Recall previous memories.",

@@ -471,3 +471,92 @@ def test_search_rejects_unknown_short_category_option(monkeypatch):
             ["note", "fact", "decision", "preference"],
         )
     ]
+
+
+def test_relate_command_accepts_source_and_target_ids(monkeypatch):
+    captured = {}
+
+    def fake_relate_memory(memory_id, related_memory_ids):
+        captured["memory_id"] = memory_id
+        captured["related_memory_ids"] = related_memory_ids
+        return "46"
+
+    monkeypatch.setattr(
+        commands,
+        "relate_memory",
+        fake_relate_memory,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_related",
+        lambda memory_id, related_memory_ids: captured.setdefault(
+            "rendered",
+            (memory_id, related_memory_ids),
+        ),
+    )
+
+    commands.relate_command(
+        "47",
+        "46",
+    )
+
+    assert captured["memory_id"] == 47
+    assert captured["related_memory_ids"] == "46"
+    assert captured["rendered"] == (47, "46")
+
+
+def test_relate_command_rejects_missing_arguments(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_usage",
+        lambda usage: output.append(usage),
+    )
+
+    commands.relate_command("47")
+
+    assert output == [
+        commands.commands["relate"]["usage"],
+    ]
+
+
+def test_relate_command_rejects_non_numeric_source(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_not_numeric",
+        lambda: output.append(True),
+    )
+
+    commands.relate_command(
+        "banana",
+        "46",
+    )
+
+    assert output == [True]
+
+
+def test_run_resolves_relate_command(monkeypatch):
+    captured = {}
+
+    def fake_relate_command(*arguments):
+        captured["arguments"] = arguments
+
+    monkeypatch.setitem(
+        commands.command_handlers,
+        "relate",
+        fake_relate_command,
+    )
+
+    assert commands.run(
+        "rel",
+        ["47", "46"],
+    ) is True
+
+    assert captured["arguments"] == (
+        "47",
+        "46",
+    )

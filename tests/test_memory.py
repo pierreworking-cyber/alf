@@ -113,6 +113,66 @@ def test_validate_related_memory_ids_rejects_invalid_id(database):
     assert memory.validate_related_memory_ids("-1") is False
 
 
+def test_relate_memory_adds_relationship(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+    memory.remember("note", "Third memory.")
+
+    result = memory.relate_memory(3, "1,2")
+
+    assert result == "1,2"
+    assert memory.get_memory(3)["related_memory_ids"] == "1,2"
+
+
+def test_relate_memory_preserves_existing_relationships(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+    memory.remember(
+        "note",
+        "Third memory.",
+        related_memory_ids="1",
+    )
+
+    result = memory.relate_memory(3, "2")
+
+    assert result == "1,2"
+    assert memory.get_memory(3)["related_memory_ids"] == "1,2"
+
+
+def test_relate_memory_ignores_duplicate_relationships(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+
+    memory.remember(
+        "note",
+        "Third memory.",
+        related_memory_ids="1",
+    )
+
+    result = memory.relate_memory(3, "1")
+
+    assert result == "1"
+    assert memory.get_memory(3)["related_memory_ids"] == "1"
+
+
+def test_relate_memory_rejects_missing_source(database):
+    memory.remember("note", "Existing memory.")
+
+    assert memory.relate_memory(999, "1") is False
+
+
+def test_relate_memory_rejects_missing_target(database):
+    memory.remember("note", "Existing memory.")
+
+    assert memory.relate_memory(1, "999") is False
+
+
+def test_relate_memory_rejects_self_relationship(database):
+    memory.remember("note", "Existing memory.")
+
+    assert memory.relate_memory(1, "1") is False
+
+
 def test_validate_related_memory_ids_requires_existing_memory(database):
     memory.remember("note", "Existing memory.")
 
@@ -560,3 +620,4 @@ def test_capability(database):
         "total_memories": 0,
         "categories": [],
     }
+
