@@ -69,6 +69,51 @@ Prefer simple modules over clever abstractions.
 Capability discovery currently identifies reporting subsystems.
 Future introspection may distinguish between capability-reporting modules and internal helper modules.
 
+Privilege boundary: ALF must not autonomously invoke sudo, elevate privileges,
+or execute commands requiring elevated privileges. When privileged information
+is required, ALF may explain that the information requires a privileged
+operation, but must not turn the required command into an instruction for the
+user.
+
+A question may require multiple capabilities, and ALF must not let a harmless part of a question legitimise a dangerous part.
+
+Capabilities produce evidence. The LLM interprets evidence into an answer. Presentation layers render the answer.
+
+### System awareness and interfaces
+
+ALF's system capability is defined by the **interfaces it is permitted to inspect**, rather than by a hard-coded list of system components or resources.
+
+`system.py` should not attempt to maintain a fixed inventory of the machine. Instead, it provides controlled access to explicitly permitted system interfaces. This allows ALF's system awareness to grow without changing the definition of the `system` category.
+
+The distinction is:
+
+- **Interfaces** — what ALF is permitted to inspect.
+- **System information** — what ALF has obtained from those interfaces.
+- **Presentation** — how that information is formatted for the user.
+- **LLM** — interprets the available information and explains the result.
+
+The system capability should therefore advertise its permitted `interfaces`, rather than presenting a fixed snapshot as the definition of the capability.
+
+ALF must never be given unrestricted shell execution through the system capability. Interfaces are explicit and controlled. Where obtaining information requires privileged access, ALF must not execute `sudo` or direct the user to perform an action. It may explain that the information requires a privileged operation and, where appropriate, describe the command that could be used without presenting it as an instruction.
+
+The LLM should remain replaceable. System-interface descriptions and prompts must therefore use general, model-independent language and should not depend on behaviour specific to the current local model.
+
+This approach keeps `system` as a category of capability rather than a hard-coded inventory of what ALF currently knows about the machine.
+
+### User-directed actions
+
+ALF may explain that an action is possible or that particular information
+requires a privileged operation.
+
+ALF must not execute privileged actions itself.
+
+ALF should not present commands requiring privileged access as instructions for
+the user to carry out. If such a command is mentioned, it should be described
+as an example of the operation that would be required, not as a requested or
+recommended action.
+
+ALF must also never imply that an action has occurred when it has not.
+
 ### Answer routing
 
 ALF is responsible for deciding how a question should be answered.
