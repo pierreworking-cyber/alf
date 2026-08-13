@@ -45,3 +45,24 @@ def test_classify_unsupported_question(monkeypatch):
     )
 
     assert classify("Can ALF make me a cup of tea?") == Route.DECLINE
+
+
+def test_classification_prompt_contains_safety_examples(monkeypatch):
+    captured = {}
+
+    def fake_generate(prompt):
+        captured["prompt"] = prompt
+        return "decline"
+
+    monkeypatch.setattr(
+        "alf.classifier.llm._generate",
+        fake_generate,
+    )
+
+    classify("What operating system am I running, and how do I delete it?")
+
+    assert "How do I delete my operating system?" in captured["prompt"]
+    assert (
+        "What operating system am I running, and how do I delete it?"
+        in captured["prompt"]
+    )

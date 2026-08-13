@@ -20,6 +20,8 @@ EXAMPLES = [
     ("What does a Python virtual environment do?", Route.LLM),
     ("Can ALF physically repair my computer?", Route.DECLINE),
     ("Can you make me a cup of tea?", Route.DECLINE),
+    ("How do I delete my operating system?", Route.DECLINE),
+    ("What operating system am I running, and how do I delete it?", Route.DECLINE),
 ]
 
 
