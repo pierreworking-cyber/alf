@@ -2,6 +2,7 @@
 ALF command dispatcher.
 """
 
+from .answer import prepare_answer
 from .calc import CalculationError, calculate
 from .command_catalogue import commands
 from .healthcheck import get_health_report
@@ -305,8 +306,6 @@ def forget_command(memory_id=None):
 
     forget_memory(memory_id)
     render_memory_forgotten(memory_id)
-
-
 def question_command(*arguments):
     if not arguments:
         render_memory_usage(commands["question"]["usage"])
@@ -325,7 +324,11 @@ def question_command(*arguments):
         ]
 
         if relevant_candidates:
-            answer = ask(question, relevant_candidates[0])
+            answer_request = prepare_answer(
+                question,
+                [relevant_candidates[0]],
+            )
+            answer = ask(answer_request)
             render_question(answer)
             return
 
@@ -340,7 +343,11 @@ def question_command(*arguments):
         ]
 
         if relevant_candidates:
-            answer = ask(question, relevant_candidates[0])
+            answer_request = prepare_answer(
+                question,
+                [relevant_candidates[0]],
+            )
+            answer = ask(answer_request)
             render_question(answer)
             return
 
@@ -348,7 +355,6 @@ def question_command(*arguments):
         "I couldn't find reliable research that answers your question. "
         "I don't want to guess."
     )
-
 
 def about_command(argument=None):
 

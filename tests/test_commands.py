@@ -32,13 +32,21 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
     monkeypatch.setattr(
         commands,
         "research_web",
-        lambda question: pytest.fail("Web search should not be used"),
+        lambda question: pytest.fail(
+            "Web search should not be used"
+        ),
     )
+
+    captured = {}
+
+    def fake_ask(answer_request):
+        captured["answer_request"] = answer_request
+        return "Paris."
 
     monkeypatch.setattr(
         commands,
         "ask",
-        lambda question, research: "Paris.",
+        fake_ask,
     )
 
     output = []
@@ -49,10 +57,21 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
         lambda answer: output.append(answer),
     )
 
-    commands.question_command("What", "is", "the", "capital", "of", "France?")
+    commands.question_command(
+        "What",
+        "is",
+        "the",
+        "capital",
+        "of",
+        "France?",
+    )
+
+    assert captured["answer_request"] == {
+        "question": "What is the capital of France?",
+        "evidence": [wikipedia_candidates[0]],
+    }
 
     assert output == ["Paris."]
-
 
 def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     web_candidates = [
@@ -103,7 +122,7 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     monkeypatch.setattr(
         commands,
         "ask",
-        lambda question, research: "The film is ...",
+        lambda answer_request: "The film is ...",
     )
 
     output = []
@@ -148,7 +167,7 @@ def test_question_command_admits_when_no_research_is_relevant(monkeypatch):
     monkeypatch.setattr(
         commands,
         "ask",
-        lambda question, research: pytest.fail(
+        lambda answer_request: pytest.fail(
             "ALF must not answer without evidence"
         ),
     )

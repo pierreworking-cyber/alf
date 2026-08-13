@@ -37,24 +37,27 @@ def _generate(prompt):
     return result["response"]
 
 
-def ask(question, research):
+def ask(answer_request):
     """
-    Send a question and optional Wikipedia research to the local language model.
+    Send an answer request to the local language model.
     """
 
-    if research is None:
-        research_text = "No Wikipedia research was available."
+    question = answer_request["question"]
+    evidence = answer_request["evidence"]
+
+    if evidence:
+        evidence_text = str(evidence)
     else:
-        research_text = research["text"]
+        evidence_text = "No evidence was available."
 
     prompt = f"""
 {ALF_PERSONALITY}
 
 You are answering the user's question as the voice of ALF.
 
-Wikipedia research supplied by ALF:
+Evidence supplied by ALF:
 
-{research_text}
+{evidence_text}
 
 User's question:
 

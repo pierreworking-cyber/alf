@@ -105,13 +105,17 @@ def test_ask_returns_ollama_response(monkeypatch):
     monkeypatch.setattr(llm, "urlopen", fake_urlopen)
 
     result = llm.ask(
-        "What is the capital of France?",
         {
-            "source": "wikipedia",
-            "title": "France",
-            "page_id": 123,
-            "text": "France is a country in Europe.",
-        },
+            "question": "What is the capital of France?",
+            "evidence": [
+                {
+                    "source": "wikipedia",
+                    "title": "France",
+                    "page_id": 123,
+                    "text": "France is a country in Europe.",
+                }
+            ],
+        }
     )
 
     assert result == "The answer from Ollama."
@@ -137,7 +141,12 @@ def test_ask_handles_no_research(monkeypatch):
 
     monkeypatch.setattr(llm, "urlopen", fake_urlopen)
 
-    result = llm.ask("What is 2 + 2?", None)
+    result = llm.ask(
+        {
+            "question": "What is 2 + 2?",
+            "evidence": [],
+        }
+    )
 
     assert result == "An answer without research."
 
