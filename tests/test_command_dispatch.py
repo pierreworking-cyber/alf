@@ -1,0 +1,175 @@
+from alf import commands
+
+
+def test_run_resolves_short_command_prefix(monkeypatch):
+    captured = {}
+
+    def fake_remember_command(*arguments):
+        captured["arguments"] = arguments
+
+    monkeypatch.setitem(
+        commands.command_handlers,
+        "remember",
+        fake_remember_command,
+    )
+
+    assert commands.run("rem", ["note", "Dave is fictional"]) is True
+
+    assert captured["arguments"] == (
+        "note",
+        "Dave is fictional",
+    )
+
+
+def test_run_resolves_longer_command_prefix(monkeypatch):
+    captured = {}
+
+    def fake_remember_command(*arguments):
+        captured["arguments"] = arguments
+
+    monkeypatch.setitem(
+        commands.command_handlers,
+        "remember",
+        fake_remember_command,
+    )
+
+    assert commands.run("reme", ["note", "Dave is fictional"]) is True
+
+    assert captured["arguments"] == (
+        "note",
+        "Dave is fictional",
+    )
+
+
+def test_run_rejects_unknown_natural_language_command():
+    assert commands.run("make", ["a", "memory", "Dave is fictional"]) is False
+
+
+def test_run_resolves_category_alias(monkeypatch):
+    captured = {}
+
+    def fake_remember_command(*arguments):
+        captured["arguments"] = arguments
+
+    monkeypatch.setitem(
+        commands.command_handlers,
+        "remember",
+        fake_remember_command,
+    )
+
+    assert commands.run(
+        "rem",
+        ["notes", "Dave is fictional"],
+    ) is True
+
+    assert captured["arguments"] == (
+        "notes",
+        "Dave is fictional",
+    )
+
+
+def test_run_rejects_unknown_command():
+    assert commands.run(
+        "make",
+        ["a", "memory"],
+    ) is False
+
+
+def test_remember_command_resolves_category_prefix(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "get_memory_categories",
+        lambda: ["note", "fact", "decision", "preference"],
+    )
+
+    def fake_remember(category, content, related_memory_ids=None):
+        captured["category"] = category
+        captured["content"] = content
+        captured["related_memory_ids"] = related_memory_ids
+        return True
+
+    monkeypatch.setattr(
+        commands,
+        "remember",
+        fake_remember,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_saved",
+        lambda category: captured.setdefault("saved", category),
+    )
+
+    commands.remember_command(
+        "notes",
+        "Dave is fictional",
+    )
+
+    assert captured["category"] == "note"
+    assert captured["content"] == "Dave is fictional"
+    assert captured["related_memory_ids"] is None
+    assert captured["saved"] == "note"
+
+
+def test_remember_command_rejects_unknown_category(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "get_memory_categories",
+        lambda: ["note", "fact", "decision", "preference"],
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_invalid_memory_category",
+        lambda category, categories: output.append(
+            (category, categories)
+        ),
+    )
+
+    commands.remember_command(
+        "banana",
+        "Dave is fictional",
+    )
+
+    assert output == [
+        (
+            "banana",
+            ["note", "fact", "decision", "preference"],
+        )
+    ]
+
+
+def test_run_resolves_command_and_category_together(monkeypatch):
+    captured = {}
+
+    def fake_remember(category, content, related_memory_ids=None):
+        captured["category"] = category
+        captured["content"] = content
+        captured["related_memory_ids"] = related_memory_ids
+        return True
+
+    monkeypatch.setattr(
+        commands,
+        "remember",
+        fake_remember,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_saved",
+        lambda category: captured.setdefault("saved", category),
+    )
+
+    assert commands.run(
+        "reme",
+        ["notes", "Dave is fictional"],
+    ) is True
+
+    assert captured["category"] == "note"
+    assert captured["content"] == "Dave is fictional"
+    assert captured["related_memory_ids"] is None
+    assert captured["saved"] == "note"

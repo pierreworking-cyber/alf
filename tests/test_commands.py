@@ -1,6 +1,6 @@
 import pytest
 
-from alf import commands
+from alf import answer, commands
 
 
 def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
@@ -44,7 +44,7 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
         return "Paris."
 
     monkeypatch.setattr(
-        commands,
+        answer,
         "ask",
         fake_ask,
     )
@@ -72,6 +72,7 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
     }
 
     assert output == ["Paris."]
+
 
 def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     web_candidates = [
@@ -120,7 +121,7 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     )
 
     monkeypatch.setattr(
-        commands,
+        answer,
         "ask",
         lambda answer_request: "The film is ...",
     )
@@ -165,7 +166,7 @@ def test_question_command_admits_when_no_research_is_relevant(monkeypatch):
     )
 
     monkeypatch.setattr(
-        commands,
+        answer,
         "ask",
         lambda answer_request: pytest.fail(
             "ALF must not answer without evidence"

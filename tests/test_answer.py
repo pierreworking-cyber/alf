@@ -1,7 +1,7 @@
-from alf.answer import prepare_answer
+from alf import answer
 
 
-def test_prepare_answer_combines_question_and_evidence():
+def test_prepare_answer_sends_question_and_evidence_to_llm(monkeypatch):
     evidence = [
         {
             "source": "platform",
@@ -10,24 +10,52 @@ def test_prepare_answer_combines_question_and_evidence():
         }
     ]
 
-    result = prepare_answer(
+    captured = {}
+
+    def fake_ask(answer_request):
+        captured["request"] = answer_request
+        return "Linux."
+
+    monkeypatch.setattr(
+        answer,
+        "ask",
+        fake_ask,
+    )
+
+    result = answer.prepare_answer(
         "What operating system am I running?",
         evidence,
     )
 
-    assert result == {
+    assert captured["request"] == {
         "question": "What operating system am I running?",
         "evidence": evidence,
     }
 
+    assert result == "Linux."
 
-def test_prepare_answer_accepts_no_evidence():
-    result = prepare_answer(
+
+def test_prepare_answer_sends_empty_evidence_to_llm(monkeypatch):
+    captured = {}
+
+    def fake_ask(answer_request):
+        captured["request"] = answer_request
+        return "I don't know."
+
+    monkeypatch.setattr(
+        answer,
+        "ask",
+        fake_ask,
+    )
+
+    result = answer.prepare_answer(
         "What motherboard model does this computer have?",
         [],
     )
 
-    assert result == {
+    assert captured["request"] == {
         "question": "What motherboard model does this computer have?",
         "evidence": [],
     }
+
+    assert result == "I don't know."

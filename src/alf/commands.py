@@ -5,12 +5,10 @@ ALF command dispatcher.
 from .answer import prepare_answer
 from .calc import CalculationError, calculate
 from .command_catalogue import commands
+from .command_resolution import resolve_category, resolve_command
 from .healthcheck import get_health_report
-from .identity import (
-    get_about_information,
-    get_identity,
-)
-from .llm import ask, evaluate_research
+from .identity import get_about_information, get_identity
+from .llm import evaluate_research
 from .memory import (
     archive_memory,
     forget_memory,
@@ -53,22 +51,23 @@ from .status import get_status_information
 
 def run(command: str, arguments=None):
     """
-    Route a command name and its arguments to the appropriate handler.
+    Route a user command through deterministic command resolution.
 
-    This is the entry point to ALF's command layer. The command handlers
-    themselves deal with the work; this function is responsible only for
-    dispatching the request to the right handler.
+    The resolver permits exact command names and unambiguous leading
+    prefixes, but does not infer natural-language intent.
     """
 
-    if command in command_handlers:
-        if arguments:
-            command_handlers[command](*arguments)
-        else:
-            command_handlers[command]()
+    command = resolve_command(command)
 
-        return True
+    if command is None:
+        return False
 
-    return False
+    if arguments:
+        command_handlers[command](*arguments)
+    else:
+        command_handlers[command]()
+
+    return True
 
 
 def calc_command(*arguments):
@@ -115,7 +114,15 @@ def remember_command(*arguments):
         render_memory_usage(commands["remember"]["usage"])
         return
 
-    category = arguments[0]
+    category = resolve_category(arguments[0])
+
+    if category is None:
+        render_invalid_memory_category(
+            arguments[0],
+            get_memory_categories(),
+        )
+        return
+
     content = arguments[1]
 
     related_memory_ids = None
@@ -126,12 +133,6 @@ def remember_command(*arguments):
             return
 
         related_memory_ids = arguments[3]
-
-    categories = get_memory_categories()
-
-    if category not in categories:
-        render_invalid_memory_category(category, categories)
-        return
 
     content = content.strip()
     result = remember(
@@ -306,6 +307,8 @@ def forget_command(memory_id=None):
 
     forget_memory(memory_id)
     render_memory_forgotten(memory_id)
+
+
 def question_command(*arguments):
     if not arguments:
         render_memory_usage(commands["question"]["usage"])
@@ -324,11 +327,10 @@ def question_command(*arguments):
         ]
 
         if relevant_candidates:
-            answer_request = prepare_answer(
+            answer = prepare_answer(
                 question,
                 [relevant_candidates[0]],
             )
-            answer = ask(answer_request)
             render_question(answer)
             return
 
@@ -343,11 +345,10 @@ def question_command(*arguments):
         ]
 
         if relevant_candidates:
-            answer_request = prepare_answer(
+            answer = prepare_answer(
                 question,
                 [relevant_candidates[0]],
             )
-            answer = ask(answer_request)
             render_question(answer)
             return
 
