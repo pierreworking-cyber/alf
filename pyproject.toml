@@ -8,12 +8,9 @@ version = "0.2.0"
 description = "Peter's local computing companion"
 requires-python = ">=3.11"
 dependencies = [
-    "beautifulsoup4",
     "rich",
     "sympy",
-    "trafilatura>=2.2.0",
 ]
-
 
 [project.scripts]
 alf = "alf.main:main"
@@ -29,3 +26,6 @@ select = [
     "I",
     "UP",
 ]
+
+[tool.pytest.ini_options]
+addopts = "--ignore=tests/test_llm_knowledge.py"

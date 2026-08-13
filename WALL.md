@@ -79,6 +79,47 @@ A question may require multiple capabilities, and ALF must not let a harmless pa
 
 Capabilities produce evidence. The LLM interprets evidence into an answer. Presentation layers render the answer.
 
+### LLM knowledge-provider qualification
+
+The local LLM must not be assumed to be a reliable source of factual knowledge merely because it can produce fluent answers.
+
+ALF tested the configured `qwen3:4b` model against a fixed 20-question factual knowledge corpus. The qualification rule was deliberately strict: one substantive factual failure is sufficient to reject the model as an independent knowledge provider.
+
+The initial qualification produced:
+
+- 20 questions tested.
+- 19 acceptable answers.
+- 1 substantive failure.
+- Result: **rejected as a knowledge provider**.
+
+The failed question was:
+
+> What does Python's `venv` module provide?
+
+The model answered:
+
+> Isolated environments for dependency management.
+
+This was considered insufficiently precise. Python's `venv` module provides virtual environments; describing them only as isolated environments for dependency management does not adequately answer the question.
+
+The result reinforces ALF's architectural separation between **evidence** and **interpretation**. The local LLM may be useful for interpreting supplied evidence and producing a natural-language answer, but its own general knowledge must not be treated as authoritative evidence.
+
+`tests/knowledge_corpus.py` and `tests/test_llm_knowledge.py` are retained as an explicit model-qualification benchmark. They are not part of ALF's normal runtime operation and are excluded from the ordinary `pytest -q` test run. The benchmark can be invoked explicitly when evaluating a candidate LLM.
+
+If the configured LLM is changed in future, the qualification benchmark may be rerun to determine whether the new model can be admitted as a knowledge provider. A model must satisfy the same qualification standard rather than the corpus being weakened to accommodate its answers.
+
+The qualification benchmark is therefore a **gate**, not a measure used to justify trusting an otherwise unqualified model.
+
+#### LLM knowledge evaluation experiment
+
+Two local LLMs were tested as independent evaluators of candidate factual answers against the deterministic knowledge corpus. The experiment demonstrated that agreement between LLM evaluators does not establish factual correctness. Both Qwen3:4B and Qwen3:8B independently accepted several objectively rejected answers, including approximate or semantically incorrect answers.
+
+The experiment also exposed limitations in the deterministic corpus: exact string matching can reject semantically correct answers and accept answers containing correct phrases while making an incorrect assertion.
+
+Conclusion: LLM agreement is not sufficient evidence for promoting model knowledge into ALF's trusted knowledge base. LLMs remain interpreters of supplied evidence rather than authoritative knowledge providers. The experiment is retained as evidence supporting this architectural decision.
+
+
+
 ### System awareness and interfaces
 
 ALF's system capability is defined by the **interfaces it is permitted to inspect**, rather than by a hard-coded list of system components or resources.
