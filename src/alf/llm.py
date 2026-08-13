@@ -102,26 +102,10 @@ Research:
 {research_text}
 """
 
-    payload = json.dumps(
-        {
-            "model": OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-        }
-    ).encode("utf-8")
-
-    request = Request(
-        OLLAMA_URL,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    with urlopen(request) as response:
-        result = json.load(response)
+    response = _generate(prompt)
 
     try:
-        evaluation = json.loads(result["response"])
+        evaluation = json.loads(response)
     except (json.JSONDecodeError, TypeError, KeyError) as error:
         raise ValueError("Invalid research evaluation response") from error
 
