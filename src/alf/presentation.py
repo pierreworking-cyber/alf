@@ -83,6 +83,31 @@ MEMORY_CATEGORY_PRIORITY = [
 ]
 
 
+def pause():
+    """
+    Pause until the user presses Return.
+    """
+
+    input()
+
+
+def render_command_structure_error(command):
+    """
+    Render an improperly structured command error.
+
+    The caller supplies the canonical command name so the user
+    can immediately discover the correct syntax through help.
+    """
+
+    console.print()
+    error("Improper command structure.")
+    console.print()
+    info(f"See: alf help {command}")
+    console.print()
+    info("Press Return to continue...")
+    pause()
+
+
 def render_greeting(greeting):
     """
     Render ALF startup greeting.
