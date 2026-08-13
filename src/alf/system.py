@@ -6,80 +6,56 @@ Provides information about the machine ALF is running on.
 
 import platform
 
-
-def get_uptime():
-    """
-    Return system uptime as a friendly string.
-    """
-
-    with open("/proc/uptime") as f:
-        seconds = float(f.read().split()[0])
-
-    days = int(seconds // 86400)
-    hours = int((seconds % 86400) // 3600)
-
-    return f"{days} days, {hours} hours"
+SYSTEM_INTERFACES = {
+    "proc_meminfo": "/proc/meminfo",
+    "proc_uptime": "/proc/uptime",
+}
 
 
-def get_system_report():
+def read_system_value(interface, key):
+    """Read a named value from a key/value system interface."""
+    data = read_system_interface(interface)
 
-    information = get_system_information()
+    if data is None:
+        return None
 
-    report = []
+    for line in data.splitlines():
+        name, separator, value = line.partition(":")
 
-    report.append("ALF system report")
-    report.append("-----------------")
-    report.append(f"Operating system: {information['operating_system']}")
-    report.append(f"Hostname: {information['hostname']}")
-    report.append(f"Architecture: {information['architecture']}")
-    report.append(f"Python version: {information['python_version']}")
-    report.append(f"Uptime: {information['uptime']}")
-
-    if information["total_memory"]:
-        report.append(f"Total memory: {information['total_memory']}")
-
-    if information["available_memory"]:
-        report.append(f"Available memory: {information['available_memory']}")
-    return "\n".join(report)
-
-
-def get_available_memory():
-    """
-    Return available memory if available.
-    Linux implementation.
-    """
-
-    try:
-        with open("/proc/meminfo") as file:
-            for line in file:
-                if line.startswith("MemAvailable"):
-                    kb = int(line.split()[1])
-                    gb = kb / 1024 / 1024
-                    return f"{gb:.1f} GB"
-
-    except Exception:
-        pass
-    return None
-
-
-def get_total_memory():
-    """
-    Return total memory if available.
-    Linux implementation.
-    """
-
-    try:
-        with open("/proc/meminfo") as file:
-            for line in file:
-                if line.startswith("MemTotal"):
-                    kb = int(line.split()[1])
-                    gb = kb / 1024 / 1024
-                    return f"{gb:.1f} GB"
-
-    except Exception:
-        pass
+        if separator and name.strip() == key:
+            return value.strip()
 
     return None
+
+
+def read_system_interface(name):
+    """Read a permitted system interface."""
+    path = SYSTEM_INTERFACES.get(name)
+
+    if path is None:
+        return None
+
+    try:
+        with open(path) as file:
+            return file.read()
+
+    except OSError:
+        return None
+
+
+def read_system_field(interface, index):
+    """Read a positional field from a system interface."""
+    data = read_system_interface(interface)
+
+    if data is None:
+        return None
+
+    fields = data.split()
+
+    try:
+        return fields[index]
+    except IndexError:
+        return None
 
 
 def get_system_information():
@@ -94,10 +70,19 @@ def get_system_information():
     information["architecture"] = platform.machine()
     information["python_version"] = platform.python_version()
 
-    information["uptime"] = get_uptime()
+    information["uptime"] = read_system_field(
+        "proc_uptime",
+        0,
+    )
 
-    information["total_memory"] = get_total_memory()
-    information["available_memory"] = get_available_memory()
+    information["total_memory"] = read_system_value(
+        "proc_meminfo",
+        "MemTotal",
+    )
+    information["available_memory"] = read_system_value(
+        "proc_meminfo",
+        "MemAvailable",
+    )
 
     return information
 
@@ -110,6 +95,6 @@ def get_capability():
     return {
         "id": "system",
         "name": "System awareness",
-        "description": "Reports information about the machine ALF is running on",
-        "details": get_system_information(),
+        "description": "Provides controlled access to permitted system interfaces",
+        "interfaces": list(SYSTEM_INTERFACES),
     }
