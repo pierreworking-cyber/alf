@@ -27,14 +27,22 @@ commands = {
     "remember": {
         "id": "memory.add",
         "help": "Add a memory.",
-        "usage": 'alf remember <category> "text" [--relate <ids>]',
+        "usage": 'alf remember <category> "text" [options]',
+        "options": {
+            "-c, --category <name>": "Specify the memory category.",
+            "-r, --relate <ids>": "Relate this memory to existing memory IDs.",
+        },
         "notes": [
             "View available categories with: alf categories",
-            "Relate this memory to existing memory IDs.",
+            "The category may also be given positionally.",
+            "Options may appear before or after the memory text.",
         ],
         "examples": [
             'alf remember preference "Peter prefers dogs"',
+            'alf remember "Peter prefers dogs" --category preference',
+            'alf remember -c preference "Peter prefers dogs"',
             'alf remember preference "Peter prefers Labradors" --relate 4,12',
+            'alf remember -c preference "Peter prefers Labradors" -r 4,12',
         ],
     },
     "memories": {

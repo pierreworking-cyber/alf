@@ -173,3 +173,166 @@ def test_run_resolves_command_and_category_together(monkeypatch):
     assert captured["content"] == "Dave is fictional"
     assert captured["related_memory_ids"] is None
     assert captured["saved"] == "note"
+
+
+def test_remember_accepts_positional_category_and_long_related_option(monkeypatch):
+    captured = {}
+
+    def fake_remember(category, content, related_memory_ids=None):
+        captured["category"] = category
+        captured["content"] = content
+        captured["related_memory_ids"] = related_memory_ids
+        return True
+
+    monkeypatch.setattr(commands, "remember", fake_remember)
+    monkeypatch.setattr(
+        commands,
+        "render_memory_saved",
+        lambda category: captured.setdefault("saved", category),
+    )
+
+    assert commands.run(
+        "rem",
+        ["notes", "Dave is fictional", "--relate", "41"],
+    ) is True
+
+    assert captured["category"] == "note"
+    assert captured["content"] == "Dave is fictional"
+    assert captured["related_memory_ids"] == "41"
+
+
+def test_remember_accepts_option_category_and_short_related_option(monkeypatch):
+    captured = {}
+
+    def fake_remember(category, content, related_memory_ids=None):
+        captured["category"] = category
+        captured["content"] = content
+        captured["related_memory_ids"] = related_memory_ids
+        return True
+
+    monkeypatch.setattr(commands, "remember", fake_remember)
+    monkeypatch.setattr(
+        commands,
+        "render_memory_saved",
+        lambda category: captured.setdefault("saved", category),
+    )
+
+    assert commands.run(
+        "rem",
+        ["-c", "note", "Dave is fictional", "-r", "41"],
+    ) is True
+
+    assert captured["category"] == "note"
+    assert captured["content"] == "Dave is fictional"
+    assert captured["related_memory_ids"] == "41"
+
+
+def test_remember_accepts_long_category_option(monkeypatch):
+    captured = {}
+
+    def fake_remember(category, content, related_memory_ids=None):
+        captured["category"] = category
+        captured["content"] = content
+        captured["related_memory_ids"] = related_memory_ids
+        return True
+
+    monkeypatch.setattr(commands, "remember", fake_remember)
+    monkeypatch.setattr(
+        commands,
+        "render_memory_saved",
+        lambda category: captured.setdefault("saved", category),
+    )
+
+    assert commands.run(
+        "rem",
+        ["--category", "note", "Dave is fictional"],
+    ) is True
+
+    assert captured["category"] == "note"
+    assert captured["content"] == "Dave is fictional"
+    assert captured["related_memory_ids"] is None
+
+
+def test_remember_rejects_category_option_without_value(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    assert commands.run(
+        "rem",
+        ["--category"],
+    ) is True
+
+    assert output == ["remember"]
+
+
+def test_remember_rejects_related_option_without_value(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    assert commands.run(
+        "rem",
+        ["note", "Dave is fictional", "--relate"],
+    ) is True
+
+    assert output == ["remember"]
+
+
+def test_remember_rejects_unknown_option(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    assert commands.run(
+        "rem",
+        ["note", "Dave is fictional", "--banana"],
+    ) is True
+
+    assert output == ["remember"]
+
+
+def test_remember_rejects_duplicate_category_specification(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    assert commands.run(
+        "rem",
+        ["note", "Dave is fictional", "--category", "fact"],
+    ) is True
+
+    assert output == ["remember"]
+
+
+def test_remember_rejects_category_option_without_content(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    assert commands.run(
+        "rem",
+        ["--category", "note"],
+    ) is True
+
+    assert output == ["remember"]

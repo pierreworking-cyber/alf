@@ -26,6 +26,7 @@ from .presentation import (
     render_calculation,
     render_calculation_error,
     render_command_help,
+    render_command_structure_error,
     render_commands,
     render_health,
     render_invalid_memory_category,
@@ -110,11 +111,54 @@ def help_command(argument=None):
 
 
 def remember_command(*arguments):
-    if len(arguments) < 2:
-        render_memory_usage(commands["remember"]["usage"])
+    category = None
+    content = None
+    related_memory_ids = None
+    index = 0
+
+    while index < len(arguments):
+        argument = arguments[index]
+
+        if argument in ("-c", "--category"):
+            if category is not None or index + 1 >= len(arguments):
+                render_command_structure_error("remember")
+                return
+
+            category = arguments[index + 1]
+            index += 2
+            continue
+
+        if argument in ("-r", "--relate"):
+            if (
+                related_memory_ids is not None
+                or index + 1 >= len(arguments)
+            ):
+                render_command_structure_error("remember")
+                return
+
+            related_memory_ids = arguments[index + 1]
+            index += 2
+            continue
+
+        if argument.startswith("-"):
+            render_command_structure_error("remember")
+            return
+
+        if category is None:
+            category = argument
+        elif content is None:
+            content = argument
+        else:
+            render_command_structure_error("remember")
+            return
+
+        index += 1
+
+    if category is None or content is None:
+        render_command_structure_error("remember")
         return
 
-    category = resolve_category(arguments[0])
+    category = resolve_category(category)
 
     if category is None:
         render_invalid_memory_category(
@@ -123,18 +167,8 @@ def remember_command(*arguments):
         )
         return
 
-    content = arguments[1]
-
-    related_memory_ids = None
-
-    if len(arguments) > 2:
-        if arguments[2] != "--relate" or len(arguments) != 4:
-            render_memory_usage(commands["remember"]["usage"])
-            return
-
-        related_memory_ids = arguments[3]
-
     content = content.strip()
+
     result = remember(
         category,
         content,
@@ -356,6 +390,7 @@ def question_command(*arguments):
         "I couldn't find reliable research that answers your question. "
         "I don't want to guess."
     )
+
 
 def about_command(argument=None):
 
