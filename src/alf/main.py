@@ -5,10 +5,12 @@ ALF - Peter's local computing companion.
 
 """
 
+from .command_resolution import get_command_matches
 from .commands import help_command, run, show_status
 from .presentation import (
     error,
     info,
+    render_ambiguous_command,
     render_greeting,
 )
 from .time import get_greeting
@@ -30,6 +32,12 @@ def main():
         command = sys.argv[1]
         arguments = sys.argv[2:]
         if run(command, arguments):
+            return
+
+        matches = get_command_matches(command)
+
+        if len(matches) > 1:
+            render_ambiguous_command(command, matches)
             return
 
         error(f"Unknown command: {command}")

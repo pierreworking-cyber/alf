@@ -62,3 +62,15 @@ def test_render_question_without_source(capsys):
 
     assert "I couldn't find reliable research." in output
     assert "Source:" not in output
+
+
+def test_render_ambiguous_command(capsys):
+    presentation.render_ambiguous_command(
+        "memor",
+        ["memories", "memory"],
+    )
+
+    output = capsys.readouterr().out
+
+    assert "Ambiguous command: memor" in output
+    assert "Similar options: alf memories, alf memory" in output

@@ -1,4 +1,6 @@
-from alf import commands
+import sys
+
+from alf import commands, main
 
 
 def test_run_resolves_short_command_prefix(monkeypatch):
@@ -560,3 +562,52 @@ def test_run_resolves_relate_command(monkeypatch):
         "47",
         "46",
     )
+
+
+def test_ambiguous_command_is_reported(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        main,
+        "render_ambiguous_command",
+        lambda command, matches: output.append((command, matches)),
+    )
+
+    monkeypatch.setattr(
+        main,
+        "run",
+        lambda command, arguments: False,
+    )
+
+    monkeypatch.setattr(
+        main,
+        "get_command_matches",
+        lambda command: ["memories", "memory"],
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alf", "memor"],
+    )
+
+    main.main()
+
+    assert output == [
+        ("memor", ["memories", "memory"]),
+    ]
+
+
+def test_ambiguous_command_reports_similar_commands(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alf", "memor"],
+    )
+
+    main.main()
+
+    output = capsys.readouterr().out
+
+    assert "Ambiguous command: memor." in output
+    assert "Similar options: alf memories, alf memory" in output

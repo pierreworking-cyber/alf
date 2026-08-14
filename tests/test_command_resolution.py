@@ -1,4 +1,19 @@
-from alf.command_resolution import resolve_category, resolve_command
+from alf.command_resolution import (
+    get_command_matches,
+    resolve_category,
+    resolve_command,
+)
+
+
+def test_ambiguous_command_prefix_is_not_resolved():
+    assert resolve_command("memor") is None
+
+
+def test_ambiguous_command_prefix_returns_matching_commands():
+    assert get_command_matches("memor") == [
+        "memories",
+        "memory",
+    ]
 
 
 def test_exact_command_is_resolved():

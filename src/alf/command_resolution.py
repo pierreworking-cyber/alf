@@ -9,6 +9,26 @@ from .command_catalogue import commands
 from .memory import get_memory_categories
 
 
+def get_command_matches(value):
+    """
+    Return commands matching an exact name or leading prefix.
+    """
+
+    value = value.strip().lower()
+
+    if not value:
+        return []
+
+    if value in commands:
+        return [value]
+
+    return [
+        command
+        for command in commands
+        if command.startswith(value)
+    ]
+
+
 def resolve_command(value):
     """
     Resolve an exact command or an unambiguous leading prefix.
@@ -17,19 +37,7 @@ def resolve_command(value):
     or ambiguous.
     """
 
-    value = value.strip().lower()
-
-    if not value:
-        return None
-
-    if value in commands:
-        return value
-
-    matches = [
-        command
-        for command in commands
-        if command.startswith(value)
-    ]
+    matches = get_command_matches(value)
 
     if len(matches) == 1:
         return matches[0]

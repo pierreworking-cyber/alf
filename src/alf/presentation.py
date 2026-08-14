@@ -591,6 +591,20 @@ def render_invalid_memory_category(category, categories):
     console.print()
 
 
+def render_ambiguous_command(command, matches):
+    """
+    Render an ambiguous command error.
+    """
+
+    console.print()
+    error(f"Ambiguous command: {command}.")
+    info(
+        "Similar options: "
+        + ", ".join(f"alf {match}" for match in matches)
+    )
+    console.print()
+
+
 def render_memory_help():
     """
     Render memory command help.
