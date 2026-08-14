@@ -420,6 +420,28 @@ def forget_memory(memory_id):
         )
 
 
+def forget_memories(memory_ids):
+    """
+    Forget multiple memories while preserving their identities.
+    """
+
+    forgotten = []
+    missing = []
+
+    for memory_id in memory_ids:
+        if get_memory(memory_id) is None:
+            missing.append(memory_id)
+            continue
+
+        forget_memory(memory_id)
+        forgotten.append(memory_id)
+
+    return {
+        "forgotten": forgotten,
+        "missing": missing,
+    }
+
+
 def get_memory_information():
     """
     Return information about ALF's memory system.

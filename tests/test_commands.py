@@ -187,3 +187,165 @@ def test_question_command_admits_when_no_research_is_relevant(monkeypatch):
         "I couldn't find reliable research that answers your question. "
         "I don't want to guess."
     ]
+
+
+def test_interpret_memory_selection_accepts_single_id():
+    assert commands.interpret_memory_selection("26") == [26]
+
+
+def test_interpret_memory_selection_expands_range():
+    assert commands.interpret_memory_selection("23-26") == [
+        23,
+        24,
+        25,
+        26,
+    ]
+
+
+def test_interpret_memory_selection_accepts_reversed_range():
+    assert commands.interpret_memory_selection("26-23") == [
+        23,
+        24,
+        25,
+        26,
+    ]
+
+
+def test_interpret_memory_selection_accepts_multiple_ranges_and_ids():
+    assert commands.interpret_memory_selection("10-12,15,20-21") == [
+        10,
+        11,
+        12,
+        15,
+        20,
+        21,
+    ]
+
+
+def test_interpret_memory_selection_removes_duplicates():
+    assert commands.interpret_memory_selection("10-12,11,12-13") == [
+        10,
+        11,
+        12,
+        13,
+    ]
+
+
+def test_interpret_memory_selection_rejects_invalid_selection():
+    assert commands.interpret_memory_selection("10--12") is None
+    assert commands.interpret_memory_selection("10-banana") is None
+    assert commands.interpret_memory_selection("0") is None
+    assert commands.interpret_memory_selection("10,") is None
+
+
+def test_interpret_memory_selection_rejects_negative_id():
+    assert commands.interpret_memory_selection("-12") is None
+
+
+def test_forget_command_forgets_single_memory(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "forget_memories",
+        lambda memory_ids: {
+            "forgotten": memory_ids,
+            "missing": [],
+        },
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_forgotten",
+        lambda memory_id: captured.setdefault(
+            "forgotten",
+            memory_id,
+        ),
+    )
+
+    commands.forget_command("26")
+
+    assert captured == {
+        "forgotten": 26,
+    }
+
+
+def test_forget_command_forgets_memory_range(monkeypatch):
+    captured = {}
+
+    def fake_forget_memories(memory_ids):
+        captured["memory_ids"] = memory_ids
+        return {
+            "forgotten": memory_ids,
+            "missing": [],
+        }
+
+    monkeypatch.setattr(
+        commands,
+        "forget_memories",
+        fake_forget_memories,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memories_forgotten",
+        lambda memory_ids: captured.setdefault(
+            "forgotten",
+            memory_ids,
+        ),
+    )
+
+    commands.forget_command("23-26")
+
+    assert captured["memory_ids"] == [23, 24, 25, 26]
+    assert captured["forgotten"] == [23, 24, 25, 26]
+
+
+def test_forget_command_reports_missing_memories(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "forget_memories",
+        lambda memory_ids: {
+            "forgotten": [23, 24],
+            "missing": [25],
+        },
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memories_forgotten",
+        lambda memory_ids: output.append(
+            ("forgotten", memory_ids)
+        ),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_missing",
+        lambda memory_ids: output.append(
+            ("missing", memory_ids)
+        ),
+    )
+
+    commands.forget_command("23-25")
+
+    assert output == [
+        ("forgotten", [23, 24]),
+        ("missing", [25]),
+    ]
+
+
+def test_forget_command_rejects_invalid_selection(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    commands.forget_command("-12")
+
+    assert output == ["forget"]

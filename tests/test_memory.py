@@ -554,6 +554,45 @@ def test_forget_memory_handles_missing_memory(database):
     assert memory.get_memory(999) is None
 
 
+def test_forget_memories_forgets_multiple_memories(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+    memory.remember("note", "Third memory.")
+
+    result = memory.forget_memories([1, 2, 3])
+
+    assert result == {
+        "forgotten": [1, 2, 3],
+        "missing": [],
+    }
+
+    assert memory.get_memory(1)["status"] == "forgotten"
+    assert memory.get_memory(2)["status"] == "forgotten"
+    assert memory.get_memory(3)["status"] == "forgotten"
+
+
+def test_forget_memories_replaces_content(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+
+    memory.forget_memories([1, 2])
+
+    assert memory.get_memory(1)["content"] == "[forgotten]"
+    assert memory.get_memory(2)["content"] == "[forgotten]"
+
+
+def test_forget_memories_reports_missing_ids(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+
+    result = memory.forget_memories([1, 999, 2])
+
+    assert result == {
+        "forgotten": [1, 2],
+        "missing": [999],
+    }
+
+
 def test_search_memories(database):
     memory.remember("note", "The moon is interesting.")
     memory.remember("fact", "The Earth has one moon.")
@@ -620,4 +659,3 @@ def test_capability(database):
         "total_memories": 0,
         "categories": [],
     }
-

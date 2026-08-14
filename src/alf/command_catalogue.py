@@ -126,10 +126,13 @@ commands = {
     },
     "forget": {
         "id": "command.forget",
-        "help": "Forget a memory while preserving its identity.",
-        "usage": "alf forget <id>",
+        "help": "Forget one or more memories while preserving their identities.",
+        "usage": "alf forget <id>[,<id>...]",
         "examples": [
-            "alf forget 12",
+            "alf forget 10-12",
+            "alf forget 15",
+            "alf forget 20-21",
+            "alf forget 10-12,15,20-21",
         ],
     },
     "version": {

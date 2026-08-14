@@ -512,6 +512,28 @@ def render_memory_forgotten(memory_id):
     success(f"Memory {memory_id} forgotten.")
 
 
+def render_memories_forgotten(memory_ids):
+    """
+    Confirm that multiple memories have been forgotten.
+    """
+
+    success(
+        f"Memories {', '.join(str(memory_id) for memory_id in memory_ids)} "
+        "forgotten."
+    )
+
+
+def render_memory_missing(memory_ids):
+    """
+    Report memory IDs that could not be found.
+    """
+
+    warning(
+        f"Memory IDs not found: "
+        f"{', '.join(str(memory_id) for memory_id in memory_ids)}."
+    )
+
+
 def render_memory_not_numeric():
     """
     Render invalid memory ID message.

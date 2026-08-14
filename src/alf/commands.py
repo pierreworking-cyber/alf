@@ -11,7 +11,7 @@ from .identity import get_about_information, get_identity
 from .llm import evaluate_research
 from .memory import (
     archive_memory,
-    forget_memory,
+    forget_memories,
     get_memories,
     get_memory,
     get_memory_categories,
@@ -33,11 +33,13 @@ from .presentation import (
     render_invalid_memory_category,
     render_invalid_related_memory,
     render_memories,
+    render_memories_forgotten,
     render_memory,
     render_memory_archived,
     render_memory_categories,
     render_memory_forgotten,
     render_memory_history,
+    render_memory_missing,
     render_memory_not_numeric,
     render_memory_positive,
     render_memory_related,
@@ -374,24 +376,74 @@ def archive_command(memory_id=None):
     render_memory_archived(memory_id)
 
 
+def interpret_memory_selection(selection):
+    """
+    Expand a memory selection into individual memory IDs.
+    """
+
+    memory_ids = []
+
+    for part in selection.split(","):
+        if not part:
+            return None
+
+        if "-" in part:
+            bounds = part.split("-")
+
+            if len(bounds) != 2:
+                return None
+
+            start, end = bounds
+
+            if not start.isdigit() or not end.isdigit():
+                return None
+
+            start = int(start)
+            end = int(end)
+
+            if start <= 0 or end <= 0:
+                return None
+
+            for memory_id in range(
+                min(start, end),
+                max(start, end) + 1,
+            ):
+                if memory_id not in memory_ids:
+                    memory_ids.append(memory_id)
+
+        else:
+            if not part.isdigit() or int(part) <= 0:
+                return None
+
+            memory_id = int(part)
+
+            if memory_id not in memory_ids:
+                memory_ids.append(memory_id)
+
+    return memory_ids
+
+
 def forget_command(memory_id=None):
     if not memory_id:
-        render_memory_usage(commands["forget"]["usage"])
+        render_command_structure_error("forget")
         return
 
-    try:
-        memory_id = int(memory_id)
+    memory_ids = interpret_memory_selection(memory_id)
 
-    except ValueError:
-        render_memory_not_numeric()
+    if memory_ids is None:
+        render_command_structure_error("forget")
         return
 
-    if memory_id <= 0:
-        render_memory_positive()
-        return
+    result = forget_memories(memory_ids)
 
-    forget_memory(memory_id)
-    render_memory_forgotten(memory_id)
+    if result["forgotten"]:
+        if len(result["forgotten"]) == 1:
+            render_memory_forgotten(result["forgotten"][0])
+        else:
+            render_memories_forgotten(result["forgotten"])
+
+    if result["missing"]:
+        render_memory_missing(result["missing"])
 
 
 def question_command(*arguments):
