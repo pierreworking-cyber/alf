@@ -307,13 +307,17 @@ def render_grouped_memories(memories):
             render_memory_entry(memory)
 
 
-def render_question(answer):
+def render_question(answer, source=None):
     """
     Render ALF's answer to a question.
     """
 
     console.print()
     console.print(answer, markup=False)
+
+    if source:
+        console.print(f"Source: {source.title()}")
+
     console.print()
 
 

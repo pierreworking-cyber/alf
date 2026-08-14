@@ -54,7 +54,7 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
     monkeypatch.setattr(
         commands,
         "render_question",
-        lambda answer: output.append(answer),
+        lambda answer, source: output.append((answer, source)),
     )
 
     commands.question_command(
@@ -70,8 +70,7 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
         "question": "What is the capital of France?",
         "evidence": [wikipedia_candidates[0]],
     }
-
-    assert output == ["Paris."]
+    assert output == [("Paris.", "wikipedia")]
 
 
 def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
@@ -131,7 +130,7 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     monkeypatch.setattr(
         commands,
         "render_question",
-        lambda answer: output.append(answer),
+        lambda answer, source: output.append((answer, source)),
     )
 
     commands.question_command("What", "film", "is", "this?")
@@ -139,7 +138,7 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     assert len(calls) == 2
     assert calls[0] == []
     assert calls[1] == web_candidates
-    assert output == ["The film is ..."]
+    assert output == [("The film is ...", "web")]
 
 
 def test_question_command_admits_when_no_research_is_relevant(monkeypatch):
@@ -178,16 +177,20 @@ def test_question_command_admits_when_no_research_is_relevant(monkeypatch):
     monkeypatch.setattr(
         commands,
         "render_question",
-        lambda answer: output.append(answer),
+        lambda answer, source=None: output.append(
+            (answer, source)
+        ),
     )
 
     commands.question_command("What", "film", "is", "this?")
 
     assert output == [
-        "I couldn't find reliable research that answers your question. "
-        "I don't want to guess."
+        (
+            "I couldn't find reliable research that answers your question. "
+            "I don't want to guess.",
+            None,
+        )
     ]
-
 
 def test_interpret_memory_selection_accepts_single_id():
     assert commands.interpret_memory_selection("26") == [26]

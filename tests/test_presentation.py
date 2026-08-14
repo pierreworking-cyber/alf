@@ -39,3 +39,26 @@ def test_render_memory_missing(capsys):
     output = capsys.readouterr().out
 
     assert "Memory IDs not found: 25, 27." in output
+
+
+def test_render_question_includes_source(capsys):
+    presentation.render_question(
+        "Monkey patching modifies Python code at runtime.",
+        "web",
+    )
+
+    output = capsys.readouterr().out
+
+    assert "Monkey patching modifies Python code at runtime." in output
+    assert "Source: Web" in output
+
+
+def test_render_question_without_source(capsys):
+    presentation.render_question(
+        "I couldn't find reliable research.",
+    )
+
+    output = capsys.readouterr().out
+
+    assert "I couldn't find reliable research." in output
+    assert "Source:" not in output

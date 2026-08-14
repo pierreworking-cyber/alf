@@ -468,7 +468,7 @@ def question_command(*arguments):
                 question,
                 [relevant_candidates[0]],
             )
-            render_question(answer)
+            render_question(answer, "wikipedia")
             return
 
     web_candidates = research_web(question)
@@ -486,7 +486,7 @@ def question_command(*arguments):
                 question,
                 [relevant_candidates[0]],
             )
-            render_question(answer)
+            render_question(answer, "web")
             return
 
     render_question(
