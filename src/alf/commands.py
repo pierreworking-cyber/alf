@@ -328,7 +328,7 @@ def relate_command(*arguments):
         render_memory_usage(commands["relate"]["usage"])
         return
 
-    memory_id, related_memory_ids = arguments
+    memory_id, related_memory_selection = arguments
 
     try:
         memory_id = int(memory_id)
@@ -340,6 +340,22 @@ def relate_command(*arguments):
         render_memory_positive()
         return
 
+    related_memory_ids = interpret_memory_selection(
+        related_memory_selection
+    )
+
+    if related_memory_ids is None:
+        render_invalid_related_memory(
+            related_memory_selection,
+            commands["relate"]["usage"],
+        )
+        return
+
+    related_memory_ids = ",".join(
+        str(memory_id)
+        for memory_id in related_memory_ids
+    )
+
     result = relate_memory(
         memory_id,
         related_memory_ids,
@@ -347,7 +363,7 @@ def relate_command(*arguments):
 
     if result is False:
         render_invalid_related_memory(
-            related_memory_ids,
+            related_memory_selection,
             commands["relate"]["usage"],
         )
         return

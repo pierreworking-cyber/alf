@@ -609,3 +609,80 @@ def test_forget_command_rejects_invalid_selection(monkeypatch):
     commands.forget_command("-12")
 
     assert output == ["forget"]
+
+
+def test_relate_command_accepts_multiple_memory_ids(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(
+        commands,
+        "relate_memory",
+        lambda memory_id, related_memory_ids: (
+            captured.append(
+                {
+                    "memory_id": memory_id,
+                    "related_memory_ids": related_memory_ids,
+                }
+            )
+            or related_memory_ids
+        ),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_related",
+        lambda memory_id, related_memory_ids: None,
+    )
+
+    commands.relate_command(
+        "47",
+        "46,43",
+    )
+
+    commands.relate_command(
+        "47",
+        "46-43,52",
+    )
+
+    assert captured == [
+        {
+            "memory_id": 47,
+            "related_memory_ids": "46,43",
+        },
+        {
+            "memory_id": 47,
+            "related_memory_ids": "43,44,45,46,52",
+        },
+    ]
+
+
+def test_relate_command_rejects_invalid_memory_selection(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_invalid_related_memory",
+        lambda related_memory_ids, usage: output.append(
+            (related_memory_ids, usage)
+        ),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "relate_memory",
+        lambda *arguments: pytest.fail(
+            "relate_memory should not be called"
+        ),
+    )
+
+    commands.relate_command(
+        "47",
+        "46--43",
+    )
+
+    assert output == [
+        (
+            "46--43",
+            "alf relate <id> <ids>",
+        )
+    ]
