@@ -15,6 +15,12 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
 
     monkeypatch.setattr(
         commands,
+        "interpret_question",
+        lambda question: question,
+    )
+
+    monkeypatch.setattr(
+        commands,
         "research_wikipedia_candidates",
         lambda question: wikipedia_candidates,
     )
@@ -39,14 +45,24 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
 
     captured = {}
 
-    def fake_ask(answer_request):
-        captured["answer_request"] = answer_request
+    def fake_prepare_answer(
+        original_question,
+        research_question,
+        evidence,
+        verbose=False,
+    ):
+        captured["answer_request"] = {
+            "original_question": original_question,
+            "research_question": research_question,
+            "evidence": evidence,
+            "verbose": verbose,
+        }
         return "Paris."
 
     monkeypatch.setattr(
-        answer,
-        "ask",
-        fake_ask,
+        commands,
+        "prepare_answer",
+        fake_prepare_answer,
     )
 
     output = []
@@ -54,7 +70,9 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
     monkeypatch.setattr(
         commands,
         "render_question",
-        lambda answer, source: output.append((answer, source)),
+        lambda answer, source, research_question: output.append(
+            (answer, source, research_question)
+        ),
     )
 
     commands.question_command(
@@ -67,10 +85,18 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
     )
 
     assert captured["answer_request"] == {
-        "question": "What is the capital of France?",
+        "original_question": "What is the capital of France?",
+        "research_question": "What is the capital of France?",
         "evidence": [wikipedia_candidates[0]],
+        "verbose": False,
     }
-    assert output == [("Paris.", "wikipedia")]
+    assert output == [
+        (
+            "Paris.",
+            "wikipedia",
+            "What is the capital of France?",
+        )
+    ]
 
 
 def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
@@ -84,6 +110,12 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     ]
 
     calls = []
+
+    monkeypatch.setattr(
+        commands,
+        "interpret_question",
+        lambda question: question,
+    )
 
     monkeypatch.setattr(
         commands,
@@ -119,10 +151,18 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
         lambda question: web_candidates,
     )
 
+    def fake_prepare_answer(
+        original_question,
+        research_question,
+        evidence,
+        verbose=False,
+    ):
+        return "The film is ..."
+
     monkeypatch.setattr(
-        answer,
-        "ask",
-        lambda answer_request: "The film is ...",
+        commands,
+        "prepare_answer",
+        fake_prepare_answer,
     )
 
     output = []
@@ -130,7 +170,9 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     monkeypatch.setattr(
         commands,
         "render_question",
-        lambda answer, source: output.append((answer, source)),
+        lambda answer, source, research_question: output.append(
+            (answer, source, research_question)
+        ),
     )
 
     commands.question_command("What", "film", "is", "this?")
@@ -138,10 +180,22 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     assert len(calls) == 2
     assert calls[0] == []
     assert calls[1] == web_candidates
-    assert output == [("The film is ...", "web")]
+    assert output == [
+        (
+            "The film is ...",
+            "web",
+            "What film is this?",
+        )
+    ]
 
 
 def test_question_command_admits_when_no_research_is_relevant(monkeypatch):
+    monkeypatch.setattr(
+        commands,
+        "interpret_question",
+        lambda question: question,
+    )
+
     monkeypatch.setattr(
         commands,
         "research_wikipedia_candidates",
@@ -191,6 +245,209 @@ def test_question_command_admits_when_no_research_is_relevant(monkeypatch):
             None,
         )
     ]
+
+
+def test_question_command_accepts_verbose_option(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "research_wikipedia_candidates",
+        lambda question: [
+            {
+                "source": "wikipedia",
+                "title": "Microbe",
+                "text": "Microbes are microscopic organisms.",
+            }
+        ],
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "evaluate_research",
+        lambda question, candidates: {
+            "relevant": True,
+            "candidates": [1],
+            "reason": "Relevant.",
+        },
+    )
+
+    def fake_prepare_answer(
+        original_question,
+        research_question,
+        evidence,
+        verbose=False,
+    ):
+        captured["verbose"] = verbose
+        return "A detailed answer."
+
+    monkeypatch.setattr(
+        commands,
+        "prepare_answer",
+        fake_prepare_answer,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_question",
+        lambda answer, source, research_question=None: None,
+    )
+
+    commands.question_command(
+        "-v",
+        "What",
+        "are",
+        "microbes?",
+    )
+
+    assert captured["verbose"] is True
+
+
+def test_question_command_accepts_long_verbose_option(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "research_wikipedia_candidates",
+        lambda question: [
+            {
+                "source": "wikipedia",
+                "title": "Microbe",
+                "text": "Microbes are microscopic organisms.",
+            }
+        ],
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "evaluate_research",
+        lambda question, candidates: {
+            "relevant": True,
+            "candidates": [1],
+            "reason": "Relevant.",
+        },
+    )
+
+    def fake_prepare_answer(
+        original_question,
+        research_question,
+        evidence,
+        verbose=False,
+    ):
+        captured["verbose"] = verbose
+        return "A detailed answer."
+
+    monkeypatch.setattr(
+        commands,
+        "prepare_answer",
+        fake_prepare_answer,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_question",
+        lambda answer, source, research_question=None: None,
+    )
+
+    commands.question_command(
+        "What",
+        "are",
+        "microbes?",
+        "--verbose",
+    )
+
+    assert captured["verbose"] is True
+
+
+def test_question_command_keeps_verbose_text_inside_question(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "interpret_question",
+        lambda question: question,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "research_wikipedia_candidates",
+        lambda question: [
+            {
+                "source": "wikipedia",
+                "title": "Linux commands",
+                "text": "Many Linux commands provide a -v option.",
+            }
+        ],
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "evaluate_research",
+        lambda question, candidates: {
+            "relevant": True,
+            "candidates": [1],
+            "reason": "Relevant.",
+        },
+    )
+
+    def fake_prepare_answer(
+        original_question,
+        research_question,
+        evidence,
+        verbose=False,
+    ):
+        captured["question"] = original_question
+        captured["verbose"] = verbose
+        return "An answer."
+
+    monkeypatch.setattr(
+        commands,
+        "prepare_answer",
+        fake_prepare_answer,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_question",
+        lambda answer, source, research_question=None: None,
+    )
+
+    commands.question_command(
+        "What Linux commands have the switch -v",
+    )
+
+    assert captured["question"] == (
+        "What Linux commands have the switch -v"
+    )
+    assert captured["verbose"] is False
+
+
+def test_question_command_rejects_unknown_option(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "research_wikipedia_candidates",
+        lambda question: pytest.fail(
+            "Research should not be performed"
+        ),
+    )
+
+    commands.question_command(
+        "--banana",
+        "What",
+        "are",
+        "microbes?",
+    )
+
+    assert output == ["question"]
+
 
 def test_interpret_memory_selection_accepts_single_id():
     assert commands.interpret_memory_selection("26") == [26]

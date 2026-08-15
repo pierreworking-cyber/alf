@@ -8,6 +8,7 @@ from .command_catalogue import commands
 from .command_resolution import resolve_category, resolve_command
 from .healthcheck import get_health_report
 from .identity import get_about_information, get_identity
+from .interpretation import interpret_question
 from .llm import evaluate_research
 from .memory import (
     archive_memory,
@@ -447,14 +448,29 @@ def forget_command(memory_id=None):
 
 
 def question_command(*arguments):
-    if not arguments:
+    verbose = False
+    question_arguments = []
+
+    for argument in arguments:
+        if argument in ("-v", "--verbose"):
+            verbose = True
+            continue
+
+        if argument.startswith("-"):
+            render_command_structure_error("question")
+            return
+
+        question_arguments.append(argument)
+
+    if not question_arguments:
         render_memory_usage(commands["question"]["usage"])
         return
 
-    question = " ".join(arguments).strip()
+    original_question = " ".join(question_arguments).strip()
+    research_question = interpret_question(original_question)
 
-    candidates = research_wikipedia_candidates(question)
-    evaluation = evaluate_research(question, candidates)
+    candidates = research_wikipedia_candidates(research_question)
+    evaluation = evaluate_research(research_question, candidates)
 
     if evaluation["relevant"]:
         relevant_candidates = [
@@ -465,14 +481,20 @@ def question_command(*arguments):
 
         if relevant_candidates:
             answer = prepare_answer(
-                question,
+                original_question,
+                research_question,
                 [relevant_candidates[0]],
+                verbose=verbose,
             )
-            render_question(answer, "wikipedia")
+            render_question(
+                answer,
+                "wikipedia",
+                research_question,
+            )
             return
 
-    web_candidates = research_web(question)
-    web_evaluation = evaluate_research(question, web_candidates)
+    web_candidates = research_web(research_question)
+    web_evaluation = evaluate_research(research_question, web_candidates)
 
     if web_evaluation["relevant"]:
         relevant_candidates = [
@@ -483,10 +505,16 @@ def question_command(*arguments):
 
         if relevant_candidates:
             answer = prepare_answer(
-                question,
+                original_question,
+                research_question,
                 [relevant_candidates[0]],
+                verbose=verbose,
             )
-            render_question(answer, "web")
+            render_question(
+                answer,
+                "web",
+                research_question,
+            )
             return
 
     render_question(

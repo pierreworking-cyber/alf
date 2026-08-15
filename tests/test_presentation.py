@@ -53,6 +53,35 @@ def test_render_question_includes_source(capsys):
     assert "Source: Web" in output
 
 
+def test_render_question_includes_interpretation_when_different(capsys):
+    presentation.render_question(
+        "Trailing commas are allowed in Python.",
+        "web",
+        "Why are trailing commas allowed in Python?",
+    )
+
+    output = capsys.readouterr().out
+
+    assert (
+        "Question interpreted as: "
+        "Why are trailing commas allowed in Python?"
+    ) in output
+    assert "Trailing commas are allowed in Python." in output
+
+
+def test_render_question_omits_interpretation_when_unchanged(capsys):
+    presentation.render_question(
+        "What are microbes?",
+        "wikipedia",
+        "What are microbes?",
+    )
+
+    output = capsys.readouterr().out
+
+    assert "Question interpreted as:" not in output
+    assert "What are microbes?" in output
+
+
 def test_render_question_without_source(capsys):
     presentation.render_question(
         "I couldn't find reliable research.",

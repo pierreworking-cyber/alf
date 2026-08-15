@@ -44,11 +44,23 @@ def ask(answer_request):
 
     question = answer_request["question"]
     evidence = answer_request["evidence"]
+    verbose = answer_request.get("verbose", False)
 
     if evidence:
         evidence_text = str(evidence)
     else:
         evidence_text = "No evidence was available."
+    if verbose:
+        answer_style = (
+            "Give a detailed, well-developed answer. "
+            "Provide useful context and explanation rather than "
+            "a brief response."
+        )
+    else:
+        answer_style = (
+            "Give a concise but useful answer. "
+            "Do not add unnecessary detail."
+        )
 
     prompt = f"""
 {ALF_PERSONALITY}
@@ -62,6 +74,10 @@ Evidence supplied by ALF:
 User's question:
 
 {question}
+
+Answer style:
+
+{answer_style}
 """
 
     return _generate(prompt)

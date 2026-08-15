@@ -157,10 +157,16 @@ commands = {
     "question": {
         "id": "llm.question",
         "help": "Ask ALF a question.",
-        "usage": 'alf question "text"',
+        "usage": 'alf question [-v, --verbose] "text"',
+        "options": {
+            "-v, --verbose": "Give a more detailed answer.",
+        },
         "examples": [
             'alf question "What is the capital of Morocco?"',
-            'alf question "Why does the Moon look larger near the horizon?"',
+            'alf question -v "Why does the Moon look larger near the horizon?"',
+        ],
+        "notes": [
+            "Quote the entire question so the shell passes it to ALF as one argument.",
         ],
     },
 }
