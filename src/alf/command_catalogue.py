@@ -118,10 +118,12 @@ commands = {
     },
     "archive": {
         "id": "memory.archive",
-        "help": "Archive a memory.",
-        "usage": "alf archive <id>",
+        "help": "Archive one or more memories.",
+        "usage": "alf archive <id>[,<id>...]",
         "examples": [
             "alf archive 11",
+            "alf archive 10-12",
+            "alf archive 10-12,15,20-21",
         ],
     },
     "forget": {

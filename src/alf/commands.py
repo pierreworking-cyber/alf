@@ -376,21 +376,18 @@ def relate_command(*arguments):
 
 def archive_command(memory_id=None):
     if not memory_id:
-        render_memory_usage(commands["archive"]["usage"])
+        render_command_structure_error("archive")
         return
 
-    try:
-        memory_id = int(memory_id)
-    except ValueError:
-        render_memory_not_numeric()
+    memory_ids = interpret_memory_selection(memory_id)
+
+    if memory_ids is None:
+        render_command_structure_error("archive")
         return
 
-    if memory_id <= 0:
-        render_memory_positive()
-        return
-
-    archive_memory(memory_id)
-    render_memory_archived(memory_id)
+    for memory_id in memory_ids:
+        archive_memory(memory_id)
+        render_memory_archived(memory_id)
 
 
 def interpret_memory_selection(selection):

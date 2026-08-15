@@ -686,3 +686,65 @@ def test_relate_command_rejects_invalid_memory_selection(monkeypatch):
             "alf relate <id> <ids>",
         )
     ]
+
+
+def test_archive_command_archives_single_memory(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(
+        commands,
+        "archive_memory",
+        lambda memory_id: captured.append(memory_id),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_archived",
+        lambda memory_id: None,
+    )
+
+    commands.archive_command("47")
+
+    assert captured == [47]
+
+
+def test_archive_command_archives_memory_selection(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(
+        commands,
+        "archive_memory",
+        lambda memory_id: captured.append(memory_id),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memory_archived",
+        lambda memory_id: None,
+    )
+
+    commands.archive_command("46-43,52")
+
+    assert captured == [43, 44, 45, 46, 52]
+
+
+def test_archive_command_rejects_invalid_memory_selection(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "archive_memory",
+        lambda *arguments: pytest.fail(
+            "archive_memory should not be called"
+        ),
+    )
+
+    commands.archive_command("46--43")
+
+    assert output == ["archive"]
