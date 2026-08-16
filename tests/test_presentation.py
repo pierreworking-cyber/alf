@@ -41,6 +41,44 @@ def test_render_memory_missing(capsys):
     assert "Memory IDs not found: 25, 27." in output
 
 
+def test_render_memory_entry_includes_related_memory_ids(capsys):
+    presentation.render_memory_entry(
+        {
+            "id": 58,
+            "created": "2026-08-16 03:42:54",
+            "category": "note",
+            "status": "active",
+            "content": "memory links should be displayed against the memory text",
+            "related_memory_ids": "46,42",
+        }
+    )
+
+    output = capsys.readouterr().out
+
+    assert (
+        "memory links should be displayed against the memory text (46, 42)"
+        in output
+    )
+
+
+def test_render_memory_entry_without_related_memory_ids(capsys):
+    presentation.render_memory_entry(
+        {
+            "id": 58,
+            "created": "2026-08-16 03:42:54",
+            "category": "note",
+            "status": "active",
+            "content": "A memory without links.",
+            "related_memory_ids": None,
+        }
+    )
+
+    output = capsys.readouterr().out
+
+    assert "A memory without links." in output
+    assert "A memory without links. (" not in output
+
+
 def test_render_question_includes_source(capsys):
     presentation.render_question(
         "Monkey patching modifies Python code at runtime.",

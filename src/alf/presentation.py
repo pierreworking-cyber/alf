@@ -259,7 +259,15 @@ def render_memory_entry(memory):
     ).strftime("%d-%b-%Y %H:%M:%S")
 
     info(f"(id: {memory['id']}) {created} [{memory['category']}] [{memory['status']}]")
-    info(f"  {memory['content']}")
+
+    content = memory["content"]
+
+    if memory.get("related_memory_ids"):
+        content += (
+            f" ({', '.join(memory['related_memory_ids'].split(','))})"
+        )
+
+    info(f"  {content}")
     console.print()
 
 
