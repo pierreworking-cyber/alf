@@ -6,7 +6,7 @@ from alf import llm
 def test_check_ollama_when_service_and_model_are_available(monkeypatch):
     response_data = {
         "models": [
-            {"name": "qwen3:4b"},
+            {"name": "qwen3:8b"},
             {"name": "some-other-model"},
         ],
     }
@@ -32,7 +32,7 @@ def test_check_ollama_when_service_and_model_are_available(monkeypatch):
     assert result == {
         "available": True,
         "model_available": True,
-        "model": "qwen3:4b",
+        "model": "qwen3:8b",
         "error": None,
     }
 
@@ -65,7 +65,7 @@ def test_check_ollama_when_model_is_missing(monkeypatch):
     assert result == {
         "available": True,
         "model_available": False,
-        "model": "qwen3:4b",
+        "model": "qwen3:8b",
         "error": None,
     }
 
@@ -80,7 +80,7 @@ def test_check_ollama_when_service_is_unavailable(monkeypatch):
 
     assert result["available"] is False
     assert result["model_available"] is False
-    assert result["model"] == "qwen3:4b"
+    assert result["model"] == "qwen3:8b"
     assert result["error"] == "Connection refused"
 
 
