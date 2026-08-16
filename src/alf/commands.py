@@ -52,6 +52,8 @@ from .presentation import (
     render_version,
 )
 from .research import research_web, research_wikipedia_candidates
+from .router import route
+from .routes import Route
 from .status import get_status_information
 
 
@@ -488,6 +490,22 @@ def question_command(*arguments):
         return
 
     original_question = " ".join(question_arguments).strip()
+    selected_route = route(original_question)
+
+    if selected_route == Route.LLM:
+        answer = prepare_answer(
+            original_question,
+            original_question,
+            [],
+            verbose=verbose,
+        )
+        render_question(
+            answer,
+            "llm",
+            original_question,
+        )
+        return
+
     research_question = interpret_question(original_question)
 
     candidates = research_wikipedia_candidates(research_question)

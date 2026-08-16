@@ -1,6 +1,7 @@
 import pytest
 
 from alf import answer, commands
+from alf.routes import Route
 
 
 def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
@@ -12,6 +13,12 @@ def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
             "text": "France is a country in Europe.",
         }
     ]
+
+    monkeypatch.setattr(
+        commands,
+        "route",
+        lambda question: Route.RESEARCH,
+    )
 
     monkeypatch.setattr(
         commands,
