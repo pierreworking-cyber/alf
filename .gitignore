@@ -13,3 +13,6 @@ docs/
 # Local SearXNG configuration
 
 .searxng/
+
+# Benchmark run results
+benchmarks/interpreter_results_*.txt
