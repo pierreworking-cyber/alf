@@ -11,7 +11,7 @@ from .identity import get_about_information, get_identity
 from .interpretation import interpret_question
 from .llm import evaluate_research
 from .memory import (
-    archive_memory,
+    archive_memories,
     forget_memories,
     get_memories,
     get_memory,
@@ -34,6 +34,7 @@ from .presentation import (
     render_invalid_memory_category,
     render_invalid_related_memory,
     render_memories,
+    render_memories_archived,
     render_memories_forgotten,
     render_memory,
     render_memory_archived,
@@ -385,9 +386,16 @@ def archive_command(memory_id=None):
         render_command_structure_error("archive")
         return
 
-    for memory_id in memory_ids:
-        archive_memory(memory_id)
-        render_memory_archived(memory_id)
+    result = archive_memories(memory_ids)
+
+    if result["archived"]:
+        if len(result["archived"]) == 1:
+            render_memory_archived(result["archived"][0])
+        else:
+            render_memories_archived(result["archived"])
+
+    if result["missing"]:
+        render_memory_missing(result["missing"])
 
 
 def interpret_memory_selection(selection):

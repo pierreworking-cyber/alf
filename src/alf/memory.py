@@ -401,6 +401,28 @@ def archive_memory(memory_id: int):
         )
 
 
+def archive_memories(memory_ids):
+    """
+    Archive multiple memories while preserving their identities.
+    """
+
+    archived = []
+    missing = []
+
+    for memory_id in memory_ids:
+        if get_memory(memory_id) is None:
+            missing.append(memory_id)
+            continue
+
+        archive_memory(memory_id)
+        archived.append(memory_id)
+
+    return {
+        "archived": archived,
+        "missing": missing,
+    }
+
+
 def forget_memory(memory_id):
     """
     Forget a memory while preserving its identity.

@@ -499,6 +499,17 @@ def render_memory_archived(memory_id):
     console.print()
 
 
+def render_memories_archived(memory_ids):
+    """
+    Confirm that multiple memories have been archived.
+    """
+
+    success(
+        f"Memories {', '.join(str(memory_id) for memory_id in memory_ids)} "
+        "archived."
+    )
+
+
 def render_memory_saved(category):
     """
     Render memory confirmation.

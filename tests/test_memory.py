@@ -516,6 +516,45 @@ def test_archive_memory_handles_missing_memory(database):
     assert memory.get_memory(999) is None
 
 
+def test_archive_memories_archives_multiple_memories(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+    memory.remember("note", "Third memory.")
+
+    result = memory.archive_memories([1, 2, 3])
+
+    assert result == {
+        "archived": [1, 2, 3],
+        "missing": [],
+    }
+
+    assert memory.get_memory(1)["status"] == "archived"
+    assert memory.get_memory(2)["status"] == "archived"
+    assert memory.get_memory(3)["status"] == "archived"
+
+
+def test_archive_memories_preserves_content(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+
+    memory.archive_memories([1, 2])
+
+    assert memory.get_memory(1)["content"] == "First memory."
+    assert memory.get_memory(2)["content"] == "Second memory."
+
+
+def test_archive_memories_reports_missing_ids(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+
+    result = memory.archive_memories([1, 999, 2])
+
+    assert result == {
+        "archived": [1, 2],
+        "missing": [999],
+    }
+
+
 def test_forget_memory(database):
     memory.remember("note", "Forget me.")
 

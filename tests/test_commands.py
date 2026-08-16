@@ -693,8 +693,14 @@ def test_archive_command_archives_single_memory(monkeypatch):
 
     monkeypatch.setattr(
         commands,
-        "archive_memory",
-        lambda memory_id: captured.append(memory_id),
+        "archive_memories",
+        lambda memory_ids: (
+            captured.append(memory_ids)
+            or {
+                "archived": memory_ids,
+                "missing": [],
+            }
+        ),
     )
 
     monkeypatch.setattr(
@@ -705,7 +711,7 @@ def test_archive_command_archives_single_memory(monkeypatch):
 
     commands.archive_command("47")
 
-    assert captured == [47]
+    assert captured == [[47]]
 
 
 def test_archive_command_archives_memory_selection(monkeypatch):
@@ -713,19 +719,25 @@ def test_archive_command_archives_memory_selection(monkeypatch):
 
     monkeypatch.setattr(
         commands,
-        "archive_memory",
-        lambda memory_id: captured.append(memory_id),
+        "archive_memories",
+        lambda memory_ids: (
+            captured.append(memory_ids)
+            or {
+                "archived": memory_ids,
+                "missing": [],
+            }
+        ),
     )
 
     monkeypatch.setattr(
         commands,
-        "render_memory_archived",
-        lambda memory_id: None,
+        "render_memories_archived",
+        lambda memory_ids: None,
     )
 
     commands.archive_command("46-43,52")
 
-    assert captured == [43, 44, 45, 46, 52]
+    assert captured == [[43, 44, 45, 46, 52]]
 
 
 def test_archive_command_rejects_invalid_memory_selection(monkeypatch):
@@ -739,9 +751,9 @@ def test_archive_command_rejects_invalid_memory_selection(monkeypatch):
 
     monkeypatch.setattr(
         commands,
-        "archive_memory",
+        "archive_memories",
         lambda *arguments: pytest.fail(
-            "archive_memory should not be called"
+            "archive_memories should not be called"
         ),
     )
 
