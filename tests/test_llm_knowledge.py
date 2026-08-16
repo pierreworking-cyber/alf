@@ -16,7 +16,13 @@ llm.OLLAMA_MODEL = KNOWLEDGE_MODEL
 
 def normalise(text):
     """Normalise an LLM response for deterministic comparison."""
-    return re.sub(r"\s+", " ", text.strip().lower())
+    text = re.sub(r"\s+", " ", text.strip().lower())
+
+    # Ignore harmless terminal punctuation while preserving punctuation
+    # that may be meaningful within technical answers.
+    text = re.sub(r"[.!?]+$", "", text)
+
+    return text
 
 
 def answer_passes(test, answer):

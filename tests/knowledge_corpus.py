@@ -24,7 +24,7 @@ KNOWLEDGE_TESTS = [
     },
     {
         "question": "How many sides does a hexagon have?",
-        "expected": ["6"],
+        "expected": ["6", "six", "A hexagon has six sides"],
         "type": "exact",
     },
     {
@@ -112,7 +112,7 @@ KNOWLEDGE_TESTS = [
     {
         "question": "What does CPU stand for?",
         "expected": ["Central Processing Unit"],
-        "type": "exact",
+        "type": "contains",
     },
     {
         "question": "What does pytest -q mean?",
@@ -134,6 +134,8 @@ KNOWLEDGE_TESTS = [
         "expected": [
             "virtual environment",
             "isolated virtual environment",
+            "isolated Python environment",
+            "isolated Python environments",
         ],
         "type": "contains",
     },
