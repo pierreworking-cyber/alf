@@ -4,6 +4,86 @@ from alf import answer, commands
 from alf.routes import Route
 
 
+def test_question_command_uses_llm_when_route_is_llm(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "route",
+        lambda question: Route.LLM,
+    )
+
+    def fake_prepare_answer(
+        original_question,
+        research_question,
+        evidence,
+        verbose=False,
+    ):
+        captured["answer_request"] = {
+            "original_question": original_question,
+            "research_question": research_question,
+            "evidence": evidence,
+            "verbose": verbose,
+        }
+        return "Python's len() function returns the number of items."
+
+    monkeypatch.setattr(
+        commands,
+        "prepare_answer",
+        fake_prepare_answer,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "research_wikipedia_candidates",
+        lambda question: pytest.fail(
+            "Wikipedia research should not be used"
+        ),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "research_web",
+        lambda question: pytest.fail(
+            "Web research should not be used"
+        ),
+    )
+
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_question",
+        lambda answer, source, research_question: output.append(
+            (answer, source, research_question)
+        ),
+    )
+
+    commands.question_command(
+        "What",
+        "does",
+        "Python's",
+        "len()",
+        "function",
+        "return?",
+    )
+
+    assert captured["answer_request"] == {
+        "original_question": "What does Python's len() function return?",
+        "research_question": "What does Python's len() function return?",
+        "evidence": [],
+        "verbose": False,
+    }
+
+    assert output == [
+        (
+            "Python's len() function returns the number of items.",
+            "llm",
+            "What does Python's len() function return?",
+        )
+    ]
+
+
 def test_question_command_uses_wikipedia_when_research_is_relevant(monkeypatch):
     wikipedia_candidates = [
         {
@@ -117,7 +197,11 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
     ]
 
     calls = []
-
+    monkeypatch.setattr(
+        commands,
+        "route",
+        lambda question: Route.RESEARCH,
+    )
     monkeypatch.setattr(
         commands,
         "interpret_question",
@@ -197,6 +281,12 @@ def test_question_command_uses_web_when_wikipedia_is_not_relevant(monkeypatch):
 
 
 def test_question_command_admits_when_no_research_is_relevant(monkeypatch):
+    monkeypatch.setattr(
+        commands,
+        "route",
+        lambda question: Route.RESEARCH,
+    )
+
     monkeypatch.setattr(
         commands,
         "interpret_question",
