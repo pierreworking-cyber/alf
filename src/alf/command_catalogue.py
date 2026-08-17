@@ -22,6 +22,7 @@ commands = {
         "examples": [
             'alf calc "2^4.26"',
             'alf calc "12 * 7"',
+            'alf calc "solve(x^2 - 4, x)"',
         ],
     },
     "remember": {
