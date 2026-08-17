@@ -447,12 +447,12 @@ def interpret_memory_selection(selection):
     return memory_ids
 
 
-def forget_command(memory_id=None):
-    if not memory_id:
+def forget_command(*arguments):
+    if not arguments:
         render_command_structure_error("forget")
         return
 
-    memory_ids = interpret_memory_selection(memory_id)
+    memory_ids = interpret_memory_selection("".join(arguments))
 
     if memory_ids is None:
         render_command_structure_error("forget")
