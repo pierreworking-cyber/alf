@@ -38,7 +38,7 @@ MEMORIES = {
 }
 
 
-class Playground(App):
+class ALFTUI(App):
     """Minimal Textual playground."""
 
     CSS = """
@@ -455,5 +455,9 @@ class Playground(App):
         memories.focus()
 
 
+def main() -> None:
+    ALFTUI().run()
+
+
 if __name__ == "__main__":
-    Playground().run()
+    main()
