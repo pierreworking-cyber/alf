@@ -13,29 +13,7 @@ from textual.widgets import (
 )
 
 from alf.command_catalogue import commands
-
-MEMORIES = {
-    "34": {
-        "category": "Note",
-        "content": "symbolic mathematics",
-        "related": [],
-    },
-    "35": {
-        "category": "Note",
-        "content": "add symbolic math to help examples",
-        "related": [],
-    },
-    "38": {
-        "category": "Decision",
-        "content": "use relate and unrelate",
-        "related": [],
-    },
-    "40": {
-        "category": "Note",
-        "content": "extend retrospective linking to link editing (38)",
-        "related": ["38"],
-    },
-}
+from alf.memory import archive_memory, get_memories, get_memory, update_memory
 
 
 class ALFTUI(App):
@@ -51,9 +29,23 @@ class ALFTUI(App):
         border: solid yellow;
     }
 
+    #memories-list {
+        width: 55%;
+    }
+
     #memories {
-        width: 50%;
+        width: 100%;
         border: solid green;
+    }
+
+    #memories Label {
+        width: 100%;
+        height: auto;
+    }
+
+    #memories ListItem {
+        border-bottom: solid grey;
+        padding-bottom: 1;
     }
 
     #question-workspace,
@@ -213,20 +205,26 @@ class ALFTUI(App):
 
 
                 with Horizontal(id="memories-workspace"):
-                    yield ListView(
-                        *[
-                            ListItem(
-                                Label(
-                                    f"{memory_id}  "
-                                    f"{memory['category']:<9} "
-                                    f"{memory['content']}"
-                                ),
-                                id=f"memory-{memory_id}",
-                            )
-                            for memory_id, memory in MEMORIES.items()
-                        ],
-                        id="memories",
-                    )
+                    with Vertical(id="memories-list"):
+                        yield Checkbox(
+                            "Show archived",
+                            id="memories-all",
+                        )
+
+                        yield ListView(
+                            *[
+                                ListItem(
+                                    Label(
+                                        f"{memory['id']}  "
+                                        f"{memory['category']:<9} "
+                                        f"{memory['content']}"
+                                    ),
+                                    id=f"memory-{memory['id']}",
+                                )
+                                for memory in get_memories()
+                            ],
+                            id="memories",
+                        )
 
                     with Vertical(id="memory-detail"):
                         yield Static(
@@ -259,14 +257,17 @@ class ALFTUI(App):
 
 
     def show_memory(self, memory_id: str) -> None:
-        memory = MEMORIES[memory_id]
+        memory = get_memory(int(memory_id))
+
+        if memory is None:
+            return
 
         details = self.query_one("#details", Static)
 
-        related = ", ".join(memory["related"]) or "None"
+        related = memory["related_memory_ids"] or "None"
 
         details.update(
-            f"Memory {memory_id}\n\n"
+            f"Memory {memory['id']}\n\n"
             f"Category: {memory['category']}\n\n"
             f"{memory['content']}\n\n"
             f"Related: {related}"
@@ -346,6 +347,44 @@ class ALFTUI(App):
         elif event.button.id == "memory-save":
             await self.save_memory_edit()
 
+        elif event.button.id == "memory-archive":
+            selected = self.query_one("#memories", ListView).highlighted_child
+
+            if selected is None:
+                return
+
+            memory_id = selected.id.removeprefix("memory-")
+            archive_memory(int(memory_id))
+            await self.refresh_memories()
+    async def refresh_memories(self) -> None:
+        options = {
+            "category": None,
+            "include_archived": self.query_one(
+                "#memories-all",
+                Checkbox,
+            ).value,
+            "group": None,
+        }
+
+        memories = get_memories(options)
+
+        list_view = self.query_one("#memories", ListView)
+        await list_view.clear()
+
+        for memory in memories:
+            memory_id = str(memory["id"])
+
+            await list_view.append(
+                ListItem(
+                    Label(
+                        f"{memory_id}  "
+                        f"{memory['category']:<9} "
+                        f"{memory['content']}"
+                    ),
+                    id=f"memory-{memory_id}",
+                )
+            )
+
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if event.list_view.id == "navigation":
@@ -386,7 +425,10 @@ class ALFTUI(App):
             return
 
         memory_id = selected.id.removeprefix("memory-")
-        memory = MEMORIES[memory_id]
+        memory = get_memory(int(memory_id))
+
+        if memory is None:
+            return
 
         self.editing_memory_id = memory_id
 
@@ -427,11 +469,22 @@ class ALFTUI(App):
         editor = self.query_one("#memory-editor", TextArea)
         memory_id = self.editing_memory_id
 
-        MEMORIES[memory_id]["content"] = editor.text
+        update_memory(int(memory_id), editor.text)
 
         await self.refresh_memory_list()
         self.show_memory(memory_id)
         self.cancel_memory_edit()
+
+
+    def get_memory_query_options(self) -> dict:
+        return {
+            "category": None,
+            "include_archived": self.query_one(
+                "#memories-all",
+                Checkbox,
+            ).value,
+            "group": None,
+        }
 
 
     async def refresh_memory_list(self) -> None:
@@ -439,7 +492,11 @@ class ALFTUI(App):
 
         await memories.clear()
 
-        for memory_id, memory in MEMORIES.items():
+        current_memories = get_memories(self.get_memory_query_options())
+
+        for memory in current_memories:
+            memory_id = str(memory["id"])
+
             await memories.append(
                 ListItem(
                     Label(
@@ -451,8 +508,20 @@ class ALFTUI(App):
                 )
             )
 
-        memories.index = list(MEMORIES).index(self.editing_memory_id)
+        if self.editing_memory_id is not None:
+            for index, memory in enumerate(current_memories):
+                if str(memory["id"]) == self.editing_memory_id:
+                    memories.index = index
+                    break
+
         memories.focus()
+
+
+    async def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
+        if event.checkbox.id != "memories-all":
+            return
+
+        await self.refresh_memory_list()
 
 
 def main() -> None:
