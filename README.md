@@ -2,34 +2,54 @@
 
 ALF is Peter's local computing companion.
 
+It is intended to be a long-lived, persistent system whose knowledge,
+memories and capabilities can evolve over time.
+
+ALF is not intended to become another chatbot.
+
 ## Philosophy
 
-The LLM is replaceable.
+**The LLM is replaceable. ALF is not.**
 
-ALF is not.
+ALF owns its identity, tools, memory, workflow and application architecture.
+The local LLM is one component of that system and may be replaced without
+replacing ALF itself.
 
-ALF exists to be useful, not impressive.
+ALF is designed to be:
 
-ALF is designed as a personal computing companion that owns its identity, tools, memory, and workflow. The intelligence layer may change over time, but ALF's purpose remains consistent.
+* useful rather than impressive;
+* correct rather than merely fluent;
+* local and inspectable;
+* evidence-aware;
+* deterministic where appropriate;
+* simple enough to remain understandable.
 
-## Principles
+The core principles are:
 
-* Correctness over speed
-* Tools over guesses
-* Records over assumed memories
-* Simplicity over unnecessary complexity
+* **Correctness over speed**
+* **Tools over guesses**
+* **Records over assumed memories**
+* **Simplicity over unnecessary complexity**
 
 ## Current capabilities
 
-ALF currently has:
+ALF currently provides:
 
-* System awareness
-* Git repository awareness
-* Persistent memory using SQLite
-* Categorised knowledge storage
-* Command discovery
-* Capability discovery and self-description
-* Self-inspection through the `health` command
+* system awareness through controlled system interfaces;
+* Git repository awareness;
+* persistent memory using SQLite;
+* categorised memories;
+* memory history and relationships;
+* memory search;
+* memory archiving;
+* permanent memory deletion;
+* in-place memory editing;
+* deterministic command discovery and dispatch;
+* capability discovery and self-description;
+* self-inspection through the `health` command;
+* external research and evidence retrieval;
+* local LLM interpretation of supplied information;
+* an experimental Textual TUI.
 
 ## Running ALF
 
@@ -39,104 +59,208 @@ After activating the Python environment:
 alf
 ```
 
-ALF can also be run with specific commands:
+ALF can also be run with specific commands.
+
+For example:
 
 ```text
 alf help
 ```
 
-to display available commands.
+displays available commands.
 
-Current commands include:
+Command help can be requested with:
+
+```text
+alf help <command>
+```
+
+## Current commands
+
+The current command vocabulary includes:
 
 * `alf about` — Explain what ALF is
 * `alf archive <id>` — Archive a memory
+* `alf calc` — Perform a calculation
 * `alf categories` — Show memory categories
-* `alf forget <id>` — Forget a memory while preserving its identity
+* `alf delete <id>[,<id>...]` — Permanently delete memories
 * `alf health` — Show ALF internal health information
 * `alf help [command]` — Show command help
 * `alf history <id>` — Show memory history
 * `alf memories` — Recall previous memories
 * `alf memory <id>` — Show a single memory
-* `alf remember <category> "text" [--relate <id>]` — Add a memory
+* `alf question` — Ask ALF a question
+* `alf relate` — Manage relationships between memories
+* `alf remember <category> "text"` — Add a memory
 * `alf search "text"` — Search memories
 * `alf version` — Show ALF version
+
+The command dispatcher is deterministic. Unambiguous command prefixes may be
+used, but ALF does not guess commands from natural language.
 
 ## Memory
 
 ALF stores persistent memories using SQLite.
 
-Memory entries currently support categories:
+Memories currently support categories including:
 
 * `note`
 * `fact`
 * `decision`
 * `preference`
 
-Memories have permanent IDs and retain their identity when forgotten.
+Memories have permanent IDs.
 
-New memories can reference previous memories, allowing ALF to preserve the evolution of knowledge without modifying existing records.
+New memories can reference previous memories, allowing ALF to preserve the
+evolution of knowledge without modifying existing records.
 
-Example:
+Memory history is based on the `previous_memory_id` chain.
+
+For example:
 
 ```text
 alf remember preference "Peter prefers structured data"
 ```
 
-ALF's memory database is kept separate from source code and is not stored in version control.
+Memories can be archived when they are no longer active.
+
+### Deleting memories
+
+Memory deletion is permanent.
+
+```text
+alf delete 42
+```
+
+Deleted memories are removed from the database rather than being retained as
+"forgotten" records.
+
+Existing references to deleted memories are not silently rewritten. Historical
+and relationship lookups simply ignore records that no longer exist.
+
+### Editing memories
+
+An existing memory can also be edited in place.
+
+Editing does not create a new memory or revision. Creating a new memory remains
+the mechanism for preserving an evolution of knowledge.
+
+## Evidence and the local LLM
+
+ALF does not treat the local LLM as an authoritative source of factual
+knowledge.
+
+ALF gathers information through its capabilities and evidence sources, then
+the LLM interprets that information and produces a natural-language response.
+
+The intended flow is:
+
+**ALF gathers evidence → the LLM interprets it → ALF presents the result**
+
+The configured local Qwen model was deliberately tested against a factual
+knowledge qualification benchmark and was rejected as an independent
+knowledge provider after one substantive failure in twenty questions.
+
+The qualification benchmark is retained for evaluating future models.
+
+Consequently, ALF's architecture is designed so that the LLM can be replaced
+without replacing the underlying application.
 
 ## Data storage
 
-ALF separates:
+ALF separates source code from personal and runtime data.
 
-* Source code — managed by Git
-* Configuration — stored in TOML files
-* Runtime data — stored separately in SQLite
+The project uses SQLite for persistent memory.
 
-This separation allows ALF's code and personal data to evolve independently.
+The current development database is:
 
-## Design approach
+```text
+data/alf.db
+```
 
-ALF is built around small, independent capabilities.
+The database is not stored in version control.
 
-Where practical, components describe themselves rather than maintaining separate registration lists.
+Moving runtime data completely to the standard user data directory remains
+future work.
 
-Examples:
+## System awareness and safety
 
-* Commands provide metadata describing available actions
-* Subsystems can advertise capabilities
-* Health checks inspect ALF's internal structure
-* Runtime data is kept separate from source code
+ALF's system awareness is based on explicitly permitted interfaces rather
+than unrestricted shell access.
 
-The goal is not to create a complex framework, but to keep ALF understandable as it grows.
+ALF must not autonomously:
+
+* invoke `sudo`;
+* elevate privileges;
+* execute privileged operations;
+* imply that an action has occurred when it has not.
+
+Where privileged information is required, ALF may explain the limitation
+without turning the privileged operation into an instruction for the user.
+
+## Interfaces
+
+ALF currently has a command-line interface as its primary interface.
+
+An experimental Textual TUI is also being developed in:
+
+```text
+tui/tui.py
+```
+
+The TUI currently includes Question, Remember and Memories workspaces.
+
+It should be regarded as an experimental interface rather than a completed
+replacement for the CLI.
+
+Future interfaces should consume ALF's existing command and capability
+metadata rather than maintaining separate descriptions of ALF's functionality.
+
+## Development
+
+ALF is early-stage development software.
+
+The project uses:
+
+* Python;
+* SQLite;
+* pytest;
+* Ruff;
+* Git;
+* Ollama for local LLM integration.
+
+Development deliberately favours small, understandable and testable changes.
+
+Architectural decisions and current design direction are recorded in:
+
+```text
+WALL.md
+```
+
+The WALL is a working architectural document rather than a user manual.
 
 ## Current limitations
 
-ALF is still early in development.
+ALF is still evolving.
 
-Current limitations:
+Current limitations include:
 
-* Limited conversation ability
-* No natural language understanding
-* No autonomous planning
-* No external integrations
-
-## Future milestones
-
-Potential future developments:
-
-* Move runtime data to a standard user data location
-* Improved conversation interface
-* Better separation of configuration and identity
-* Terminal personality enhancements 🌈
-* Local AI integration
+* conversational interaction remains limited;
+* natural-language command interpretation is not currently part of deterministic
+  command dispatch;
+* autonomous planning is not implemented;
+* the local LLM is not trusted as an independent knowledge provider;
+* the TUI remains experimental;
+* external integrations remain limited.
 
 ## Project status
 
-Version: 0.1
+**Version:** 0.1.x development
 
-ALF is learning.
+ALF is deliberately being developed as infrastructure before attempting more
+ambitious forms of intelligence.
 
-The goal is not to create another chatbot.
+The goal is not to accumulate features for their own sake.
 
-The goal is to create a personal computing companion that is reliable, understandable, and evolves alongside its owner.
+The goal is to build a personal computing companion that remains reliable,
+understandable, maintainable and useful as it evolves over years.
