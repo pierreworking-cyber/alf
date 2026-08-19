@@ -151,6 +151,61 @@ def test_ask_handles_no_research(monkeypatch):
     assert result == "An answer without research."
 
 
+def test_ask_uses_detailed_style_when_verbose(monkeypatch):
+    captured = {}
+
+    def fake_generate(prompt):
+        captured["prompt"] = prompt
+        return "A detailed answer."
+
+    monkeypatch.setattr(
+        llm,
+        "_generate",
+        fake_generate,
+    )
+
+    result = llm.ask(
+        {
+            "question": "What are microbes?",
+            "evidence": [],
+            "verbose": True,
+        }
+    )
+
+    assert "Give a detailed, well-developed answer." in captured["prompt"]
+    assert (
+        "Provide useful context and explanation rather than a brief response."
+        in captured["prompt"]
+    )
+    assert result == "A detailed answer."
+
+
+def test_ask_uses_concise_style_when_not_verbose(monkeypatch):
+    captured = {}
+
+    def fake_generate(prompt):
+        captured["prompt"] = prompt
+        return "A concise answer."
+
+    monkeypatch.setattr(
+        llm,
+        "_generate",
+        fake_generate,
+    )
+
+    result = llm.ask(
+        {
+            "question": "What are microbes?",
+            "evidence": [],
+            "verbose": False,
+        }
+    )
+
+    assert "Give a concise but useful answer." in captured["prompt"]
+    assert "Do not add unnecessary detail." in captured["prompt"]
+    assert result == "A concise answer."
+
+
 def test_evaluate_research_returns_relevant_result(monkeypatch):
     response_data = {
         "response": json.dumps(
