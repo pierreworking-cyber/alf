@@ -2,14 +2,11 @@
 ALF command dispatcher.
 """
 
-from .answer import prepare_answer
 from .calc import CalculationError, calculate
 from .command_catalogue import commands
 from .command_resolution import resolve_category, resolve_command
 from .healthcheck import get_health_report
 from .identity import get_about_information, get_identity
-from .interpretation import interpret_question
-from .llm import evaluate_research
 from .memory import (
     archive_memories,
     delete_memories,
@@ -51,9 +48,7 @@ from .presentation import (
     render_status,
     render_version,
 )
-from .research import research_web, research_wikipedia_candidates
-from .router import route
-from .routes import Route
+from .question import answer_question
 from .status import get_status_information
 
 
@@ -493,75 +488,16 @@ def question_command(*arguments):
         return
 
     original_question = " ".join(question_arguments).strip()
-    selected_route = route(original_question)
 
-    if selected_route == Route.LLM:
-        answer = prepare_answer(
-            original_question,
-            original_question,
-            [],
-            verbose=verbose,
-        )
-        render_question(
-            answer,
-            "llm",
-            original_question,
-        )
-        return
-
-    research_question = interpret_question(original_question)
-
-    candidates = research_wikipedia_candidates(research_question)
-    evaluation = evaluate_research(research_question, candidates)
-
-    if evaluation["relevant"]:
-        relevant_candidates = [
-            candidates[index - 1]
-            for index in evaluation["candidates"]
-            if 1 <= index <= len(candidates)
-        ]
-
-        if relevant_candidates:
-            answer = prepare_answer(
-                original_question,
-                research_question,
-                [relevant_candidates[0]],
-                verbose=verbose,
-            )
-            render_question(
-                answer,
-                "wikipedia",
-                research_question,
-            )
-            return
-
-    web_candidates = research_web(research_question)
-    web_evaluation = evaluate_research(research_question, web_candidates)
-
-    if web_evaluation["relevant"]:
-        relevant_candidates = [
-            web_candidates[index - 1]
-            for index in web_evaluation["candidates"]
-            if 1 <= index <= len(web_candidates)
-        ]
-
-        if relevant_candidates:
-            answer = prepare_answer(
-                original_question,
-                research_question,
-                [relevant_candidates[0]],
-                verbose=verbose,
-            )
-            render_question(
-                answer,
-                "web",
-                research_question,
-            )
-            return
+    result = answer_question(
+        original_question,
+        verbose=verbose,
+    )
 
     render_question(
-        "I couldn't find reliable research that answers your question. "
-        "I don't want to guess."
+        result.answer,
+        result.source,
+        result.research_question,
     )
 
 
