@@ -1,3 +1,4 @@
+from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import (
@@ -20,6 +21,7 @@ from alf.memory import (
     get_memory,
     update_memory,
 )
+from alf.question import answer_question
 
 
 class ALFTUI(App):
@@ -66,6 +68,11 @@ class ALFTUI(App):
 
     #question-controls {
         height: 3;
+    }
+
+    #question-status {
+        width: 1fr;
+        padding: 1 2;
     }
 
     #answer {
@@ -157,10 +164,13 @@ class ALFTUI(App):
                         id="question-input",
                         placeholder=question_tui["description"],
                     )
-
                     with Horizontal(id="question-controls"):
                         yield Checkbox("Detailed answer", id="detailed-answer")
                         yield Button("Ask", id="ask")
+                        yield Static(
+                            "Ready",
+                            id="question-status",
+                        )
 
                     yield Static(
                         question_tui["guidance"],
@@ -309,24 +319,80 @@ class ALFTUI(App):
 
         detailed = self.query_one("#detailed-answer", Checkbox).value
 
+        status = self.query_one("#question-status", Static)
         answer = self.query_one("#answer", Static)
         source = self.query_one("#answer-source", Static)
         ok_button = self.query_one("#answer-ok", Button)
 
-        if detailed:
-            answer.update(
-                "This is a more detailed temporary ALF answer. "
-                "The real question machinery will eventually appear here."
-            )
-        else:
-            answer.update(
-                "This is a temporary ALF answer. "
-                "The real question machinery will eventually appear here."
+        status.update("Asking local language model…")
+        answer.update("Waiting for answer…")
+        source.update("Source: Local language model")
+        ok_button.display = False
+        self.query_one("#ask", Button).disabled = True
+
+        self.ask_question_worker(
+            question,
+            detailed,
+        )
+
+    @work(thread=True)
+    def ask_question_worker(
+        self,
+        question: str,
+        detailed: bool,
+    ) -> None:
+
+        def report_progress(message: str) -> None:
+            self.call_from_thread(
+                self.update_question_status,
+                message,
             )
 
-        source.update("Source: Temporary playground response")
+        try:
+            result = answer_question(
+                question,
+                verbose=detailed,
+                progress=report_progress,
+            )
+        except Exception as error:
+            self.call_from_thread(
+                self.show_question_error,
+                str(error),
+            )
+            return
 
-        ok_button.display = True
+        self.call_from_thread(
+            self.show_question_answer,
+            result,
+        )
+
+    def update_question_status(self, message: str) -> None:
+        self.query_one("#question-status", Static).update(message)
+
+    def show_question_answer(self, result) -> None:
+        self.query_one("#question-status", Static).update("Complete")
+        self.query_one("#answer", Static).update(result.answer)
+
+        source = result.source or "No reliable source"
+        self.query_one("#answer-source", Static).update(
+            f"Source: {source}"
+        )
+
+        self.query_one("#answer-ok", Button).display = True
+        self.query_one("#ask", Button).disabled = False
+
+    def show_question_error(self, error: str) -> None:
+        self.query_one("#question-status", Static).update("Failed")
+        self.query_one("#answer", Static).update(
+            "I couldn't get an answer to the question."
+        )
+        self.query_one("#answer-source", Static).update(
+            f"Error: {error}"
+        )
+        self.query_one("#answer-ok", Button).display = True
+        self.query_one("#ask", Button).disabled = False
+
+
 
     def clear_question(self) -> None:
         self.query_one("#question-input", TextArea).text = ""
