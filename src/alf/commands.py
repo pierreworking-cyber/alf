@@ -12,7 +12,7 @@ from .interpretation import interpret_question
 from .llm import evaluate_research
 from .memory import (
     archive_memories,
-    forget_memories,
+    delete_memories,
     get_memories,
     get_memory,
     get_memory_categories,
@@ -35,11 +35,11 @@ from .presentation import (
     render_invalid_related_memory,
     render_memories,
     render_memories_archived,
-    render_memories_forgotten,
+    render_memories_deleted,
     render_memory,
     render_memory_archived,
     render_memory_categories,
-    render_memory_forgotten,
+    render_memory_deleted,
     render_memory_history,
     render_memory_missing,
     render_memory_not_numeric,
@@ -450,24 +450,24 @@ def interpret_memory_selection(selection):
     return memory_ids
 
 
-def forget_command(*arguments):
+def delete_command(*arguments):
     if not arguments:
-        render_command_structure_error("forget")
+        render_command_structure_error("delete")
         return
 
     memory_ids = interpret_memory_selection("".join(arguments))
 
     if memory_ids is None:
-        render_command_structure_error("forget")
+        render_command_structure_error("delete")
         return
 
-    result = forget_memories(memory_ids)
+    result = delete_memories(memory_ids)
 
-    if result["forgotten"]:
-        if len(result["forgotten"]) == 1:
-            render_memory_forgotten(result["forgotten"][0])
+    if result["deleted"]:
+        if len(result["deleted"]) == 1:
+            render_memory_deleted(result["deleted"][0])
         else:
-            render_memories_forgotten(result["forgotten"])
+            render_memories_deleted(result["deleted"])
 
     if result["missing"]:
         render_memory_missing(result["missing"])
@@ -591,7 +591,7 @@ command_handlers = {
     "health": health_command,
     "about": about_command,
     "archive": archive_command,
-    "forget": forget_command,
+    "delete": delete_command,
     "version": version_command,
     "calc": calc_command,
     "search": search_command,

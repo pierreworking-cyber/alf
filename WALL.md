@@ -119,7 +119,6 @@ The experiment also exposed limitations in the deterministic corpus: exact strin
 Conclusion: LLM agreement is not sufficient evidence for promoting model knowledge into ALF's trusted knowledge base. LLMs remain interpreters of supplied evidence rather than authoritative knowledge providers. The experiment is retained as evidence supporting this architectural decision.
 
 
-
 ### System awareness and interfaces
 
 ALF's system capability is defined by the **interfaces it is permitted to inspect**, rather than by a hard-coded list of system components or resources.
@@ -216,6 +215,10 @@ Potential knowledge sources include:
 The knowledge-routing layer should remain explicit, small and testable.
 
 Search architecture: Use the local search service as ALF's general web-search interface. Do not create a separate Wikipedia search layer unless a specific requirement emerges that the general search service cannot satisfy.
+
+### Known limitation
+— LLM route: Questions classified as Route.LLM are answered by the local model without external evidence. The model may confidently answer incorrectly when it lacks knowledge of a named application, library, command, or other specific subject. This is a limitation of the knowledge provider, not necessarily a routing failure.
+
 
 ## Data
 

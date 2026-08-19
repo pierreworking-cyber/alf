@@ -13,7 +13,13 @@ from textual.widgets import (
 )
 
 from alf.command_catalogue import commands
-from alf.memory import archive_memory, get_memories, get_memory, update_memory
+from alf.memory import (
+    archive_memory,
+    delete_memory,
+    get_memories,
+    get_memory,
+    update_memory,
+)
 
 
 class ALFTUI(App):
@@ -241,7 +247,7 @@ class ALFTUI(App):
                                 yield Button("Edit", id="memory-edit")
                                 yield Button("Relate", id="memory-relate")
                                 yield Button("Archive", id="memory-archive")
-                                yield Button("Forget", id="memory-forget")
+                                yield Button("Delete", id="memory-delete")
 
                             with Horizontal(id="memory-edit-actions"):
                                 yield Button("Save", id="memory-save")
@@ -356,6 +362,17 @@ class ALFTUI(App):
             memory_id = selected.id.removeprefix("memory-")
             archive_memory(int(memory_id))
             await self.refresh_memories()
+
+        elif event.button.id == "memory-delete":
+            selected = self.query_one("#memories", ListView).highlighted_child
+
+            if selected is None:
+                return
+
+            memory_id = selected.id.removeprefix("memory-")
+            delete_memory(int(memory_id))
+            await self.refresh_memories()
+
     async def refresh_memories(self) -> None:
         options = {
             "category": None,

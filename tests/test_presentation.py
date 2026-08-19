@@ -17,20 +17,20 @@ def test_render_command_structure_error(monkeypatch, capsys):
     assert "Press Return to continue..." in output
 
 
-def test_render_memory_forgotten(capsys):
-    presentation.render_memory_forgotten(12)
+def test_render_memory_deleted(capsys):
+    presentation.render_memory_deleted(12)
 
     output = capsys.readouterr().out
 
-    assert "Memory 12 forgotten." in output
+    assert "Memory 12 deleted." in output
 
 
-def test_render_memories_forgotten(capsys):
-    presentation.render_memories_forgotten([10, 11, 12])
+def test_render_memories_deleted(capsys):
+    presentation.render_memories_deleted([10, 11, 12])
 
     output = capsys.readouterr().out
 
-    assert "Memories 10, 11, 12 forgotten." in output
+    assert "Memories 10, 11, 12 deleted." in output
 
 
 def test_render_memory_missing(capsys):

@@ -599,82 +599,82 @@ def test_interpret_memory_selection_rejects_negative_id():
     assert commands.interpret_memory_selection("-12") is None
 
 
-def test_forget_command_forgets_single_memory(monkeypatch):
+def test_delete_command_deletes_single_memory(monkeypatch):
     captured = {}
 
     monkeypatch.setattr(
         commands,
-        "forget_memories",
+        "delete_memories",
         lambda memory_ids: {
-            "forgotten": memory_ids,
+            "deleted": memory_ids,
             "missing": [],
         },
     )
 
     monkeypatch.setattr(
         commands,
-        "render_memory_forgotten",
+        "render_memory_deleted",
         lambda memory_id: captured.setdefault(
-            "forgotten",
+            "deleted",
             memory_id,
         ),
     )
 
-    commands.forget_command("26")
+    commands.delete_command("26")
 
     assert captured == {
-        "forgotten": 26,
+        "deleted": 26,
     }
 
 
-def test_forget_command_forgets_memory_range(monkeypatch):
+def test_delete_command_deletes_memory_range(monkeypatch):
     captured = {}
 
-    def fake_forget_memories(memory_ids):
+    def fake_delete_memories(memory_ids):
         captured["memory_ids"] = memory_ids
         return {
-            "forgotten": memory_ids,
+            "deleted": memory_ids,
             "missing": [],
         }
 
     monkeypatch.setattr(
         commands,
-        "forget_memories",
-        fake_forget_memories,
+        "delete_memories",
+        fake_delete_memories,
     )
 
     monkeypatch.setattr(
         commands,
-        "render_memories_forgotten",
+        "render_memories_deleted",
         lambda memory_ids: captured.setdefault(
-            "forgotten",
+            "deleted",
             memory_ids,
         ),
     )
 
-    commands.forget_command("23-26")
+    commands.delete_command("23-26")
 
     assert captured["memory_ids"] == [23, 24, 25, 26]
-    assert captured["forgotten"] == [23, 24, 25, 26]
+    assert captured["deleted"] == [23, 24, 25, 26]
 
 
-def test_forget_command_reports_missing_memories(monkeypatch):
+def test_delete_command_reports_missing_memories(monkeypatch):
     output = []
 
     monkeypatch.setattr(
         commands,
-        "forget_memories",
+        "delete_memories",
         lambda memory_ids: {
-            "forgotten": [23, 24],
+            "deleted": [23, 24],
             "missing": [25],
         },
     )
 
     monkeypatch.setattr(
         commands,
-        "render_memories_forgotten",
+        "render_memories_deleted",
         lambda memory_ids: output.append(
-            ("forgotten", memory_ids)
+            ("deleted", memory_ids)
         ),
     )
 
@@ -686,15 +686,15 @@ def test_forget_command_reports_missing_memories(monkeypatch):
         ),
     )
 
-    commands.forget_command("23-25")
+    commands.delete_command("23-25")
 
     assert output == [
-        ("forgotten", [23, 24]),
+        ("deleted", [23, 24]),
         ("missing", [25]),
     ]
 
 
-def test_forget_command_rejects_invalid_selection(monkeypatch):
+def test_delete_command_rejects_invalid_selection(monkeypatch):
     output = []
 
     monkeypatch.setattr(
@@ -703,9 +703,9 @@ def test_forget_command_rejects_invalid_selection(monkeypatch):
         lambda command: output.append(command),
     )
 
-    commands.forget_command("-12")
+    commands.delete_command("-12")
 
-    assert output == ["forget"]
+    assert output == ["delete"]
 
 
 def test_relate_command_accepts_multiple_memory_ids(monkeypatch):

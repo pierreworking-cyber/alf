@@ -45,6 +45,14 @@ commands = {
             'alf remember preference "Peter prefers Labradors" --relate 4,12',
             'alf remember -c preference "Peter prefers Labradors" -r 4,12',
         ],
+        "tui": {
+            "title": "Remember",
+            "description": "Give ALF something to remember.",
+            "guidance": (
+                "Choose a category, enter the memory, and optionally "
+                "relate it to existing memories."
+            ),
+        },
     },
     "relate": {
         "id": "memory.relate",
@@ -75,6 +83,11 @@ commands = {
             "alf memories --category preference",
             "alf memories --group category",
         ],
+        "tui": {
+            "title": "Memories",
+            "description": "Recall and explore previous memories.",
+            "guidance": "Select a memory to view its details.",
+        },
     },
     "categories": {
         "id": "memory.categories",
@@ -127,15 +140,15 @@ commands = {
             "alf archive 10-12,15,20-21",
         ],
     },
-    "forget": {
-        "id": "command.forget",
-        "help": "Forget one or more memories while preserving their identities.",
-        "usage": "alf forget <id>[,<id>...]",
+    "delete": {
+        "id": "memory.delete",
+        "help": "Delete one or more memories.",
+        "usage": "alf delete <id>[,<id>...]",
         "examples": [
-            "alf forget 10-12",
-            "alf forget 15",
-            "alf forget 20-21",
-            "alf forget 10-12,15,20-21",
+            "alf delete 10-12",
+            "alf delete 15",
+            "alf delete 20-21",
+            "alf delete 10-12,15,20-21",
         ],
     },
     "version": {
@@ -171,5 +184,13 @@ commands = {
         "notes": [
             "Quote the entire question so the shell passes it to ALF as one argument.",
         ],
+        "tui": {
+            "title": "Question",
+            "description": "Ask ALF a question.",
+            "guidance": (
+                "Enter your question and choose whether you want "
+                "a detailed answer."
+            ),
+        },
     },
 }

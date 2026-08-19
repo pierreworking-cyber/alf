@@ -538,22 +538,22 @@ def render_memory_related(memory_id, related_memory_ids):
     )
 
 
-def render_memory_forgotten(memory_id):
+def render_memory_deleted(memory_id):
     """
-    Confirm that a memory has been forgotten.
+    Confirm that a memory has been deleted.
     """
 
-    success(f"Memory {memory_id} forgotten.")
+    success(f"Memory {memory_id} deleted.")
 
 
-def render_memories_forgotten(memory_ids):
+def render_memories_deleted(memory_ids):
     """
-    Confirm that multiple memories have been forgotten.
+    Confirm that multiple memories have been deleted.
     """
 
     success(
         f"Memories {', '.join(str(memory_id) for memory_id in memory_ids)} "
-        "forgotten."
+        "deleted."
     )
 
 

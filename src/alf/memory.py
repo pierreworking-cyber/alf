@@ -212,6 +212,27 @@ def remember(
     return True
 
 
+def update_memory(memory_id: int, content: str):
+    """
+    Update the content of an existing memory in place.
+    """
+
+    if get_memory(memory_id) is None:
+        return False
+
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE memories
+            SET content = ?
+            WHERE id = ?
+            """,
+            (content, memory_id),
+        )
+
+    return True
+
+
 def get_memories(options=None):
     """
     Retrieve ALF memories using query options.
@@ -423,9 +444,9 @@ def archive_memories(memory_ids):
     }
 
 
-def forget_memory(memory_id):
+def delete_memory(memory_id: int):
     """
-    Forget a memory while preserving its identity.
+    Delete a memory permanently.
     """
 
     with get_connection() as connection:
@@ -433,33 +454,35 @@ def forget_memory(memory_id):
 
         cursor.execute(
             """
-            UPDATE memories
-            SET status = 'forgotten',
-                content = '[forgotten]'
+            DELETE FROM memories
             WHERE id = ?
             """,
             (memory_id,),
         )
 
+        if cursor.rowcount == 0:
+            return False
 
-def forget_memories(memory_ids):
+    return True
+
+
+def delete_memories(memory_ids):
     """
-    Forget multiple memories while preserving their identities.
+    Delete multiple memories while repairing their histories
+    and relationships.
     """
 
-    forgotten = []
+    deleted = []
     missing = []
 
     for memory_id in memory_ids:
-        if get_memory(memory_id) is None:
+        if delete_memory(memory_id):
+            deleted.append(memory_id)
+        else:
             missing.append(memory_id)
-            continue
-
-        forget_memory(memory_id)
-        forgotten.append(memory_id)
 
     return {
-        "forgotten": forgotten,
+        "deleted": deleted,
         "missing": missing,
     }
 

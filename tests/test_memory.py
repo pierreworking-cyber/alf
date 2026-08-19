@@ -96,6 +96,26 @@ def test_remember_rejects_invalid_previous_memory(database):
     assert memory.get_memories() == []
 
 
+def test_update_memory_changes_content_without_creating_memory(database):
+    memory.remember("note", "Original memory.")
+
+    result = memory.update_memory(1, "Edited memory.")
+
+    assert result is True
+    assert memory.get_memory(1)["content"] == "Edited memory."
+    assert memory.get_memories() == [
+        {
+            "id": 1,
+            "created": memory.get_memory(1)["created"],
+            "category": "note",
+            "status": "active",
+            "content": "Edited memory.",
+            "previous_memory_id": None,
+            "related_memory_ids": None,
+        }
+    ]
+
+
 def test_remember_rejects_invalid_related_memory(database):
     result = memory.remember(
         "note",
@@ -555,81 +575,159 @@ def test_archive_memories_reports_missing_ids(database):
     }
 
 
-def test_forget_memory(database):
-    memory.remember("note", "Forget me.")
+def test_delete_memory_removes_memory(database):
+    memory.remember("note", "Delete me.")
 
-    memory.forget_memory(1)
+    assert memory.delete_memory(1) is True
 
-    result = memory.get_memory(1)
-
-    assert result["status"] == "forgotten"
-    assert result["content"] == "[forgotten]"
+    assert memory.get_memory(1) is None
 
 
-def test_forget_memory_marks_memory_forgotten(database):
-    memory.remember("note", "Memory to forget.")
-
-    memory.forget_memory(1)
-
-    result = memory.get_memory(1)
-
-    assert result["status"] == "forgotten"
-    assert result["content"] == "[forgotten]"
-
-
-def test_forget_memory_preserves_memory_id(database):
-    memory.remember("note", "Memory to forget.")
-
-    memory.forget_memory(1)
-
-    result = memory.get_memory(1)
-
-    assert result["id"] == 1
-
-
-def test_forget_memory_handles_missing_memory(database):
-    memory.forget_memory(999)
-
-    assert memory.get_memory(999) is None
-
-
-def test_forget_memories_forgets_multiple_memories(database):
+def test_delete_memory_preserves_other_memories(database):
     memory.remember("note", "First memory.")
     memory.remember("note", "Second memory.")
     memory.remember("note", "Third memory.")
 
-    result = memory.forget_memories([1, 2, 3])
+    memory.delete_memory(2)
+
+    assert memory.get_memory(1)["content"] == "First memory."
+    assert memory.get_memory(3)["content"] == "Third memory."
+
+
+def test_delete_memory_leaves_history_reference_to_deleted_memory(database):
+    memory.remember("note", "Original.")
+    memory.remember(
+        "note",
+        "Revision.",
+        previous_memory_id=1,
+    )
+    memory.remember(
+        "note",
+        "Final revision.",
+        previous_memory_id=2,
+    )
+
+    memory.delete_memory(2)
+
+    result = memory.get_memory(3)
+
+    assert result["previous_memory_id"] == 2
+
+    history = memory.get_memory_history(3)
+
+    assert [item["id"] for item in history] == [3]
+
+
+def test_delete_memory_leaves_history_reference_when_first_memory_is_deleted(
+    database,
+):
+    memory.remember("note", "Original.")
+    memory.remember(
+        "note",
+        "Revision.",
+        previous_memory_id=1,
+    )
+
+    memory.delete_memory(1)
+
+    result = memory.get_memory(2)
+
+    assert result["previous_memory_id"] == 1
+
+    history = memory.get_memory_history(2)
+
+    assert [item["id"] for item in history] == [2]
+
+
+def test_delete_memory_leaves_related_memory_id(database):
+    memory.remember("note", "First memory.")
+    memory.remember(
+        "note",
+        "Second memory.",
+        related_memory_ids="1",
+    )
+
+    memory.delete_memory(1)
+
+    result = memory.get_memory(2)
+
+    assert result["related_memory_ids"] == "1"
+    assert memory.get_related_memories(2) == []
+
+
+def test_delete_memory_leaves_multiple_related_memory_ids(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+    memory.remember(
+        "note",
+        "Third memory.",
+        related_memory_ids="1,2",
+    )
+
+    memory.delete_memory(1)
+
+    result = memory.get_memory(3)
+
+    assert result["related_memory_ids"] == "1,2"
+    assert [item["id"] for item in memory.get_related_memories(3)] == [2]
+
+
+def test_delete_memory_leaves_history_and_relationship_references(database):
+    memory.remember("note", "Original.")
+    memory.remember(
+        "note",
+        "Revision.",
+        previous_memory_id=1,
+    )
+    memory.remember(
+        "note",
+        "Related memory.",
+        related_memory_ids="2",
+    )
+
+    memory.delete_memory(2)
+
+    result = memory.get_memory(3)
+
+    assert result["previous_memory_id"] is None
+    assert result["related_memory_ids"] == "2"
+    assert memory.get_related_memories(3) == []
+
+
+def test_delete_memory_handles_missing_memory(database):
+    assert memory.delete_memory(999) is False
+
+
+def test_delete_memories_deletes_multiple_memories(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+    memory.remember("note", "Third memory.")
+
+    result = memory.delete_memories([1, 2, 3])
 
     assert result == {
-        "forgotten": [1, 2, 3],
+        "deleted": [1, 2, 3],
         "missing": [],
     }
 
-    assert memory.get_memory(1)["status"] == "forgotten"
-    assert memory.get_memory(2)["status"] == "forgotten"
-    assert memory.get_memory(3)["status"] == "forgotten"
+    assert memory.get_memory(1) is None
+    assert memory.get_memory(2) is None
+    assert memory.get_memory(3) is None
 
 
-def test_forget_memories_replaces_content(database):
+def test_delete_memories_reports_missing_ids(database):
     memory.remember("note", "First memory.")
     memory.remember("note", "Second memory.")
 
-    memory.forget_memories([1, 2])
-
-    assert memory.get_memory(1)["content"] == "[forgotten]"
-    assert memory.get_memory(2)["content"] == "[forgotten]"
-
-
-def test_forget_memories_reports_missing_ids(database):
-    memory.remember("note", "First memory.")
-    memory.remember("note", "Second memory.")
-
-    result = memory.forget_memories([1, 999, 2])
+    result = memory.delete_memories([1, 999, 2])
 
     assert result == {
-        "forgotten": [1, 2],
+        "deleted": [1, 2],
         "missing": [999],
     }
+
+    assert memory.get_memory(1) is None
+    assert memory.get_memory(2) is None
 
 
 def test_search_memories(database):
