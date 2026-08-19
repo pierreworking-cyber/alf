@@ -119,8 +119,8 @@ def help_command(argument=None):
 
 def remember_command(*arguments):
     category = None
-    content = None
     related_memory_ids = None
+    positional_arguments = []
     index = 0
 
     while index < len(arguments):
@@ -151,19 +151,22 @@ def remember_command(*arguments):
             render_command_structure_error("remember")
             return
 
-        if category is None:
-            category = argument
-        elif content is None:
-            content = argument
-        else:
+        positional_arguments.append(argument)
+        index += 1
+
+    if category is None:
+        if len(positional_arguments) != 2:
             render_command_structure_error("remember")
             return
 
-        index += 1
+        category, content = positional_arguments
 
-    if category is None or content is None:
-        render_command_structure_error("remember")
-        return
+    else:
+        if len(positional_arguments) != 1:
+            render_command_structure_error("remember")
+            return
+
+        content = positional_arguments[0]
 
     category = resolve_category(category)
 

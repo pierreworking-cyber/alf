@@ -255,6 +255,32 @@ def test_remember_accepts_long_category_option(monkeypatch):
     assert captured["related_memory_ids"] is None
 
 
+def test_remember_accepts_content_before_long_category_option(monkeypatch):
+    captured = {}
+
+    def fake_remember(category, content, related_memory_ids=None):
+        captured["category"] = category
+        captured["content"] = content
+        captured["related_memory_ids"] = related_memory_ids
+        return True
+
+    monkeypatch.setattr(commands, "remember", fake_remember)
+    monkeypatch.setattr(
+        commands,
+        "render_memory_saved",
+        lambda category: captured.setdefault("saved", category),
+    )
+
+    assert commands.run(
+        "rem",
+        ["Peter prefers dogs", "--category", "preference"],
+    ) is True
+
+    assert captured["category"] == "preference"
+    assert captured["content"] == "Peter prefers dogs"
+    assert captured["related_memory_ids"] is None
+
+
 def test_remember_rejects_category_option_without_value(monkeypatch):
     output = []
 
