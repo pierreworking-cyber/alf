@@ -1,6 +1,6 @@
 from textual import work
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import (
     Button,
     Checkbox,
@@ -177,10 +177,10 @@ class ALFTUI(App):
                         id="guidance",
                     )
 
-                    yield Static(
-                        "Your answer will appear here.",
-                        id="answer",
-                    )
+                    with VerticalScroll(id="answer"):
+                        yield Static(
+                            "Your answer will appear here.",
+                        )
 
                     yield Static(
                         "Source: —",
@@ -320,7 +320,7 @@ class ALFTUI(App):
         detailed = self.query_one("#detailed-answer", Checkbox).value
 
         status = self.query_one("#question-status", Static)
-        answer = self.query_one("#answer", Static)
+        answer = self.query_one("#answer Static", Static)
         source = self.query_one("#answer-source", Static)
         ok_button = self.query_one("#answer-ok", Button)
 
@@ -371,7 +371,7 @@ class ALFTUI(App):
 
     def show_question_answer(self, result) -> None:
         self.query_one("#question-status", Static).update("Complete")
-        self.query_one("#answer", Static).update(result.answer)
+        self.query_one("#answer Static", Static).update(result.answer)
 
         source = result.source or "No reliable source"
         self.query_one("#answer-source", Static).update(
@@ -396,7 +396,7 @@ class ALFTUI(App):
 
     def clear_question(self) -> None:
         self.query_one("#question-input", TextArea).text = ""
-        self.query_one("#answer", Static).update(
+        self.query_one("#answer Static", Static).update(
             "Your answer will appear here."
         )
         self.query_one("#answer-source", Static).update("Source: —")
