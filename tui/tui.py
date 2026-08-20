@@ -1,3 +1,5 @@
+import asyncio
+
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
@@ -18,6 +20,7 @@ from alf.command_catalogue import commands
 from alf.memory import (
     archive_memory,
     delete_memory,
+    find_related_memory_candidates,
     get_memories,
     get_memory,
     remember,
@@ -38,61 +41,84 @@ class ALFTUI(App):
         height: 1fr;
     }
 
-    #navigation {
-        width: 15%;
-        border: solid yellow;
-    }
+      #navigation {
+          width: 12%;
+          border: solid yellow;
+      }
 
-    #workspace {
-        width: 85%;
-        height: 1fr;
-    }
+      #workspace {
+          width: 88%;
+          height: 1fr;
+      }
 
-    #workspace-left {
-        width: 40%;
-        border: solid green;
-        padding: 1 2;
-    }
+      #workspace-left {
+          width: 40%;
+          border: solid green;
+          padding: 1 2;
+      }
 
-    #remember-workspace #workspace-left {
-        padding-top: 0;
-    }
+      #remember-workspace #workspace-left {
+          padding-top: 0;
+      }
 
-    #workspace-right {
-        width: 60%;
-        border: solid blue;
-        padding: 1 2;
-    }
+      #workspace-right {
+          width: 60%;
+          border: solid blue;
+          padding: 1 2;
+      }
 
-    .workspace-title {
-        height: 3;
-        content-align: left middle;
-    }
+      .workspace-title {
+          height: 3;
+          content-align: left middle;
+      }
 
-    #remember-workspace {
-        height: 1fr;
-    }
+      #remember-workspace {
+          height: 1fr;
+      }
 
-    #remember-category {
-        height: 3;
-    }
+      #remember-category {
+          height: 3;
+      }
 
-    #remember-input {
-        height: 1fr;
-    }
+      #remember-input {
+          width: 100%;
+          height: 1fr;
+      }
 
-    #remember-related-title {
-        height: 3;
-        padding-top: 1;
-    }
+      #remember-related-title {
+          height: 3;
+          padding-top: 1;
+      }
 
-    #remember-related {
-        height: 5;
-    }
+      #remember-related {
+          height: 1fr;
+      }
 
-    #remember-guidance {
-        height: 3;
-    }
+      #remember-related Horizontal {
+          width: 100%;
+          height: auto;
+      }
+
+      #remember-related Checkbox {
+          width: auto;
+          height: auto;
+      }
+
+      #remember-related Label {
+          width: 1fr;
+          height: auto;
+          text-wrap: nowrap;
+      }
+
+      #remember-related ListItem {
+          border-bottom: solid grey;
+          padding-bottom: 1;
+      }
+
+      #remember-save {
+          width: 100%;
+          height: 3;
+      }
 
     #remember-save {
         width: 100%;
@@ -282,6 +308,11 @@ class ALFTUI(App):
                             placeholder=remember_tui["description"],
                         )
 
+                        yield Button(
+                            "Save",
+                            id="remember-save",
+                        )
+                    with Vertical(id="workspace-right"):
                         yield Static(
                             "Related memories",
                             id="remember-related-title",
@@ -290,19 +321,6 @@ class ALFTUI(App):
                         yield ListView(
                             id="remember-related",
                         )
-
-                        yield Static(
-                            remember_tui["guidance"],
-                            id="remember-guidance",
-                        )
-
-                        yield Button(
-                            "Save",
-                            id="remember-save",
-                        )
-
-                    with Vertical(id="workspace-right"):
-                        yield Static("")
 
                 with Horizontal(id="memories-workspace"):
                     with Vertical(id="memories-list"):
@@ -384,10 +402,13 @@ class ALFTUI(App):
         question_workspace = self.query_one("#question-workspace")
         remember_workspace = self.query_one("#remember-workspace")
         memories_workspace = self.query_one("#memories-workspace")
+        footer_guidance = self.query_one("#footer-guidance", Static)
 
         question_workspace.display = workspace_id == "question"
         remember_workspace.display = workspace_id == "remember"
         memories_workspace.display = workspace_id == "memories"
+
+        footer_guidance.update(commands[workspace_id]["tui"]["guidance"])
 
 
     def show_question(self) -> None:
@@ -502,6 +523,50 @@ class ALFTUI(App):
             self.ask_question()
 
 
+    def on_text_area_changed(self, event: TextArea.Changed) -> None:
+        if event.text_area.id != "remember-input":
+            return
+
+        content = event.text_area.text.strip()
+
+        if not content:
+            self.clear_related_memories()
+            return
+
+        self.update_related_memories(content)
+
+    def clear_related_memories(self) -> None:
+        related = self.query_one("#remember-related", ListView)
+        related.clear()
+
+
+    @work(exclusive="related-memory-search")
+    async def update_related_memories(self, content: str) -> None:
+        await asyncio.sleep(0.75)
+
+        candidates = find_related_memory_candidates(content)
+
+        related = self.query_one("#remember-related", ListView)
+        await related.clear()
+
+        for memory in candidates:
+            await related.append(
+                ListItem(
+                    Horizontal(
+                        Checkbox(
+                            id=f"related-memory-{memory['id']}",
+                            compact=True,
+                        ),
+                        Label(
+                            f"{memory['id']}  "
+                            f"{memory['category']:<9} "
+                            f"{memory['content']}"
+                        ),
+                    ),
+                    id=f"related-memory-item-{memory['id']}",
+                )
+            )
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "quit":
             self.exit()
@@ -540,7 +605,7 @@ class ALFTUI(App):
         category = self.query_one("#remember-category", Select).value
         content = self.query_one("#remember-input", TextArea).text.strip()
 
-        guidance = self.query_one("#remember-guidance", Static)
+        guidance = self.query_one("#footer-guidance", Static)
 
         if category is Select.BLANK:
             guidance.update("Please choose a memory category.")
@@ -550,9 +615,17 @@ class ALFTUI(App):
             guidance.update("Please enter something to remember.")
             return
 
+        related = self.query_one("#remember-related", ListView)
+        related_memory_ids = [
+            item.query_one(Checkbox).id.removeprefix("related-memory-")
+            for item in related.children
+            if item.query_one(Checkbox).value
+        ]
+
         result = remember(
             category,
             content,
+            related_memory_ids=",".join(related_memory_ids) or None,
         )
 
         if result is not True:
@@ -560,6 +633,7 @@ class ALFTUI(App):
             return
 
         self.query_one("#remember-input", TextArea).text = ""
+        self.clear_related_memories()
         guidance.update("Memory saved.")
 
         await self.refresh_memories()

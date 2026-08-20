@@ -619,6 +619,22 @@ def test_find_related_memory_candidates_finds_matching_memories(database):
     )
 
 
+def test_find_related_memory_candidates_is_case_insensitive(database):
+    memory.remember(
+        "note",
+        "ALF should remain a simple and useful computing companion.",
+    )
+
+    results = memory.find_related_memory_candidates(
+        "alf computing companion"
+    )
+
+    assert len(results) == 1
+    assert results[0]["content"] == (
+        "ALF should remain a simple and useful computing companion."
+    )
+
+
 def test_find_related_memory_candidates_requires_multiple_matching_terms(
     database,
 ):
