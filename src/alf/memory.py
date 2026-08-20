@@ -21,7 +21,7 @@ from .paths import get_data_directory
 DATABASE = get_data_directory() / "alf.db"
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 VALID_MEMORY_CATEGORIES = [
     "note",
@@ -33,10 +33,14 @@ VALID_MEMORY_CATEGORIES = [
 
 def initialise_database(connection):
     """
-    Create ALF memory tables if they do not exist.
+    Create ALF memory tables if they do not exist and apply schema migrations.
     """
 
     cursor = connection.cursor()
+
+    version = connection.execute(
+        "PRAGMA user_version"
+    ).fetchone()[0]
 
     cursor.execute(
         """
@@ -51,6 +55,26 @@ def initialise_database(connection):
         )
         """
     )
+
+    cursor.execute(
+        """
+        CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts
+        USING fts5(
+            content,
+            content='memories',
+            content_rowid='id'
+        )
+        """
+    )
+
+    if version < 2:
+        cursor.execute(
+            """
+            INSERT INTO memory_fts (rowid, content)
+            SELECT id, content
+            FROM memories
+            """
+        )
 
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
@@ -209,6 +233,16 @@ def remember(
             ),
         )
 
+        memory_id = cursor.lastrowid
+
+        cursor.execute(
+            """
+            INSERT INTO memory_fts (rowid, content)
+            VALUES (?, ?)
+            """,
+            (memory_id, content),
+        )
+
     return True
 
 
@@ -217,7 +251,9 @@ def update_memory(memory_id: int, content: str):
     Update the content of an existing memory in place.
     """
 
-    if get_memory(memory_id) is None:
+    memory = get_memory(memory_id)
+
+    if memory is None:
         return False
 
     with get_connection() as connection:
@@ -230,8 +266,23 @@ def update_memory(memory_id: int, content: str):
             (content, memory_id),
         )
 
-    return True
+        connection.execute(
+            """
+            INSERT INTO memory_fts(memory_fts, rowid, content)
+            VALUES('delete', ?, ?)
+            """,
+            (memory_id, memory["content"]),
+        )
 
+        connection.execute(
+            """
+            INSERT INTO memory_fts(rowid, content)
+            VALUES (?, ?)
+            """,
+            (memory_id, content),
+        )
+
+    return True
 
 def get_memories(options=None):
     """
@@ -449,10 +500,21 @@ def delete_memory(memory_id: int):
     Delete a memory permanently.
     """
 
-    with get_connection() as connection:
-        cursor = connection.cursor()
+    memory = get_memory(memory_id)
 
-        cursor.execute(
+    if memory is None:
+        return False
+
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO memory_fts(memory_fts, rowid, content)
+            VALUES('delete', ?, ?)
+            """,
+            (memory_id, memory["content"]),
+        )
+
+        connection.execute(
             """
             DELETE FROM memories
             WHERE id = ?
@@ -460,11 +522,7 @@ def delete_memory(memory_id: int):
             (memory_id,),
         )
 
-        if cursor.rowcount == 0:
-            return False
-
     return True
-
 
 def delete_memories(memory_ids):
     """

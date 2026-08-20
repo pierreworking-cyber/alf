@@ -19,6 +19,62 @@ def test_database_is_created(database):
     assert tables == [("memories",)]
 
 
+def test_memory_fts_is_created(database):
+    with memory.get_connection() as connection:
+        tables = connection.execute(
+            "SELECT name FROM sqlite_master WHERE name = 'memory_fts'"
+        ).fetchall()
+
+    assert tables == [("memory_fts",)]
+
+
+def test_database_migrates_fts_from_version_one(database):
+    connection = memory.sqlite3.connect(database)
+
+    connection.execute(
+        """
+        CREATE TABLE memories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created TEXT NOT NULL,
+            category TEXT NOT NULL,
+            content TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            previous_memory_id INTEGER,
+            related_memory_ids TEXT
+        )
+        """
+    )
+
+    connection.execute(
+        """
+        INSERT INTO memories (created, category, content)
+        VALUES (?, ?, ?)
+        """,
+        ("2026-01-01 12:00:00", "note", "Existing Austerlitz memory."),
+    )
+
+    connection.execute("PRAGMA user_version = 1")
+    connection.commit()
+    connection.close()
+
+    with memory.get_connection() as connection:
+        version = connection.execute(
+            "PRAGMA user_version"
+        ).fetchone()[0]
+
+        results = connection.execute(
+            """
+            SELECT rowid
+            FROM memory_fts
+            WHERE memory_fts MATCH ?
+            """,
+            ("Austerlitz",),
+        ).fetchall()
+
+    assert version == 2
+    assert results == [(1,)]
+
+
 def test_database_schema_version(database):
     with memory.get_connection() as connection:
         version = connection.execute("PRAGMA user_version").fetchone()[0]
@@ -114,6 +170,34 @@ def test_update_memory_changes_content_without_creating_memory(database):
             "related_memory_ids": None,
         }
     ]
+
+
+def test_update_memory_updates_fts_index(database):
+    memory.remember("note", "Original memory.")
+
+    memory.update_memory(1, "Edited memory.")
+
+    with memory.get_connection() as connection:
+        old_results = connection.execute(
+            """
+            SELECT rowid
+            FROM memory_fts
+            WHERE memory_fts MATCH ?
+            """,
+            ("Original",),
+        ).fetchall()
+
+        new_results = connection.execute(
+            """
+            SELECT rowid
+            FROM memory_fts
+            WHERE memory_fts MATCH ?
+            """,
+            ("Edited",),
+        ).fetchall()
+
+    assert old_results == []
+    assert new_results == [(1,)]
 
 
 def test_remember_rejects_invalid_related_memory(database):
@@ -219,6 +303,22 @@ def test_remember_and_get_memory(database):
     assert result["category"] == "note"
     assert result["content"] == "This is a test memory."
     assert result["status"] == "active"
+
+
+def test_remember_indexes_memory_for_fts_search(database):
+    memory.remember("note", "The Battle of Austerlitz.")
+
+    with memory.get_connection() as connection:
+        results = connection.execute(
+            """
+            SELECT rowid
+            FROM memory_fts
+            WHERE memory_fts MATCH ?
+            """,
+            ("Austerlitz",),
+        ).fetchall()
+
+    assert results == [(1,)]
 
 
 def test_get_memories(database):
@@ -581,6 +681,24 @@ def test_delete_memory_removes_memory(database):
     assert memory.delete_memory(1) is True
 
     assert memory.get_memory(1) is None
+
+
+def test_delete_memory_removes_memory_from_fts(database):
+    memory.remember("note", "Memory to delete.")
+
+    memory.delete_memory(1)
+
+    with memory.get_connection() as connection:
+        results = connection.execute(
+            """
+            SELECT rowid
+            FROM memory_fts
+            WHERE memory_fts MATCH ?
+            """,
+            ("delete",),
+        ).fetchall()
+
+    assert results == []
 
 
 def test_delete_memory_preserves_other_memories(database):
