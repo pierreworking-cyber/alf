@@ -595,6 +595,91 @@ def test_search_memories_returns_empty_for_no_match(database):
     assert results == []
 
 
+def test_find_related_memory_candidates_finds_matching_memories(database):
+    memory.remember(
+        "note",
+        "ALF should remain a simple and useful computing companion.",
+    )
+    memory.remember(
+        "note",
+        "SQLite provides persistent storage for ALF memory.",
+    )
+    memory.remember(
+        "note",
+        "The garden needs watering this evening.",
+    )
+
+    results = memory.find_related_memory_candidates(
+        "ALF computing companion"
+    )
+
+    assert len(results) == 1
+    assert results[0]["content"] == (
+        "ALF should remain a simple and useful computing companion."
+    )
+
+
+def test_find_related_memory_candidates_requires_multiple_matching_terms(
+    database,
+):
+    memory.remember(
+        "note",
+        "ALF should remain a simple and useful computing companion.",
+    )
+    memory.remember(
+        "note",
+        "SQLite provides persistent storage for ALF memory.",
+    )
+
+    results = memory.find_related_memory_candidates(
+        "ALF computing companion"
+    )
+
+    assert [item["id"] for item in results] == [1]
+
+
+def test_find_related_memory_candidates_limits_results(database):
+    for index in range(6):
+        memory.remember(
+            "note",
+            f"ALF memory about computing companion {index}.",
+        )
+
+    results = memory.find_related_memory_candidates(
+        "ALF computing companion"
+    )
+
+    assert len(results) == 5
+
+
+def test_find_related_memory_candidates_ignores_archived_memories(database):
+    memory.remember(
+        "note",
+        "ALF should remain a useful computing companion.",
+    )
+    memory.remember(
+        "note",
+        "An archived ALF computing companion memory.",
+    )
+
+    memory.archive_memory(2)
+
+    results = memory.find_related_memory_candidates(
+        "ALF computing companion"
+    )
+
+    assert [item["id"] for item in results] == [1]
+
+
+def test_find_related_memory_candidates_ignores_short_input(database):
+    memory.remember(
+        "note",
+        "ALF should remain a useful computing companion.",
+    )
+
+    assert memory.find_related_memory_candidates("Al") == []
+
+
 def test_archive_memory(database):
     memory.remember("note", "Archive me.")
 

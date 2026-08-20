@@ -5,6 +5,7 @@ from textual.widgets import (
     Button,
     Checkbox,
     Header,
+    Input,
     Label,
     ListItem,
     ListView,
@@ -19,6 +20,7 @@ from alf.memory import (
     delete_memory,
     get_memories,
     get_memory,
+    remember,
     update_memory,
 )
 from alf.question import answer_question
@@ -28,7 +30,11 @@ class ALFTUI(App):
     """Minimal Textual playground."""
 
     CSS = """
-    Horizontal {
+    Screen {
+        layout: vertical;
+    }
+
+    #main {
         height: 1fr;
     }
 
@@ -37,6 +43,61 @@ class ALFTUI(App):
         border: solid yellow;
     }
 
+    #workspace {
+        width: 85%;
+        height: 1fr;
+    }
+
+    #workspace-left {
+        width: 40%;
+        border: solid green;
+        padding: 1 2;
+    }
+
+    #remember-workspace #workspace-left {
+        padding-top: 0;
+    }
+
+    #workspace-right {
+        width: 60%;
+        border: solid blue;
+        padding: 1 2;
+    }
+
+    .workspace-title {
+        height: 3;
+        content-align: left middle;
+    }
+
+    #remember-workspace {
+        height: 1fr;
+    }
+
+    #remember-category {
+        height: 3;
+    }
+
+    #remember-input {
+        height: 1fr;
+    }
+
+    #remember-related-title {
+        height: 3;
+        padding-top: 1;
+    }
+
+    #remember-related {
+        height: 5;
+    }
+
+    #remember-guidance {
+        height: 3;
+    }
+
+    #remember-save {
+        width: 100%;
+        height: 3;
+    }
     #memories-list {
         width: 55%;
     }
@@ -54,6 +115,24 @@ class ALFTUI(App):
     #memories ListItem {
         border-bottom: solid grey;
         padding-bottom: 1;
+    }
+
+    #memory-detail {
+        width: 45%;
+    }
+
+    #footer {
+        height: 3;
+        align: right middle;
+    }
+
+    #footer-guidance {
+        width: 1fr;
+        padding: 1 2;
+    }
+
+    #quit {
+        width: 10;
     }
 
     #question-workspace,
@@ -83,22 +162,6 @@ class ALFTUI(App):
 
     #answer-ok {
         display: none;
-    }
-
-    #remember-category {
-        height: 3;
-    }
-
-    #remember-input {
-        height: 1fr;
-    }
-
-    #remember-guidance {
-        height: 3;
-    }
-
-    #remember-save {
-        height: 3;
     }
 
     #details {
@@ -138,7 +201,7 @@ class ALFTUI(App):
     def compose(self) -> ComposeResult:
         yield Header()
 
-        with Horizontal():
+        with Horizontal(id="main"):
             yield ListView(
                 *[
                     ListItem(
@@ -150,7 +213,7 @@ class ALFTUI(App):
                 id="navigation",
             )
 
-            with Vertical():
+            with Vertical(id="workspace"):
 
                 with Vertical(id="question-workspace"):
                     question_tui = commands["question"]["tui"]
@@ -160,12 +223,16 @@ class ALFTUI(App):
                         classes="workspace-title",
                     )
 
-                    yield TextArea(
+                    yield Input(
                         id="question-input",
                         placeholder=question_tui["description"],
                     )
+
                     with Horizontal(id="question-controls"):
-                        yield Checkbox("Detailed answer", id="detailed-answer")
+                        yield Checkbox(
+                            "Detailed answer",
+                            id="detailed-answer",
+                        )
                         yield Button("Ask", id="ask")
                         yield Static(
                             "Ready",
@@ -189,36 +256,53 @@ class ALFTUI(App):
 
                     yield Button("OK", id="answer-ok")
 
-                with Vertical(id="remember-workspace"):
-                    remember_tui = commands["remember"]["tui"]
+                with Horizontal(id="remember-workspace"):
 
-                    yield Static(
-                        remember_tui["title"],
-                        classes="workspace-title",
-                    )
+                    with Vertical(id="workspace-left"):
+                        remember_tui = commands["remember"]["tui"]
 
-                    yield Select(
-                        [
-                            ("Note", "note"),
-                            ("Preference", "preference"),
-                            ("Decision", "decision"),
-                        ],
-                        prompt="Choose a category",
-                        id="remember-category",
-                    )
+                        yield Static(
+                            remember_tui["title"],
+                            classes="workspace-title",
+                        )
 
-                    yield TextArea(
-                        id="remember-input",
-                        placeholder=remember_tui["description"],
-                    )
+                        yield Select(
+                            [
+                                ("Note", "note"),
+                                ("Preference", "preference"),
+                                ("Decision", "decision"),
+                                ("Fact", "fact"),
+                            ],
+                            value="note",
+                            id="remember-category",
+                        )
 
-                    yield Static(
-                        remember_tui["guidance"],
-                        id="remember-guidance",
-                    )
+                        yield TextArea(
+                            id="remember-input",
+                            placeholder=remember_tui["description"],
+                        )
 
-                    yield Button("Remember", id="remember-save")
+                        yield Static(
+                            "Related memories",
+                            id="remember-related-title",
+                        )
 
+                        yield ListView(
+                            id="remember-related",
+                        )
+
+                        yield Static(
+                            remember_tui["guidance"],
+                            id="remember-guidance",
+                        )
+
+                        yield Button(
+                            "Save",
+                            id="remember-save",
+                        )
+
+                    with Vertical(id="workspace-right"):
+                        yield Static("")
 
                 with Horizontal(id="memories-workspace"):
                     with Vertical(id="memories-list"):
@@ -262,6 +346,13 @@ class ALFTUI(App):
                             with Horizontal(id="memory-edit-actions"):
                                 yield Button("Save", id="memory-save")
                                 yield Button("Cancel", id="memory-cancel")
+
+        with Horizontal(id="footer"):
+            yield Static(
+                "",
+                id="footer-guidance",
+            )
+            yield Button("Quit", id="quit")
 
 
     def on_mount(self) -> None:
@@ -312,7 +403,7 @@ class ALFTUI(App):
 
 
     def ask_question(self) -> None:
-        question = self.query_one("#question-input", TextArea).text
+        question = self.query_one("#question-input", Input).value
 
         if not question.strip():
             return
@@ -395,7 +486,7 @@ class ALFTUI(App):
 
 
     def clear_question(self) -> None:
-        self.query_one("#question-input", TextArea).text = ""
+        self.query_one("#question-input", Input).value = ""
         self.query_one("#answer Static", Static).update(
             "Your answer will appear here."
         )
@@ -403,21 +494,27 @@ class ALFTUI(App):
         self.query_one("#answer-ok", Button).display = False
 
 
+    async def on_input_submitted(
+        self,
+        event: Input.Submitted,
+    ) -> None:
+        if event.input.id == "question-input":
+            self.ask_question()
+
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "quit":
+            self.exit()
+            return
+
         if event.button.id == "ask":
             self.ask_question()
 
         elif event.button.id == "answer-ok":
             self.clear_question()
 
-        elif event.button.id == "memory-edit":
-            self.action_edit_memory()
-
-        elif event.button.id == "memory-cancel":
-            self.cancel_memory_edit()
-
-        elif event.button.id == "memory-save":
-            await self.save_memory_edit()
+        elif event.button.id == "remember-save":
+            await self.save_remembered_memory()
 
         elif event.button.id == "memory-archive":
             selected = self.query_one("#memories", ListView).highlighted_child
@@ -438,6 +535,35 @@ class ALFTUI(App):
             memory_id = selected.id.removeprefix("memory-")
             delete_memory(int(memory_id))
             await self.refresh_memories()
+
+    async def save_remembered_memory(self) -> None:
+        category = self.query_one("#remember-category", Select).value
+        content = self.query_one("#remember-input", TextArea).text.strip()
+
+        guidance = self.query_one("#remember-guidance", Static)
+
+        if category is Select.BLANK:
+            guidance.update("Please choose a memory category.")
+            return
+
+        if not content:
+            guidance.update("Please enter something to remember.")
+            return
+
+        result = remember(
+            category,
+            content,
+        )
+
+        if result is not True:
+            guidance.update("I couldn't save that memory.")
+            return
+
+        self.query_one("#remember-input", TextArea).text = ""
+        guidance.update("Memory saved.")
+
+        await self.refresh_memories()
+
 
     async def refresh_memories(self) -> None:
         options = {
