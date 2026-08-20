@@ -328,8 +328,8 @@ def test_get_memories(database):
     memories = memory.get_memories()
 
     assert len(memories) == 2
-    assert memories[0]["content"] == "First memory."
-    assert memories[1]["content"] == "Second memory."
+    assert memories[0]["content"] == "Second memory."
+    assert memories[1]["content"] == "First memory."
 
 
 def test_get_memories_by_category(database):
@@ -358,17 +358,17 @@ def test_get_memories_includes_archived_when_requested(database):
         {"category": None, "include_archived": True, "group": None}
     )
 
-    assert [item["id"] for item in memories] == [1, 2]
+    assert [item["id"] for item in memories] == [2, 1]
 
 
-def test_get_memories_returns_id_order(database):
+def test_get_memories_returns_newest_first(database):
     memory.remember("note", "First memory.")
     memory.remember("note", "Second memory.")
     memory.remember("note", "Third memory.")
 
     memories = memory.get_memories()
 
-    assert [item["id"] for item in memories] == [1, 2, 3]
+    assert [item["id"] for item in memories] == [3, 2, 1]
 
 
 def test_get_memories_does_not_modify_options(database):
@@ -1002,7 +1002,7 @@ def test_memory_information(database):
     information = memory.get_memory_information()
 
     assert information["total_memories"] == 2
-    assert information["categories"] == ["note", "fact"]
+    assert information["categories"] == ["fact", "note"]
 
 
 def test_capability(database):

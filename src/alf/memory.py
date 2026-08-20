@@ -312,7 +312,7 @@ def get_memories(options=None):
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
 
-    query += " ORDER BY id"
+    query += " ORDER BY id DESC"
 
     with get_connection() as connection:
         rows = connection.execute(query, parameters).fetchall()
