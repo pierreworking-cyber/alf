@@ -617,6 +617,23 @@ class ALFTUI(App):
         self.show_memory(memory_id)
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        if event.list_view.id == "navigation":
+            if event.item is None:
+                return
+
+            command = event.item.id.removeprefix("navigation-")
+
+            if command == "question":
+                self.show_question()
+
+            elif command == "remember":
+                self.show_remember()
+
+            elif command == "memories":
+                self.show_memories()
+
+            return
+
         if event.list_view.id != "memories":
             return
 
