@@ -75,3 +75,28 @@ def resolve_category(value):
         return matches[0]
 
     return None
+
+
+def resolve_option(value, options):
+    """
+    Resolve an exact option or an unambiguous leading prefix.
+
+    Returns the canonical option name, or None if the value is unknown
+    or ambiguous.
+    """
+
+    value = value.strip().lower()
+
+    if value in options:
+        return value
+
+    matches = [
+        option
+        for option in options
+        if option.startswith(value)
+    ]
+
+    if len(matches) == 1:
+        return matches[0]
+
+    return None

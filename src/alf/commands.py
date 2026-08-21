@@ -4,7 +4,7 @@ ALF command dispatcher.
 
 from .calc import CalculationError, calculate
 from .command_catalogue import commands
-from .command_resolution import resolve_category, resolve_command
+from .command_resolution import resolve_category, resolve_command, resolve_option
 from .healthcheck import get_health_report
 from .identity import get_about_information, get_identity
 from .memory import (
@@ -79,13 +79,75 @@ def calc_command(*arguments):
     """
 
     if not arguments:
-        render_memory_usage(commands["calc"]["usage"])
+        render_command_help("calc", commands["calc"])
         return
 
-    expression = " ".join(arguments)
+    expression_arguments = []
+    symbolic = False
+    places = 3
+    index = 0
+
+    options = {
+        "--symbolic": "--symbolic",
+        "-p": "--places",
+        "--places": "--places",
+    }
+
+    while index < len(arguments):
+        argument = arguments[index]
+
+        if argument.startswith("-"):
+            option = resolve_option(argument, options)
+
+            if option is None:
+                render_command_structure_error("calc")
+                return
+
+            if option == "--symbolic":
+                if symbolic:
+                    render_command_structure_error("calc")
+                    return
+
+                symbolic = True
+                index += 1
+                continue
+
+            if index + 1 >= len(arguments):
+                render_command_structure_error("calc")
+                return
+
+            try:
+                places = int(arguments[index + 1])
+            except ValueError:
+                render_command_structure_error("calc")
+                return
+
+            if not 1 <= places <= 10:
+                render_command_structure_error("calc")
+                return
+
+            index += 2
+            continue
+
+        expression_arguments.append(argument)
+        index += 1
+
+    if not expression_arguments:
+        render_command_structure_error("calc")
+        return
+
+    if symbolic and places != 3:
+        render_command_structure_error("calc")
+        return
+
+    expression = " ".join(expression_arguments)
 
     try:
-        result = calculate(expression)
+        result = calculate(
+            expression,
+            symbolic=symbolic,
+            places=places,
+        )
     except CalculationError as error:
         render_calculation_error(error)
         return

@@ -350,13 +350,19 @@ def render_calculation(result):
     console.print()
 
 
-def render_calculation_error(exception):
+def render_calculation_error(exception, expression):
     """
     Render a mathematical calculation error.
     """
 
     console.print()
     error(f"Could not calculate expression: {exception}")
+
+    if str(exception) == "invalid numeric entry":
+        console.print()
+        info("Try symbolic mode:")
+        info(f'    alf calc "{expression}" --symbolic')
+
     console.print()
 
 

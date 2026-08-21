@@ -82,7 +82,7 @@ def _validate_functions(expression):
             raise CalculationError("unsupported expression")
 
 
-def calculate(expression):
+def calculate(expression, symbolic=False, places=3):
     """
     Evaluate a mathematical expression using the allowed SymPy vocabulary.
     """
@@ -91,7 +91,7 @@ def calculate(expression):
     _validate_functions(expression)
 
     try:
-        return parse_expr(
+        result = parse_expr(
             expression,
             global_dict=PARSER_GLOBALS,
             local_dict=LOCAL_DICT,
@@ -99,3 +99,11 @@ def calculate(expression):
         )
     except (SyntaxError, TypeError, ValueError) as error:
         raise CalculationError("unsupported expression") from error
+
+    if symbolic:
+        return result
+
+    if not result.is_number:
+        raise CalculationError("invalid numeric entry")
+
+    return round(float(result), places)

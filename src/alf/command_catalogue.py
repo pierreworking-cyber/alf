@@ -18,12 +18,42 @@ commands = {
     "calc": {
         "id": "math.calculate",
         "help": "Calculate a mathematical expression.",
-        "usage": 'alf calc "expression"',
+        "usage": 'alf calc "expression" [options]',
+        "options": {
+            "--symbolic": "Evaluate the expression symbolically.",
+            "-p, --places <n>": (
+                "Display a numeric result to n decimal places (1-10). "
+                "Defaults to 3."
+            ),
+        },
         "examples": [
-            'alf calc "2^4.26"',
             'alf calc "12 * 7"',
+            'alf calc "2^8"',
+            'alf calc "sqrt(144) + 3"',
+            'alf calc "sin(pi / 2)"',
             'alf calc "solve(x^2 - 4, x)"',
+            'alf calc "expand((x + 2)^2)"',
+            'alf calc "factor(x^2 - 4)"',
+            'alf calc "diff(x^3, x)"',
+            'alf calc "integrate(x^2, x)"',
+            'alf calc "limit(sin(x) / x, x, 0)"',
         ],
+        "tui": {
+            "title": "Calculator",
+            "description": "Enter a mathematical expression.",
+            "guidance": (
+                "ALF can work with arithmetic, algebra, functions, "
+                "equations, and calculus."
+            ),
+            "symbolic_examples": [
+                'alf calc "solve(x^2 - 4, x)"',
+                'alf calc "expand((x + 2)^2)"',
+                'alf calc "factor(x^2 - 4)"',
+                'alf calc "diff(x^3, x)"',
+                'alf calc "integrate(x^2, x)"',
+                'alf calc "limit(sin(x) / x, x, 0)"',
+            ],
+        },
     },
     "remember": {
         "id": "memory.add",

@@ -590,6 +590,216 @@ def test_run_resolves_relate_command(monkeypatch):
     )
 
 
+def test_calc_command_defaults_to_numeric_with_three_places(monkeypatch):
+    captured = {}
+
+    def fake_calculate(expression, symbolic=False, places=3):
+        captured["arguments"] = (expression, symbolic, places)
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: captured.setdefault("result", result),
+    )
+
+    commands.calc_command("12", "*", "7")
+
+    assert captured["arguments"] == ("12 * 7", False, 3)
+    assert captured["result"] == 42
+
+
+def test_calc_command_accepts_symbolic_option(monkeypatch):
+    captured = {}
+
+    def fake_calculate(expression, symbolic=False, places=3):
+        captured["arguments"] = (expression, symbolic, places)
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command("x^2", "--symbolic")
+
+    assert captured["arguments"] == ("x^2", True, 3)
+
+
+def test_calc_command_accepts_symbolic_prefix(monkeypatch):
+    captured = {}
+
+    def fake_calculate(expression, symbolic=False, places=3):
+        captured["arguments"] = (expression, symbolic, places)
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command("x^2", "--sym")
+
+    assert captured["arguments"] == ("x^2", True, 3)
+
+
+def test_calc_command_accepts_places_prefix(monkeypatch):
+    captured = {}
+
+    def fake_calculate(expression, symbolic=False, places=3):
+        captured["arguments"] = (expression, symbolic, places)
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command("sqrt(2)", "--pla", "5")
+
+    assert captured["arguments"] == ("sqrt(2)", False, 5)
+
+
+def test_calc_command_accepts_places_option(monkeypatch):
+    captured = {}
+
+    def fake_calculate(expression, symbolic=False, places=3):
+        captured["arguments"] = (expression, symbolic, places)
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command("sqrt(2)", "--places", "5")
+
+    assert captured["arguments"] == ("sqrt(2)", False, 5)
+
+
+def test_calc_command_accepts_short_places_option(monkeypatch):
+    captured = {}
+
+    def fake_calculate(expression, symbolic=False, places=3):
+        captured["arguments"] = (expression, symbolic, places)
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command("sqrt(2)", "-p", "5")
+
+    assert captured["arguments"] == ("sqrt(2)", False, 5)
+
+
+def test_calc_command_options_are_order_independent(monkeypatch):
+    captured = {}
+
+    def fake_calculate(expression, symbolic=False, places=3):
+        captured["arguments"] = (expression, symbolic, places)
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command(
+        "--places",
+        "5",
+        "sqrt(2)",
+    )
+
+    assert captured["arguments"] == ("sqrt(2)", False, 5)
+
+
+def test_calc_command_rejects_symbolic_with_places(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    commands.calc_command(
+        "x^2",
+        "--symbolic",
+        "--places",
+        "5",
+    )
+
+    assert output == ["calc"]
+
+
+def test_calc_command_rejects_places_outside_range(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    commands.calc_command(
+        "sqrt(2)",
+        "--places",
+        "11",
+    )
+
+    assert output == ["calc"]
+
+
+def test_calc_command_rejects_non_numeric_places(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    commands.calc_command(
+        "sqrt(2)",
+        "--places",
+        "banana",
+    )
+
+    assert output == ["calc"]
+
+
+def test_calc_command_rejects_unknown_option(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    commands.calc_command(
+        "sqrt(2)",
+        "--banana",
+    )
+
+    assert output == ["calc"]
+
+
 def test_ambiguous_command_is_reported(monkeypatch):
     output = []
 
