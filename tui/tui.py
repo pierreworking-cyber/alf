@@ -923,6 +923,31 @@ class ALFTUI(App):
             )
 
 
+    def on_list_view_highlighted(
+        self,
+        event: ListView.Highlighted,
+    ) -> None:
+        if event.list_view.id != "navigation":
+            return
+
+        if event.item is None:
+            return
+
+        command = event.item.id.removeprefix("navigation-")
+
+        if command == "question":
+            self.show_question()
+
+        elif command == "calc":
+            self.show_calc()
+
+        elif command == "remember":
+            self.show_remember()
+
+        elif command == "memories":
+            self.show_memories()
+
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if event.list_view.id == "navigation":
             command = event.item.id.removeprefix("navigation-")
