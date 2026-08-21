@@ -11,11 +11,14 @@ from textual.widgets import (
     Label,
     ListItem,
     ListView,
+    RadioButton,
+    RadioSet,
     Select,
     Static,
     TextArea,
 )
 
+from alf.calc import CalculationError, calculate
 from alf.command_catalogue import commands
 from alf.memory import (
     archive_memory,
@@ -161,11 +164,93 @@ class ALFTUI(App):
         width: 10;
     }
 
-    #question-workspace,
-    #remember-workspace,
-    #memories-workspace {
-        height: 1fr;
-    }
+        #question-workspace,
+        #remember-workspace,
+        #memories-workspace,
+        #calc-workspace {
+            height: 1fr;
+        }
+
+        #calc-workspace {
+            layout: horizontal;
+        }
+
+      #calc-left {
+          width: 55%;
+          border: solid green;
+          padding: 0 2;
+      }
+
+      #calc-right {
+          width: 45%;
+          border: solid blue;
+          padding: 1 2;
+      }
+
+      #calc-left .workspace-title {
+          height: 1;
+      }
+
+      #calc-input {
+          height: 3;
+      }
+
+      #calc-options {
+          height: 3;
+          align: left middle;
+      }
+
+      #calc-mode {
+          width: auto;
+          height: 3;
+          layout: horizontal;
+      }
+
+      #calc-mode RadioButton {
+          width: auto;
+      }
+
+      #calc-precision {
+          width: 1fr;
+          height: 3;
+          align: right middle;
+      }
+
+      #calc-options Label {
+          width: auto;
+          margin-left: 1;
+          margin-right: 1;
+      }
+
+      #calc-places {
+          width: 10;
+          height: 3;
+      }
+
+      #calc-controls {
+          height: 3;
+      }
+
+      #calc-controls Button {
+          width: 1fr;
+      }
+
+      #calc-result {
+          height: 1fr;
+          border: solid blue;
+          padding: 1 2;
+      }
+
+        #calc-examples,
+        #calc-symbolic-examples {
+            height: auto;
+            margin: 0 1;
+        }
+
+        .calc-example-heading {
+            height: 1;
+            margin: 1 1 0 1;
+        }
 
     #question-input {
         height: 3;
@@ -234,7 +319,7 @@ class ALFTUI(App):
                         Label(commands[command]["tui"]["title"]),
                         id=f"navigation-{command}",
                     )
-                    for command in ("question", "remember", "memories")
+                    for command in ("question", "calc", "remember", "memories")
                 ],
                 id="navigation",
             )
@@ -265,11 +350,6 @@ class ALFTUI(App):
                             id="question-status",
                         )
 
-                    yield Static(
-                        question_tui["guidance"],
-                        id="guidance",
-                    )
-
                     with VerticalScroll(id="answer"):
                         yield Static(
                             "Your answer will appear here.",
@@ -282,8 +362,111 @@ class ALFTUI(App):
 
                     yield Button("OK", id="answer-ok")
 
-                with Horizontal(id="remember-workspace"):
+                with Horizontal(id="calc-workspace"):
+                    calc_tui = commands["calc"]["tui"]
+  
+                    with Vertical(id="calc-left"):
+                        yield Static(
+                            calc_tui["title"],
+                            classes="workspace-title",
+                        )
+  
+                        yield Input(
+                            id="calc-input",
+                            placeholder=calc_tui["description"],
+                        )
+  
+                        with Horizontal(id="calc-options"):
+                            with RadioSet(id="calc-mode"):
+                                yield RadioButton(
+                                    "Numeric",
+                                    value=True,
+                                )
+                                yield RadioButton(
+                                    "Symbolic",
+                                    id="calc-symbolic",
+                                )
+  
+                            with Horizontal(id="calc-precision"):
+                                yield Label("Dec:")
+                                yield Select(
+                                    [
+                                        ("1", 1),
+                                        ("2", 2),
+                                        ("3", 3),
+                                        ("4", 4),
+                                        ("5", 5),
+                                        ("6", 6),
+                                        ("7", 7),
+                                        ("8", 8),
+                                        ("9", 9),
+                                        ("10", 10),
+                                    ],
+                                    value=3,
+                                    id="calc-places",
+                                )
+  
+                        with Horizontal(id="calc-controls"):
+                            yield Button(
+                                "Calculate",
+                                id="calc-button",
+                            )
+                            yield Button(
+                                "Clear",
+                                id="calc-clear",
+                            )
+  
+                        with VerticalScroll(id="calc-result"):
+                            yield Static(
+                                "The result will appear here.",
+                                id="calc-history",
+                            )
+  
+                    with Vertical(id="calc-right"):
 
+                        yield Static(
+                            "Try some numerical calculations",
+                            classes="calc-example-heading",
+                        )
+
+                        yield ListView(
+                            *[
+                                ListItem(
+                                    Label(
+                                        example.removeprefix('alf calc "')
+                                        .removesuffix('"')
+                                    ),
+                                    id=f"calc-example-{index}",
+                                )
+                                for index, example in enumerate(
+                                    commands["calc"]["examples"][:4]
+                                )
+                            ],
+                            id="calc-examples",
+                        )
+
+                        yield Static(
+                            "Explore symbolic mathematics",
+                            classes="calc-example-heading",
+                        )
+
+                        yield ListView(
+                            *[
+                                ListItem(
+                                    Label(
+                                        example.removeprefix('alf calc "')
+                                        .removesuffix('"')
+                                    ),
+                                    id=f"calc-example-{index + 4}",
+                                )
+                                for index, example in enumerate(
+                                    commands["calc"]["examples"][4:]
+                                )
+                            ],
+                            id="calc-symbolic-examples",
+                        )
+  
+                with Horizontal(id="remember-workspace"):
                     with Vertical(id="workspace-left"):
                         remember_tui = commands["remember"]["tui"]
 
@@ -312,6 +495,7 @@ class ALFTUI(App):
                             "Save",
                             id="remember-save",
                         )
+
                     with Vertical(id="workspace-right"):
                         yield Static(
                             "Related memories",
@@ -374,6 +558,7 @@ class ALFTUI(App):
 
 
     def on_mount(self) -> None:
+        self.calc_history = []
         navigation = self.query_one("#navigation", ListView)
         navigation.index = 0
         navigation.focus()
@@ -400,11 +585,13 @@ class ALFTUI(App):
 
     def show_workspace(self, workspace_id: str) -> None:
         question_workspace = self.query_one("#question-workspace")
+        calc_workspace = self.query_one("#calc-workspace")
         remember_workspace = self.query_one("#remember-workspace")
         memories_workspace = self.query_one("#memories-workspace")
         footer_guidance = self.query_one("#footer-guidance", Static)
 
         question_workspace.display = workspace_id == "question"
+        calc_workspace.display = workspace_id == "calc"
         remember_workspace.display = workspace_id == "remember"
         memories_workspace.display = workspace_id == "memories"
 
@@ -413,6 +600,10 @@ class ALFTUI(App):
 
     def show_question(self) -> None:
         self.show_workspace("question")
+
+
+    def show_calc(self) -> None:
+        self.show_workspace("calc")
 
 
     def show_memories(self) -> None:
@@ -522,6 +713,60 @@ class ALFTUI(App):
         if event.input.id == "question-input":
             self.ask_question()
 
+        elif event.input.id == "calc-input":
+            self.calculate_expression()
+
+
+    def calculate_expression(self) -> None:
+        expression = self.query_one("#calc-input", Input).value.strip()
+
+        if not expression:
+            return
+
+        mode = self.query_one("#calc-mode", RadioSet)
+        symbolic = mode.pressed_button.label.plain == "Symbolic"
+
+        places = self.query_one("#calc-places", Select).value
+
+        try:
+            calculation = calculate(
+                expression,
+                symbolic=symbolic,
+                places=places,
+            )
+        except CalculationError as error:
+            self.calc_history.append(
+                f"{expression}\n{error}"
+            )
+        else:
+            self.calc_history.append(
+                f"{expression}\n{calculation}"
+            )
+
+        self.query_one("#calc-history", Static).update(
+            "\n\n".join(self.calc_history)
+        )
+        self.query_one("#calc-input", Input).value = ""
+        self.query_one("#calc-input", Input).focus()
+
+
+    def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        if event.radio_set.id != "calc-mode":
+            return
+
+        symbolic = event.pressed.label.plain == "Symbolic"
+
+        self.query_one("#calc-places", Select).disabled = symbolic
+
+
+    def clear_calculation(self) -> None:
+        self.calc_history.clear()
+        self.query_one("#calc-input", Input).value = ""
+        self.query_one("#calc-history", Static).update(
+            "The result will appear here."
+        )
+        self.query_one("#calc-input", Input).focus()
+
 
     def on_text_area_changed(self, event: TextArea.Changed) -> None:
         if event.text_area.id != "remember-input":
@@ -574,6 +819,15 @@ class ALFTUI(App):
 
         if event.button.id == "ask":
             self.ask_question()
+
+        elif event.button.id == "calc-button":
+            self.calculate_expression()
+
+        elif event.button.id == "calc-clear":
+            self.clear_calculation()
+
+        elif event.button.id == "answer-ok":
+            self.clear_question()
 
         elif event.button.id == "answer-ok":
             self.clear_question()
@@ -676,36 +930,42 @@ class ALFTUI(App):
             if command == "question":
                 self.show_question()
 
+            elif command == "calc":
+                self.show_calc()
+
             elif command == "remember":
                 self.show_remember()
 
             elif command == "memories":
                 self.show_memories()
 
+            return
+
+        if event.list_view.id in {
+            "calc-examples",
+            "calc-symbolic-examples",
+        }:
+            index = int(event.item.id.removeprefix("calc-example-"))
+            example = commands["calc"]["examples"][index]
+            expression = (
+                example.removeprefix('alf calc "')
+                .removesuffix('"')
+            )
+
+            symbolic_examples = commands["calc"]["tui"]["symbolic_examples"]
+            mode = self.query_one("#calc-mode", RadioSet)
+
+            if example in symbolic_examples and mode.pressed_index == 0:
+                mode.query_one("#calc-symbolic", RadioButton).value = True
+            elif example not in symbolic_examples and mode.pressed_index == 1:
+                mode.query_one(RadioButton).value = True
+
+            input_widget = self.query_one("#calc-input", Input)
+            input_widget.value = expression
+            input_widget.focus()
             return
 
         if event.list_view.id != "memories":
-            return
-
-        memory_id = event.item.id.removeprefix("memory-")
-        self.show_memory(memory_id)
-
-    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
-        if event.list_view.id == "navigation":
-            if event.item is None:
-                return
-
-            command = event.item.id.removeprefix("navigation-")
-
-            if command == "question":
-                self.show_question()
-
-            elif command == "remember":
-                self.show_remember()
-
-            elif command == "memories":
-                self.show_memories()
-
             return
 
         if event.list_view.id != "memories":
