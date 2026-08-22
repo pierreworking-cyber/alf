@@ -6,7 +6,7 @@ This module provides the Flask application used by ``alf web``.
 
 from flask import Flask, render_template, request
 
-from .question import answer_question
+from ..question import answer_question
 
 app = Flask(__name__)
 
