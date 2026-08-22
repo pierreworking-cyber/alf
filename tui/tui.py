@@ -44,89 +44,85 @@ class ALFTUI(App):
         height: 1fr;
     }
 
-      #navigation {
-          width: 12%;
-          border: solid yellow;
-      }
+    #navigation {
+        width: 12%;
+        border: solid yellow;
+    }
 
-      #workspace {
-          width: 88%;
-          height: 1fr;
-      }
+    #workspace {
+        width: 88%;
+        height: 1fr;
+    }
 
-      #workspace-left {
-          width: 40%;
-          border: solid green;
-          padding: 1 2;
-      }
+    #workspace-left {
+        width: 40%;
+        border: solid green;
+        padding: 1 2;
+    }
 
-      #remember-workspace #workspace-left {
-          padding-top: 0;
-      }
+    #remember-workspace #workspace-left {
+        padding-top: 0;
+    }
 
-      #workspace-right {
-          width: 60%;
-          border: solid blue;
-          padding: 1 2;
-      }
+    #workspace-right {
+        width: 60%;
+        border: solid blue;
+        padding: 1 2;
+    }
 
-      .workspace-title {
-          height: 3;
-          content-align: left middle;
-      }
+    .workspace-title {
+        height: 3;
+        content-align: left middle;
+    }
 
-      #remember-workspace {
-          height: 1fr;
-      }
+    #remember-workspace {
+        height: 1fr;
+    }
 
-      #remember-category {
-          height: 3;
-      }
-
-      #remember-input {
-          width: 100%;
-          height: 1fr;
-      }
-
-      #remember-related-title {
-          height: 3;
-          padding-top: 1;
-      }
-
-      #remember-related {
-          height: 1fr;
-      }
-
-      #remember-related Horizontal {
-          width: 100%;
-          height: auto;
-      }
-
-      #remember-related Checkbox {
-          width: auto;
-          height: auto;
-      }
-
-      #remember-related Label {
-          width: 1fr;
-          height: auto;
-          text-wrap: nowrap;
-      }
-
-      #remember-related ListItem {
-          border-bottom: solid grey;
-          padding-bottom: 1;
-      }
-
-      #remember-save {
-          width: 100%;
-          height: 3;
-      }
-
-    #remember-save {
-        width: 100%;
+    #remember-category {
         height: 3;
     }
+
+    #remember-input {
+        width: 100%;
+        height: 1fr;
+    }
+
+    #remember-related-title {
+        height: 3;
+        padding-top: 1;
+    }
+
+    #remember-related {
+        height: 1fr;
+    }
+
+    #remember-related Horizontal {
+        width: 100%;
+        height: auto;
+    }
+
+    #remember-related Checkbox {
+        width: auto;
+        height: auto;
+    }
+
+    #remember-related Label {
+        width: 1fr;
+        height: auto;
+        text-wrap: nowrap;
+    }
+
+    #remember-related ListItem {
+        border-bottom: solid grey;
+        padding-bottom: 1;
+    }
+
+    #remember-save {
+        width: auto;
+        height: 1;
+    }
+
     #memories-list {
         width: 55%;
     }
@@ -164,105 +160,130 @@ class ALFTUI(App):
         width: 10;
     }
 
-        #question-workspace,
-        #remember-workspace,
-        #memories-workspace,
-        #calc-workspace {
-            height: 1fr;
-        }
+    Button {
+        height: 1;
+        border: none;
+        padding: 0 1;
+    }
 
-        #calc-workspace {
-            layout: horizontal;
-        }
+    #question-workspace,
+    #remember-workspace,
+    #memories-workspace,
+    #calc-workspace {
+        height: 1fr;
+    }
 
-      #calc-left {
-          width: 55%;
-          border: solid green;
-          padding: 0 2;
-      }
+    #calc-workspace {
+        layout: horizontal;
+    }
 
-      #calc-right {
-          width: 45%;
-          border: solid blue;
-          padding: 1 2;
-      }
+    #calc-left {
+        width: 55%;
+        border: solid green;
+        padding: 0 2;
+    }
 
-      #calc-left .workspace-title {
-          height: 1;
-      }
+    #calc-right {
+        width: 45%;
+        border: solid blue;
+        padding: 1 2;
+    }
 
-      #calc-input {
-          height: 3;
-      }
+    #calc-left .workspace-title {
+        height: 1;
+    }
 
-      #calc-options {
-          height: 3;
-          align: left middle;
-      }
+    #calc-input {
+        height: 3;
+    }
 
-      #calc-mode {
-          width: auto;
-          height: 3;
-          layout: horizontal;
-      }
+    #calc-options {
+        height: 1;
+        align: left middle;
+    }
 
-      #calc-mode RadioButton {
-          width: auto;
-      }
+    #calc-mode {
+        width: auto;
+        height: auto;
+        layout: horizontal;
+    }
 
-      #calc-precision {
-          width: 1fr;
-          height: 3;
-          align: right middle;
-      }
+    #calc-precision {
+        width: 1fr;
+        height: 3;
+        align: right middle;
+    }
 
-      #calc-options Label {
-          width: auto;
-          margin-left: 1;
-          margin-right: 1;
-      }
+    #calc-mode RadioButton {
+        width: auto;
+    }
 
-      #calc-places {
-          width: 10;
-          height: 3;
-      }
 
-      #calc-controls {
-          height: 3;
-      }
+    #calc-options Label {
+        width: auto;
+        margin-left: 1;
+        margin-right: 1;
+    }
 
-      #calc-controls Button {
-          width: 1fr;
-      }
+    #calc-places {
+        width: 10;
+        height: 3;
+    }
 
-      #calc-result {
-          height: 1fr;
-          border: solid blue;
-          padding: 1 2;
-      }
+    #calc-controls {
+        height: 3;
+        border: solid blue;
+        align: left middle;
+    }
 
-        #calc-examples,
-        #calc-symbolic-examples {
-            height: auto;
-            margin: 0 1;
-        }
+    #calc-controls Button {
+        width: 1fr;
+    }
 
-        .calc-example-heading {
-            height: 1;
-            margin: 1 1 0 1;
-        }
+    #calc-result {
+        height: 1fr;
+        border: solid blue;
+        padding: 1 2;
+    }
+
+    #calc-examples,
+    #calc-symbolic-examples {
+        height: auto;
+        margin: 0 1;
+    }
+
+    .calc-example-heading {
+        height: 2;
+        margin: 1 1 0 1;
+        border-bottom: solid $border-blurred;
+    }
 
     #question-input {
         height: 3;
+        border: solid blue;
     }
 
     #question-controls {
         height: 3;
+        margin-top: 0;
+        border: solid blue;
+        align: left top;
+    }
+
+    #detailed-answer-control {
+        width: auto;
+        height: 1;
+    }
+
+    #ask {
+        margin-left: 2;
     }
 
     #question-status {
         width: 1fr;
-        padding: 1 2;
+        height: 3;
+        padding: 0 2;
+        content-align: left top;
     }
 
     #answer {
@@ -340,9 +361,11 @@ class ALFTUI(App):
                     )
 
                     with Horizontal(id="question-controls"):
-                        yield Checkbox(
-                            "Detailed answer",
-                            id="detailed-answer",
+                        with Horizontal(id="detailed-answer-control"):
+                            yield Checkbox(
+                                "Detailed answer",
+                                id="detailed-answer",
+                                compact=True,
                         )
                         yield Button("Ask", id="ask")
                         yield Static(
@@ -377,7 +400,10 @@ class ALFTUI(App):
                         )
   
                         with Horizontal(id="calc-options"):
-                            with RadioSet(id="calc-mode"):
+                            with RadioSet(
+                                id="calc-mode",
+                                compact=True,
+                                ):
                                 yield RadioButton(
                                     "Numeric",
                                     value=True,
@@ -404,6 +430,7 @@ class ALFTUI(App):
                                     ],
                                     value=3,
                                     id="calc-places",
+                                    compact=True,
                                 )
   
                         with Horizontal(id="calc-controls"):
