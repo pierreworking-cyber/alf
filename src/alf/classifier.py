@@ -1,5 +1,9 @@
 """
 Question classification for ALF's answer router.
+
+This module uses the local language model to classify a user's question
+into one of ALF's routing categories. The resulting category determines
+which part of ALF is responsible for answering the question.
 """
 
 from . import llm
@@ -26,7 +30,24 @@ EXAMPLES = [
 
 
 def classify(question):
-    """Classify a question into one of ALF's routing categories."""
+    """
+    Classify a question into one of ALF's routing categories.
+
+    The local language model is given the question and a set of
+    representative examples, then asked to return exactly one routing
+    category. The result is converted to a ``Route`` value so that the
+    router can dispatch the question deterministically.
+
+    Args:
+        question: The user's question to classify.
+
+    Returns:
+        The ``Route`` corresponding to the classified question.
+
+    Raises:
+        ValueError: If the language model returns a value that is not a
+            recognised routing category.
+    """
 
     examples = "\n".join(
         f"{example_question} -> {route.value}"

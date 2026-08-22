@@ -1,7 +1,13 @@
 """
-Local language model interface.
+Local language-model interface for ALF.
 
-Provides a small boundary between ALF and the local Ollama service.
+This module provides the boundary between ALF and the local Ollama
+service. It sends prompts to the configured model, builds answer
+requests using ALF's personality and supplied evidence, evaluates
+research candidates, and checks model availability.
+
+The language model is treated as an interpreter of prompts and evidence;
+it is not treated as an independent source of trusted knowledge.
 """
 
 import json
@@ -15,7 +21,18 @@ OLLAMA_MODEL = "qwen3:8b"
 
 
 def _generate(prompt):
-    """Send a prompt to the configured local language model."""
+    """
+    Send a prompt to ALF's configured local language model.
+
+    This is the low-level Ollama interface used by the higher-level
+    functions in this module.
+
+    Args:
+        prompt: The complete prompt to send to the model.
+
+    Returns:
+        The text response returned by the language model.
+    """
     payload = json.dumps(
         {
             "model": OLLAMA_MODEL,
@@ -39,7 +56,17 @@ def _generate(prompt):
 
 def ask(answer_request):
     """
-    Send an answer request to the local language model.
+    Ask the local language model to produce an answer for ALF.
+
+    The request combines the user's original question with any evidence
+    supplied by ALF and selects either a concise or detailed answer style.
+
+    Args:
+        answer_request: A dictionary containing the question, evidence,
+            and optional ``verbose`` flag.
+
+    Returns:
+        The language model's generated answer.
     """
 
     question = answer_request["question"]
@@ -85,7 +112,23 @@ Answer style:
 
 def evaluate_research(question, candidates):
     """
-    Ask the local language model whether the supplied research is relevant.
+    Evaluate whether supplied research is relevant to a question.
+
+    The local language model examines the supplied research candidates
+    and identifies which candidates genuinely support answering the
+    question. The model is instructed not to treat superficial word
+    overlap as evidence of relevance.
+
+    Args:
+        question: The question the research should answer.
+        candidates: Research candidates containing ``title`` and ``text``.
+
+    Returns:
+        A dictionary containing the relevance decision, relevant
+        candidate numbers, and a brief explanation.
+
+    Raises:
+        ValueError: If the language model does not return valid JSON.
     """
 
     research_text = "\n\n".join(
@@ -134,7 +177,15 @@ Research:
 
 def check_ollama():
     """
-    Check whether Ollama is available and ALF's configured model is installed.
+    Check availability of the Ollama service and configured model.
+
+    The service is queried for its installed models. A successful
+    connection does not by itself mean ALF can use the configured model;
+    both service availability and model availability are reported.
+
+    Returns:
+        A dictionary containing service availability, model availability,
+        the configured model name, and any connection error.
     """
 
     request = Request(OLLAMA_TAGS_URL)

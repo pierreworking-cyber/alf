@@ -1,5 +1,14 @@
 """
-ALF question-processing engine.
+Question-processing engine for ALF.
+
+This module coordinates the end-to-end process of answering a user
+question. It routes the question, interprets it when research is
+required, searches for evidence, evaluates that evidence, and passes
+relevant evidence to the answer-generation layer.
+
+Wikipedia is tried before web research. If no reliable research is found,
+the engine returns an explicit failure rather than asking the language
+model to guess.
 """
 
 from collections.abc import Callable
@@ -15,7 +24,14 @@ from .routes import Route
 
 @dataclass
 class QuestionResult:
-    """Result returned by the question-processing engine."""
+    """Result produced by the question-processing engine.
+
+    Attributes:
+        answer: The final answer presented to the user.
+        source: The source used to support the answer, or ``None`` when
+            no reliable research was found.
+        research_question: The question used when searching for research.
+    """
 
     answer: str
     source: str | None
@@ -27,11 +43,26 @@ def answer_question(
     verbose: bool = False,
     progress: Callable[[str], None] | None = None,
 ) -> QuestionResult:
-    """
-    Process a question and return the resulting answer.
+    """Process a user question and return the resulting answer.
 
-    The optional progress callback receives descriptions of the
-    significant stages of question processing.
+    Questions are first routed to determine whether they can be answered
+    directly by the local language model or require research. Research
+    questions are interpreted, searched on Wikipedia, and then searched
+    on the web if Wikipedia does not provide relevant evidence.
+
+    Only evidence judged relevant by the research evaluator is passed to
+    the answer-generation layer. If no reliable evidence is found, the
+    function returns a failure result rather than guessing.
+
+    Args:
+        original_question: The question as entered by the user.
+        verbose: Whether to request a more detailed answer.
+        progress: Optional callback used to report significant stages of
+            question processing.
+
+    Returns:
+        A ``QuestionResult`` containing the answer, its source, and the
+        research question used during the process.
     """
 
     def report(message: str) -> None:

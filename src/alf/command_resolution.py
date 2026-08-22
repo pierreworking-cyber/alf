@@ -11,7 +11,17 @@ from .memory import get_memory_categories
 
 def get_command_matches(value):
     """
-    Return commands matching an exact name or leading prefix.
+    Find commands matching an exact name or leading prefix.
+
+    Matching is case-insensitive and ignores surrounding whitespace.
+    An exact command name takes precedence over prefix matching.
+
+    Args:
+        value: The command name or prefix to match.
+
+    Returns:
+        A list of matching canonical command names. An empty list is
+        returned when there are no matches.
     """
 
     value = value.strip().lower()
@@ -31,10 +41,18 @@ def get_command_matches(value):
 
 def resolve_command(value):
     """
-    Resolve an exact command or an unambiguous leading prefix.
+    Resolve a command to its canonical name.
 
-    Returns the canonical command name, or None if the value is unknown
-    or ambiguous.
+    A command may be given by its exact name or by a leading prefix,
+    provided that the prefix matches exactly one command. Ambiguous and
+    unknown values are deliberately rejected rather than guessed.
+
+    Args:
+        value: The command name or prefix to resolve.
+
+    Returns:
+        The canonical command name when the value resolves uniquely;
+        otherwise ``None``.
     """
 
     matches = get_command_matches(value)
@@ -47,12 +65,14 @@ def resolve_command(value):
 
 def resolve_category(value):
     """
-    Resolve an exact memory category or an unambiguous leading prefix.
+    Resolve a memory category to its canonical name.
 
-    Simple plural forms such as 'notes' are also accepted when they map
-    directly to a canonical category.
+    Matching is case-insensitive and accepts an exact category name,
+    its singular form, or an unambiguous leading prefix.
 
-    Returns the canonical category name, or None if unresolved.
+    Returns:
+        The canonical category name when the value resolves uniquely;
+        otherwise ``None``.
     """
 
     value = value.strip().lower()

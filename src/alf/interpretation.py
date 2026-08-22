@@ -10,7 +10,21 @@ from .llm import _generate
 
 def interpret_question(question):
     """
-    Reformulate a user's question for research when necessary.
+    Prepare a user's question for research.
+
+    If the question is already clear and suitable for research, it is
+    returned unchanged. Otherwise, the local language model reformulates
+    it into a clearer research question while preserving its meaning and
+    specific terminology.
+
+    The function does not answer the question or add new facts.
+
+    Args:
+        question: The user's original question.
+
+    Returns:
+        The original question or a reformulated version suitable for
+        research.
     """
 
     prompt = f"""

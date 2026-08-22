@@ -33,7 +33,13 @@ VALID_MEMORY_CATEGORIES = [
 
 def initialise_database(connection):
     """
-    Create ALF memory tables if they do not exist and apply schema migrations.
+    Create the memory schema and apply any required schema migrations.
+
+    The supplied SQLite connection is updated in place and committed
+    before the function returns.
+
+    Args:
+        connection: An open SQLite database connection.
     """
 
     cursor = connection.cursor()
@@ -82,9 +88,12 @@ def initialise_database(connection):
 
 def get_connection():
     """
-    Open a connection to ALF's memory database.
+    Open and initialise a connection to ALF's memory database.
 
-    Ensures the database structure exists.
+    The database directory and schema are created when necessary.
+
+    Returns:
+        An initialised SQLite database connection.
     """
 
     DATABASE.parent.mkdir(parents=True, exist_ok=True)
@@ -98,7 +107,10 @@ def get_connection():
 
 def get_memory_categories():
     """
-    Return valid memory categories.
+    Return a copy of ALF's valid memory categories.
+
+    Returns:
+        A list of supported memory category names.
     """
 
     return VALID_MEMORY_CATEGORIES.copy()
@@ -106,7 +118,11 @@ def get_memory_categories():
 
 def get_memory_query_options():
     """
-    Return default memory query options.
+    Create the default options used when querying memories.
+
+    Returns:
+        A dictionary containing the default category, archive, and
+        grouping options.
     """
 
     return {
@@ -118,7 +134,17 @@ def get_memory_query_options():
 
 def validate_related_memory_ids(related_memory_ids):
     """
-    Validate a comma-separated list of related memory IDs.
+    Validate and normalise a comma-separated list of memory IDs.
+
+    Each referenced memory must exist. An empty value means that no
+    relationships were supplied.
+
+    Args:
+        related_memory_ids: A comma-separated string of memory IDs.
+
+    Returns:
+        The validated ID string, ``None`` when no IDs were supplied, or
+        ``False`` when the value is invalid.
     """
 
     if not related_memory_ids:
@@ -194,7 +220,20 @@ def remember(
     related_memory_ids=None,
 ):
     """
-    Store a memory in ALF's database.
+    Store a new memory in the persistent database.
+
+    Optional history and relationship references are validated before
+    the memory is stored.
+
+    Args:
+        category: The memory category.
+        content: The memory text.
+        previous_memory_id: Optional ID of the previous version.
+        related_memory_ids: Optional comma-separated related memory IDs.
+
+    Returns:
+        ``True`` when the memory is stored successfully, otherwise
+        ``False`` when a supplied reference is invalid.
     """
 
     if previous_memory_id is not None:
@@ -248,7 +287,15 @@ def remember(
 
 def update_memory(memory_id: int, content: str):
     """
-    Update the content of an existing memory in place.
+    Replace the content of an existing memory and update its search index.
+
+    Args:
+        memory_id: ID of the memory to update.
+        content: The new memory text.
+
+    Returns:
+        ``True`` when the memory exists and is updated, otherwise
+        ``False``.
     """
 
     memory = get_memory(memory_id)
@@ -286,8 +333,17 @@ def update_memory(memory_id: int, content: str):
 
 def get_memories(options=None):
     """
-    Retrieve ALF memories using query options.
-    Archived memories are not displayed by default.
+    Retrieve memories matching the supplied query options.
+
+    Archived memories are excluded by default. Category filtering is
+    applied when requested.
+
+    Args:
+        options: Optional memory query options. Defaults to
+            ``get_memory_query_options()``.
+
+    Returns:
+        A list of memory dictionaries ordered by descending memory ID.
     """
 
     if options is None:
@@ -333,7 +389,17 @@ def get_memories(options=None):
 
 def search_memories(term, options=None):
     """
-    Search memories by content using query options.
+    Search memory content for a text term.
+
+    Archived memories are excluded by default and the search can be
+    restricted to a memory category.
+
+    Args:
+        term: Text to search for.
+        options: Optional memory query options.
+
+    Returns:
+        A list of matching memory dictionaries.
     """
 
     if options is None:
@@ -378,8 +444,16 @@ def find_related_memory_candidates(content: str, limit=5):
     """
     Find existing memories that may be related to new memory content.
 
+    Candidate memories are identified from shared significant terms.
     This is intended for interactive interfaces such as the TUI.
     It provides candidate memories only; it does not create relationships.
+
+    Args:
+        content: New memory content to compare with existing memories.
+        limit: Maximum number of candidate memories to return.
+
+    Returns:
+        A list of candidate memory dictionaries, ordered by relevance.
     """
 
     words = [
@@ -473,6 +547,12 @@ def find_related_memory_candidates(content: str, limit=5):
 def get_memory(memory_id: int):
     """
     Retrieve a single memory by ID.
+
+    Args:
+        memory_id: The ID of the memory to retrieve.
+
+    Returns:
+        The memory as a dictionary, or ``None`` if it does not exist.
     """
 
     with get_connection() as connection:
@@ -531,7 +611,16 @@ def get_related_memories(memory_id: int):
 
 def get_memory_history(memory_id: int):
     """
-    Retrieve the history chain for a memory.
+    Retrieve the complete revision history for a memory.
+
+    The returned history is ordered from the oldest version to the
+    requested memory.
+
+    Args:
+        memory_id: ID of the memory whose history should be retrieved.
+
+    Returns:
+        A list of memory dictionaries in chronological order.
     """
 
     history = []

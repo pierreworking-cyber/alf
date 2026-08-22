@@ -411,13 +411,6 @@ def render_status(status):
     info(f"Memory categories: {', '.join(memory['categories'])}")
 
 
-def render_unknown_option(option):
-    """
-    Render an invalid command option.
-    """
-
-    console.print(f"Unknown option: {option}")
-
 
 def render_capability_details(capability):
     """
@@ -640,37 +633,6 @@ def render_ambiguous_command(command, matches):
     )
     console.print()
 
-
-def render_memory_help():
-    """
-    Render memory command help.
-    """
-
-    console.print()
-
-    section("Usage:")
-    info("    alf memories [options]")
-
-    console.print()
-
-    info("Options:")
-
-    console.print()
-
-    info("  --all")
-    info("      Include archived memories.")
-
-    console.print()
-
-    info("  --category <name>")
-    info("      Show only memories in a category.")
-
-    console.print()
-
-    info("  --group category")
-    info("      Group memories by category.")
-
-    console.print()
 
 
 def render_health(report, show_details=False):

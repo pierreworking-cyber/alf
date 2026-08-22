@@ -29,3 +29,8 @@ select = [
 
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/test_llm_knowledge.py"
+
+[tool.basedpyright]
+typeCheckingMode = "off"
+reportUnusedParameter = "none"
+reportUnreachable = "none"

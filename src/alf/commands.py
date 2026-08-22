@@ -1,5 +1,12 @@
 """
-ALF command dispatcher.
+Command dispatch and command handling for ALF.
+
+This module resolves user-facing commands to their handlers, validates
+command arguments, invokes the appropriate ALF functionality, and passes
+results to the presentation layer.
+
+Command routing is deterministic: command names and unambiguous prefixes
+are resolved explicitly rather than interpreted as natural-language intent.
 """
 
 from .calc import CalculationError, calculate
@@ -54,10 +61,19 @@ from .status import get_status_information
 
 def run(command: str, arguments=None):
     """
-    Route a user command through deterministic command resolution.
+    Resolve and execute a user-facing ALF command.
 
-    The resolver permits exact command names and unambiguous leading
-    prefixes, but does not infer natural-language intent.
+    Command resolution accepts exact names and unambiguous leading
+    prefixes. Natural-language intent is never inferred. Unknown or
+    ambiguous commands are rejected without invoking a handler.
+
+    Args:
+        command: The command name or unambiguous prefix.
+        arguments: Optional arguments passed to the command handler.
+
+    Returns:
+        ``True`` when the command was resolved and executed; otherwise
+        ``False``.
     """
 
     command = resolve_command(command)
@@ -75,7 +91,14 @@ def run(command: str, arguments=None):
 
 def calc_command(*arguments):
     """
-    Calculate a mathematical expression.
+    Handle the ``calc`` command.
+
+    Parses calculator options, evaluates the requested mathematical
+    expression, and passes the result or an appropriate error to the
+    presentation layer.
+
+    Args:
+        *arguments: Command-line arguments supplied after ``calc``.
     """
 
     if not arguments:
@@ -463,6 +486,17 @@ def archive_command(*arguments):
 def interpret_memory_selection(selection):
     """
     Expand a memory selection into individual memory IDs.
+
+    Selections may contain individual IDs, comma-separated IDs, and
+    inclusive ranges. Duplicate IDs are removed while preserving their
+    first occurrence.
+
+    Args:
+        selection: A memory selection such as ``"10-12,15,20-21"``.
+
+    Returns:
+        A list of individual memory IDs, or ``None`` when the selection
+        is invalid.
     """
 
     memory_ids = []
@@ -531,6 +565,16 @@ def delete_command(*arguments):
 
 
 def question_command(*arguments):
+    """
+    Handle the ``question`` command.
+
+    Reconstructs the user's question from the command arguments, applies
+    the optional verbose flag, sends the question through ALF's question
+    engine, and presents the resulting answer.
+
+    Args:
+        *arguments: Command-line arguments supplied after ``question``.
+    """
     verbose = False
     question_arguments = []
 
@@ -606,7 +650,13 @@ command_handlers = {
 
 def get_commands():
     """
-    Return public command information.
+    Return a copy of the public ALF command catalogue.
+
+    A copy is returned so callers can inspect or present command
+    metadata without modifying the canonical command catalogue.
+
+    Returns:
+        A dictionary containing the public metadata for each command.
     """
     catalog = {}
 
@@ -618,7 +668,15 @@ def get_commands():
 
 def get_capability():
     """
-    Return command discovery capability information.
+    Return ALF's command-discovery capability information.
+
+    The capability describes the available user-facing commands and
+    exposes their catalogue metadata to ALF's capability-discovery
+    system.
+
+    Returns:
+        A capability dictionary describing ALF's command discovery
+        facility.
     """
 
     return {

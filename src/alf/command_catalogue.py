@@ -1,7 +1,13 @@
 """
-ALF command catalogue.
+Command catalogue for ALF.
 
-Contains command metadata exposed by ALF.
+This module contains the metadata used to describe ALF's command
+vocabulary, including help text, usage, options, examples, and
+TUI-specific guidance.
+
+The catalogue is declarative: command implementations do not live here.
+Other parts of ALF use this metadata to present and discover commands
+consistently.
 """
 
 commands = {

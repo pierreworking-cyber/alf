@@ -1,7 +1,10 @@
 """
-ALF capability discovery.
+Capability discovery for ALF.
 
-Discovers modules that advertise capabilities.
+This module discovers ALF modules that advertise capabilities and
+collects those capabilities into a common registry. It also validates
+basic capability contracts and reports problems as warnings rather than
+allowing one faulty provider to prevent discovery of the others.
 """
 
 import importlib
@@ -12,7 +15,10 @@ import alf
 
 def get_alf_modules():
     """
-    Discover ALF modules.
+    Discover and import the modules contained in the ALF package.
+
+    Returns:
+        A list of imported ALF modules.
     """
 
     modules = []
@@ -29,7 +35,13 @@ def get_alf_modules():
 
 def get_provider_modules():
     """
-    Find ALF modules that advertise capabilities.
+    Find ALF modules that advertise a capability provider.
+
+    A provider is any ALF module exposing a ``get_capability()``
+    function.
+
+    Returns:
+        A list of ALF modules that provide capabilities.
     """
 
     providers = []
@@ -43,7 +55,10 @@ def get_provider_modules():
 
 def get_capabilities():
     """
-    Collect capabilities from providers.
+    Collect the capabilities advertised by all provider modules.
+
+    Returns:
+        A list containing the capability returned by each provider.
     """
 
     capabilities = []
@@ -56,7 +71,23 @@ def get_capabilities():
 
 def discover_capabilities():
     """
-    Discover capabilities and validate capability contracts.
+    Discover capabilities and validate their basic contracts.
+
+    Each provider is asked for its capability and the capability must
+    have a unique, non-empty ``id``. Problems encountered while loading
+    providers or validating capabilities are collected as warnings so
+    that one faulty provider does not prevent other capabilities from
+    being discovered.
+
+    Returns:
+        A dictionary containing two keys:
+
+        ``capabilities``
+            The successfully discovered capabilities.
+
+        ``warnings``
+            A list of dictionaries describing providers that could not
+            be included.
     """
     capabilities = []
     warnings = []

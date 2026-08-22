@@ -1,7 +1,10 @@
 """
-ALF introspection and health checks.
+Introspection and health checks for ALF.
 
-Provides information about ALF's internal structure and state.
+This module inspects ALF's loaded modules, command catalogue, command
+handlers, and local language-model service. It reports structural or
+service problems as health-check results rather than raising them as
+exceptions.
 """
 
 import importlib
@@ -20,7 +23,13 @@ REQUIRED_COMMAND_FIELDS = [
 
 def discover_modules():
     """
-    Discover and import ALF modules.
+    Discover and import the modules contained in the ALF package.
+
+    Modules that fail to import are recorded with their error rather
+    than preventing the remaining modules from being inspected.
+
+    Returns:
+        A list describing each discovered module and any import error.
     """
 
     modules = []
@@ -54,7 +63,17 @@ def discover_modules():
 
 def check_modules(modules):
     """
-    Report ALF modules and their capability status.
+    Check whether discovered ALF modules loaded successfully.
+
+    Modules are also classified according to whether they advertise a
+    ``get_capability()`` function.
+
+    Args:
+        modules: The module records returned by ``discover_modules()``.
+
+    Returns:
+        A health-check result containing the advertising, non-reporting,
+        and failed modules.
     """
 
     advertising_modules = []
@@ -93,6 +112,16 @@ def check_modules(modules):
 def check_command_integrity(modules):
     """
     Check the command catalogue and handlers for consistency.
+
+    Verifies that catalogue entries contain their required fields, have
+    corresponding handlers, and have unique command IDs. It also checks
+    for handlers that have no catalogue entry.
+
+    Args:
+        modules: The module records returned by ``discover_modules()``.
+
+    Returns:
+        A health-check result containing any command-integrity warnings.
     """
 
     warnings = []
@@ -184,7 +213,13 @@ def check_command_integrity(modules):
 
 def check_llm_service():
     """
-    Check the local language model service used by ALF.
+    Check the local language-model service used by ALF.
+
+    Checks both whether the Ollama service is available and whether the
+    configured model is available to it.
+
+    Returns:
+        A health-check result describing service and model availability.
     """
 
     status = check_ollama()
@@ -215,7 +250,11 @@ def check_llm_service():
 
 def get_health_report():
     """
-    Run all health checks.
+    Run all ALF health checks and combine their results.
+
+    Returns:
+        A report containing the overall health status and the individual
+        results from each health check.
     """
 
     modules = discover_modules()

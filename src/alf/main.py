@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 """
-ALF - Peter's local computing companion.
+ALF application entry point.
 
+Handles command-line startup, command resolution, help requests, and
+the default interactive introduction when no command is supplied.
 """
 
 from .command_resolution import get_command_matches
@@ -17,11 +19,26 @@ from .time import get_greeting
 
 
 def introduce():
+    """
+    Display ALF's greeting and initial status information.
+
+    This is the default startup path when ALF is invoked without a
+    command-line command.
+    """
     render_greeting(f"{get_greeting()}, Peter.")
     (show_status,)
 
 
 def main():
+    """
+    Process ALF's command-line arguments and dispatch the requested command.
+
+    With a command argument, ``main()`` handles help requests and passes
+    other commands to the deterministic command dispatcher. Unknown or
+    ambiguous commands are reported to the user.
+
+    With no command argument, ALF displays its default introduction.
+    """
     import sys
 
     if len(sys.argv) > 1:

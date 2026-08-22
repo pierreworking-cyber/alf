@@ -1,3 +1,11 @@
+"""
+ALF Textual user interface.
+
+Provides the interactive terminal front end for ALF's capabilities.
+The TUI delegates application logic to the underlying ALF modules and
+is responsible for presentation, user interaction, and workspace state.
+"""
+
 import asyncio
 
 from textual import work
@@ -889,9 +897,6 @@ class ALFTUI(App):
         elif event.button.id == "answer-ok":
             self.clear_question()
 
-        elif event.button.id == "answer-ok":
-            self.clear_question()
-
         elif event.button.id == "remember-save":
             await self.save_remembered_memory()
 
@@ -1048,9 +1053,6 @@ class ALFTUI(App):
             input_widget = self.query_one("#calc-input", Input)
             input_widget.value = expression
             input_widget.focus()
-            return
-
-        if event.list_view.id != "memories":
             return
 
         if event.list_view.id != "memories":

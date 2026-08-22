@@ -1,7 +1,9 @@
 """
-Mathematical calculation support.
+Mathematical calculation support for ALF.
 
-Provides mathematical expression evaluation using SymPy.
+This module evaluates mathematical expressions using SymPy while
+restricting expressions to ALF's explicitly supported mathematical
+vocabulary.
 """
 
 import re
@@ -34,9 +36,7 @@ from sympy.parsing.sympy_parser import (
 
 
 class CalculationError(ValueError):
-    """
-    Raised when a mathematical expression cannot be calculated.
-    """
+    """Raised when a mathematical expression cannot be calculated."""
 
 
 TRANSFORMATIONS = standard_transformations + (
@@ -84,7 +84,28 @@ def _validate_functions(expression):
 
 def calculate(expression, symbolic=False, places=3):
     """
-    Evaluate a mathematical expression using the allowed SymPy vocabulary.
+    Evaluate a mathematical expression using ALF's allowed SymPy vocabulary.
+
+    Expressions may be evaluated numerically or symbolically. Numeric
+    results are rounded to the requested number of decimal places.
+    Unsupported functions, invalid expressions, and non-numeric results
+    raise ``CalculationError``.
+
+    Args:
+        expression: The mathematical expression to evaluate.
+        symbolic: Whether to return the SymPy result instead of a numeric
+            value.
+        places: Number of decimal places to use when rounding numeric
+            results.
+
+    Returns:
+        The evaluated SymPy expression when ``symbolic`` is true;
+        otherwise, the numeric result rounded to ``places`` decimal
+        places.
+
+    Raises:
+        CalculationError: If the expression is unsupported, invalid, or
+            cannot produce a numeric result.
     """
 
     expression = expression.replace("^", "**")
