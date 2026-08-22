@@ -2,7 +2,7 @@ import asyncio
 
 from textual.widgets import RadioSet
 
-from tui.tui import ALFTUI
+from alf.tui import ALFTUI
 
 
 def test_calculator_passes_selected_options(monkeypatch):
@@ -12,7 +12,7 @@ def test_calculator_passes_selected_options(monkeypatch):
         captured["arguments"] = (expression, symbolic, places)
         return "test result"
 
-    monkeypatch.setattr("tui.tui.calculate", fake_calculate)
+    monkeypatch.setattr("alf.tui.calculate", fake_calculate)
 
     async def run_test():
         app = ALFTUI()
@@ -44,7 +44,7 @@ def test_calculator_passes_symbolic_mode(monkeypatch):
         captured["arguments"] = (expression, symbolic, places)
         return "symbolic result"
 
-    monkeypatch.setattr("tui.tui.calculate", fake_calculate)
+    monkeypatch.setattr("alf.tui.calculate", fake_calculate)
 
     async def run_test():
         app = ALFTUI()

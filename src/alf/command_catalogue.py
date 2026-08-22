@@ -223,4 +223,12 @@ commands = {
             ),
         },
     },
+    "tui": {
+        "id": "interface.tui",
+        "help": "Launch the ALF terminal user interface.",
+        "usage": "alf tui",
+        "examples": [
+            "alf tui",
+        ],
+    },
 }

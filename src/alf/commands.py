@@ -563,6 +563,12 @@ def question_command(*arguments):
     )
 
 
+def tui_command():
+    from .tui import main
+
+    main()
+
+
 def about_command(argument=None):
 
     render_about(
@@ -594,6 +600,7 @@ command_handlers = {
     "calc": calc_command,
     "search": search_command,
     "question": question_command,
+    "tui": tui_command,
 }
 
 

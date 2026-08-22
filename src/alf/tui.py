@@ -38,7 +38,11 @@ class ALFTUI(App):
     CSS = """
     Screen {
         layout: vertical;
+        scrollbar-size: 1 1;
     }
+
+
+
 
     #main {
         height: 1fr;
@@ -47,6 +51,10 @@ class ALFTUI(App):
     #navigation {
         width: 12%;
         border: solid yellow;
+    }
+
+    #navigation ListItem.--highlight {
+        text-style: bold;
     }
 
     #workspace {
@@ -79,22 +87,46 @@ class ALFTUI(App):
         height: 1fr;
     }
 
+    #remember-input {
+        height: 1fr;
+        border: solid blue;
+    }
+
+    #remember-controls {
+        height: 3;
+        margin-top: 0;
+        border: solid blue;
+        align: left middle;
+    }
+
     #remember-category {
+        width: 14;
         height: 3;
     }
 
-    #remember-input {
-        width: 100%;
-        height: 1fr;
+    #remember-save {
+        width: auto;
+        height: 1;
+        margin-left: 2;
+    }
+
+    #remember-status {
+        width: 1fr;
+        height: 3;
+        padding: 0 2;
+        content-align: left top;
     }
 
     #remember-related-title {
-        height: 3;
-        padding-top: 1;
+        height: 2;
+        margin-top: 1;
+        border-bottom: solid $border-blurred;
     }
 
     #remember-related {
-        height: 1fr;
+        height: 8;
+        border: solid blue;
+        padding: 1 2;
     }
 
     #remember-related Horizontal {
@@ -118,13 +150,12 @@ class ALFTUI(App):
         padding-bottom: 1;
     }
 
-    #remember-save {
-        width: auto;
-        height: 1;
-    }
-
     #memories-list {
         width: 55%;
+    }
+
+    #memory-view-actions Button {
+        margin-right: 1;
     }
 
     #memories {
@@ -165,7 +196,6 @@ class ALFTUI(App):
         border: none;
         padding: 0 1;
     }
-
     #question-workspace,
     #remember-workspace,
     #memories-workspace,
@@ -493,15 +523,24 @@ class ALFTUI(App):
                             id="calc-symbolic-examples",
                         )
   
-                with Horizontal(id="remember-workspace"):
-                    with Vertical(id="workspace-left"):
-                        remember_tui = commands["remember"]["tui"]
+                with Vertical(id="remember-workspace"):
+                    remember_tui = commands["remember"]["tui"]
 
-                        yield Static(
-                            remember_tui["title"],
-                            classes="workspace-title",
+                    yield Static(
+                        remember_tui["title"],
+                        classes="workspace-title",
+                    )
+
+                    yield TextArea(
+                        id="remember-input",
+                        placeholder=remember_tui["description"],
+                    )
+
+                    with Horizontal(id="remember-controls"):
+                        yield Button(
+                            "Save",
+                            id="remember-save",
                         )
-
                         yield Select(
                             [
                                 ("Note", "note"),
@@ -511,27 +550,21 @@ class ALFTUI(App):
                             ],
                             value="note",
                             id="remember-category",
+                            compact=True,
                         )
-
-                        yield TextArea(
-                            id="remember-input",
-                            placeholder=remember_tui["description"],
-                        )
-
-                        yield Button(
-                            "Save",
-                            id="remember-save",
-                        )
-
-                    with Vertical(id="workspace-right"):
                         yield Static(
-                            "Related memories",
-                            id="remember-related-title",
+                            "Ready",
+                            id="remember-status",
                         )
 
-                        yield ListView(
-                            id="remember-related",
-                        )
+                    yield Static(
+                        "Related memories",
+                        id="remember-related-title",
+                    )
+
+                    yield ListView(
+                        id="remember-related",
+                    )
 
                 with Horizontal(id="memories-workspace"):
                     with Vertical(id="memories-list"):
