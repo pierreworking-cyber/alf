@@ -19,3 +19,5 @@ benchmarks/interpreter_results_*.txt
 benchmarks/explain_routing_*.txt
 benchmarks/routing_results_*.txt
 benchmarks/torture_result*.txt
+#Notes
+benchmarks/overview.md
