@@ -237,4 +237,12 @@ commands = {
             "alf tui",
         ],
     },
+    "web": {
+        "id": "interface.web",
+        "help": "Launch the ALF web interface.",
+        "usage": "alf web",
+        "examples": [
+            "alf web",
+        ],
+    },
 }

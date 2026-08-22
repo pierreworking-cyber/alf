@@ -613,6 +613,12 @@ def tui_command():
     main()
 
 
+def web_command():
+    from .web import main
+
+    main()
+
+
 def about_command(argument=None):
 
     render_about(
@@ -645,6 +651,7 @@ command_handlers = {
     "search": search_command,
     "question": question_command,
     "tui": tui_command,
+    "web": web_command,
 }
 
 
