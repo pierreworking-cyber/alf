@@ -971,36 +971,6 @@ class ALFTUI(App):
         await self.refresh_memory_list()
 
 
-    async def refresh_memories(self) -> None:
-        options = {
-            "category": None,
-            "include_archived": self.query_one(
-                "#memories-all",
-                Checkbox,
-            ).value,
-            "group": None,
-        }
-
-        memories = get_memories(options)
-
-        list_view = self.query_one("#memories", ListView)
-        await list_view.clear()
-
-        for memory in memories:
-            memory_id = str(memory["id"])
-
-            await list_view.append(
-                ListItem(
-                    Label(
-                        f"{memory_id}  "
-                        f"{memory['category']:<9} "
-                        f"{memory['content']}"
-                    ),
-                    id=f"memory-{memory_id}",
-                )
-            )
-
-
     def on_list_view_highlighted(
         self,
         event: ListView.Highlighted,
