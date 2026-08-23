@@ -331,9 +331,7 @@ def test_answer_question_uses_system_information(monkeypatch):
 
     assert result.answer == "You are running Linux."
     assert result.source == "system"
-    assert result.research_question == (
-        "What operating system am I running?"
-    )
+    assert result.research_question is None
 
 
 def test_answer_question_uses_memory_when_relevant(monkeypatch):
@@ -399,9 +397,7 @@ def test_answer_question_uses_memory_when_relevant(monkeypatch):
         "We decided to use evidence rather than guesses."
     )
     assert result.source == "memory"
-    assert result.research_question == (
-        "What did we decide about how ALF should answer questions?"
-    )
+    assert result.research_question is None
 
 
 def test_answer_question_admits_when_no_memory_matches(monkeypatch):
@@ -434,9 +430,7 @@ def test_answer_question_admits_when_no_memory_matches(monkeypatch):
         "I don't want to guess."
     )
     assert result.source is None
-    assert result.research_question == (
-        "What did we decide about something forgotten?"
-    )
+    assert result.research_question is None
 
 
 def test_answer_question_declines_unsupported_question(monkeypatch):
@@ -484,6 +478,4 @@ def test_answer_question_declines_unsupported_question(monkeypatch):
 
     assert result.answer == "I can't help with that."
     assert result.source is None
-    assert result.research_question == (
-        "Can you make me a cup of tea?"
-    )
+    assert result.research_question is None

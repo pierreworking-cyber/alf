@@ -32,12 +32,13 @@ class QuestionResult:
         answer: The final answer presented to the user.
         source: The source used to support the answer, or ``None`` when
             no reliable research was found.
-        research_question: The question used when searching for research.
+        research_question: The interpreted question used for research,
+            or ``None`` when research was not required.
     """
 
     answer: str
     source: str | None
-    research_question: str
+    research_question: str | None
 
 
 def answer_question(
@@ -87,7 +88,7 @@ def answer_question(
         return QuestionResult(
             answer=answer,
             source="llm",
-            research_question=original_question,
+            research_question=None,
         )
     if selected_route == Route.SYSTEM:
         report("Reading system information…")
@@ -106,7 +107,7 @@ def answer_question(
         return QuestionResult(
             answer=answer,
             source="system",
-            research_question=original_question,
+            research_question=None,
         )
 
     if selected_route == Route.MEMORY:
@@ -127,7 +128,7 @@ def answer_question(
             return QuestionResult(
                 answer=answer,
                 source="memory",
-                research_question=original_question,
+                research_question=None,
             )
 
         return QuestionResult(
@@ -136,14 +137,14 @@ def answer_question(
                 "I don't want to guess."
             ),
             source=None,
-            research_question=original_question,
+            research_question=None,
         )
 
     if selected_route == Route.DECLINE:
         return QuestionResult(
             answer="I can't help with that.",
             source=None,
-            research_question=original_question,
+            research_question=None,
         )
 
     report("Interpreting question…")
