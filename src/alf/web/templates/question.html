@@ -4,24 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ALF — Question</title>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont,
-                "Segoe UI", sans-serif;
-            background: #202b38;
-            color: #edf1f3;
-        }
-
         main {
-            width: min(900px, 90%);
-            margin: 0 auto;
             padding: 55px 0 70px;
         }
 
@@ -62,7 +51,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #34495a;
             font-size: 3.5rem;
         }
 
@@ -92,12 +80,10 @@
             color: #aebdca;
         }
 
-        textarea {
+        input[type="text"] {
             display: block;
             width: 100%;
-            min-height: 130px;
             padding: 18px;
-            resize: vertical;
             border: 1px solid #46596b;
             border-radius: 16px;
             background: #253341;
@@ -108,7 +94,7 @@
             outline: none;
         }
 
-        textarea:focus {
+        input[type="text"]:focus {
             border-color: #b9cdd1;
             box-shadow: 0 0 0 3px rgba(185, 205, 209, 0.25);
         }
@@ -138,10 +124,12 @@
             border: 0;
             border-radius: 14px;
             padding: 12px 24px;
-            background: #7899ad;
+            background: #34495a;
             color: #f1f5f7;
             font: inherit;
             cursor: pointer;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(10, 18, 28, 0.28);
         }
 
         button:hover {
@@ -173,7 +161,6 @@
 
         @media (max-width: 650px) {
             main {
-                width: min(94%, 900px);
                 padding-top: 35px;
             }
 
@@ -203,15 +190,17 @@
         </header>
 
         <section class="workspace">
-            <form method="post">
+            <form method="post" id="question-form">
                 <label for="question">What would you like to ask?</label>
 
-                <textarea
+                <input
                     id="question"
                     name="question"
+                    type="text"
+                    value="{{ question }}"
                     placeholder="Ask ALF a question."
                     required
-                >{{ question }}</textarea>
+                >
 
                 <div class="controls">
                     <label class="detail-option">
@@ -223,12 +212,12 @@
                         Detailed answer
                     </label>
 
-                    <button type="submit">Ask ALF</button>
+                    <button type="submit" id="ask-button">Ask ALF</button>
                 </div>
             </form>
 
             <div class="response">
-                <div class="status">
+                <div class="status" id="question-status">
                     Status: {{ status }}
                 </div>
 
@@ -242,5 +231,20 @@
             </div>
         </section>
     </main>
+        <script>
+        document
+            .querySelector("#question-form")
+            .addEventListener("submit", function () {
+                const status = document.querySelector("#question-status");
+                const button = document.querySelector("#ask-button");
+
+                status.textContent = "Status: Asking…";
+                button.disabled = true;
+
+                requestAnimationFrame(() => {
+                    this.submit();
+                });
+            });
+    </script>
 </body>
 </html>
