@@ -246,7 +246,7 @@ ALF's memory is persistent structured data stored in SQLite.
 
 The current development database is:
 
-`data/alf.db`
+`~/.local/share/alf/alf.db`
 
 The longer-term design is to keep runtime and personal data outside the source
 tree and version control.
@@ -478,13 +478,14 @@ Potential future health checks include:
 
 A Textual TUI exists as an experimental interface in:
 
-`tui/tui.py`
+`src/alf/tui.py`
 
 It currently provides workspaces for:
 
 * Question;
 * Remember;
-* Memories.
+* Memories;
+* Calc.
 
 The Memories workspace supports:
 
@@ -520,8 +521,6 @@ Examples include:
 The project directory should contain source code and project assets rather than
 personal runtime data.
 
-Moving all runtime data to a standard user data location remains future work
-where it has not yet been completed.
 
 Configuration should eventually be clearly separated from identity.
 
@@ -630,7 +629,6 @@ requirements:
 * further development of `alf relate`;
 * further TUI development;
 * deciding whether ALF should run manually or as a user service;
-* moving runtime data fully to the standard user data directory;
 * separating configuration from identity;
 * application logging;
 * reviewing module responsibilities;

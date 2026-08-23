@@ -93,7 +93,9 @@ The current command vocabulary includes:
 * `alf relate` — Manage relationships between memories
 * `alf remember <category> "text"` — Add a memory
 * `alf search "text"` — Search memories
+* `alf tui` — Launch the Textual interface
 * `alf version` — Show ALF version
+* `alf web` — Launch the web interface
 
 The command dispatcher is deterministic. Unambiguous command prefixes may be
 used, but ALF does not guess commands from natural language.
@@ -175,13 +177,11 @@ The project uses SQLite for persistent memory.
 The current development database is:
 
 ```text
-data/alf.db
+~/.local/share/alf/alf.db
 ```
 
 The database is not stored in version control.
 
-Moving runtime data completely to the standard user data directory remains
-future work.
 
 ## System awareness and safety
 
@@ -205,10 +205,10 @@ ALF currently has a command-line interface as its primary interface.
 An experimental Textual TUI is also being developed in:
 
 ```text
-tui/tui.py
+src/alf/tui.py
 ```
 
-The TUI currently includes Question, Remember and Memories workspaces.
+The TUI currently includes Question, Remember, Memories and Calc workspaces.
 
 It should be regarded as an experimental interface rather than a completed
 replacement for the CLI.
