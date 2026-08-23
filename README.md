@@ -49,7 +49,8 @@ ALF currently provides:
 * self-inspection through the `health` command;
 * external research and evidence retrieval;
 * local LLM interpretation of supplied information;
-* an experimental Textual TUI.
+* an experimental Textual TUI;
+* a local web interface.
 
 ## Running ALF
 
@@ -200,18 +201,16 @@ without turning the privileged operation into an instruction for the user.
 
 ## Interfaces
 
-ALF currently has a command-line interface as its primary interface.
+ALF currently provides three interfaces:
 
-An experimental Textual TUI is also being developed in:
-
-```text
-src/alf/tui.py
-```
+* **CLI** — the primary interface and the reference implementation;
+* **Textual TUI** — an experimental terminal interface;
+* **Web** — a local web interface.
 
 The TUI currently includes Question, Remember, Memories and Calc workspaces.
 
-It should be regarded as an experimental interface rather than a completed
-replacement for the CLI.
+The TUI and web interface are front-ends to the same underlying ALF
+application; they do not define separate application logic.
 
 Future interfaces should consume ALF's existing command and capability
 metadata rather than maintaining separate descriptions of ALF's functionality.

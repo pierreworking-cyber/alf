@@ -117,8 +117,11 @@ before asking the LLM to formulate the final response.
 The local LLM must not be assumed to be a reliable independent source of
 factual knowledge merely because it produces fluent answers.
 
-The configured Qwen 3:4b model was tested against a fixed 20-question factual
-knowledge corpus.
+The Qwen 3:4b model was tested against a fixed 20-question factual knowledge
+corpus.
+
+ALF currently configures qwen3:8b. The current model has not yet been
+independently qualified against this benchmark.
 
 The qualification standard was deliberately strict: one substantive factual
 failure is sufficient to reject a model as an independent knowledge provider.
@@ -203,11 +206,11 @@ than deciding what information ALF should obtain.
 
 ### Research
 
-ALF's local search service is the general web-search interface.
+ALF currently uses Wikipedia as the first research source, followed by the
+local web-search service when Wikipedia does not provide relevant evidence.
 
-Do not introduce a separate Wikipedia search layer unless a concrete
-requirement demonstrates that the general search service cannot satisfy the
-need.
+Wikipedia is used as a lightweight source of structured candidate evidence,
+not as an authoritative knowledge provider.
 
 The user's original question should be preserved faithfully.
 
@@ -386,7 +389,9 @@ The command vocabulary currently includes commands such as:
 * `delete`;
 * `version`;
 * `search`;
-* `question`.
+* `question`;
+* `tui`;
+* `web`.
 
 The command catalogue is the central source of command metadata.
 
