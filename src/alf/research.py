@@ -12,7 +12,6 @@ from .identity import get_identity
 
 WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 
-MAX_RESEARCH_CHARS = 6000
 MAX_WEB_RESULTS = 3
 
 
@@ -73,26 +72,6 @@ def fetch_wikipedia_page(page_id):
     page = data["query"]["pages"][str(page_id)]
 
     return page.get("extract", "")
-
-
-def research_wikipedia(question):
-    """
-    Search Wikipedia and return the first relevant page as a research source.
-    """
-
-    results = search_wikipedia(question)
-
-    if not results:
-        return None
-
-    result = results[0]
-
-    return {
-        "source": "wikipedia",
-        "title": result["title"],
-        "page_id": result["page_id"],
-        "text": fetch_wikipedia_page(result["page_id"])[:MAX_RESEARCH_CHARS],
-    }
 
 
 def research_wikipedia_candidates(question):

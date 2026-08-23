@@ -613,7 +613,6 @@ class ALFTUI(App):
                         with Horizontal(id="memory-actions"):
                             with Horizontal(id="memory-view-actions"):
                                 yield Button("Edit", id="memory-edit")
-                                yield Button("Relate", id="memory-relate")
                                 yield Button("Archive", id="memory-archive")
                                 yield Button("Delete", id="memory-delete")
 

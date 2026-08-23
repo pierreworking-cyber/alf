@@ -141,3 +141,40 @@ def test_render_ambiguous_command(capsys):
 
     assert "Ambiguous command: memor" in output
     assert "Similar options: alf memories, alf memory" in output
+
+def test_render_health_handles_commands_module_failure(capsys):
+    report = {
+        "checks": [
+            {
+                "name": "Modules",
+                "healthy": True,
+                "details": {
+                    "failed_modules": [],
+                },
+            },
+            {
+                "name": "Commands",
+                "healthy": False,
+                "details": {
+                    "warnings": [
+                        {
+                            "message": "Commands module could not be loaded",
+                        }
+                    ],
+                },
+            },
+            {
+                "name": "Ollama",
+                "healthy": True,
+                "details": {},
+            },
+        ]
+    }
+
+    presentation.render_health(report)
+
+    output = capsys.readouterr().out
+
+    assert "Command integrity issues:" in output
+    assert "- Commands" in output
+    assert "Commands module could not be loaded" in output

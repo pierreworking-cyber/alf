@@ -451,12 +451,6 @@ def render_memory(memory, related_memories=None):
         for related_memory in related_memories:
             render_memory_entry(related_memory)
 
-    if memory.get("previous_memory"):
-        previous = memory["previous_memory"]
-
-        section("Previous memory:")
-        render_memory_entry(previous)
-
 
 def render_memory_categories(categories):
     """
@@ -656,7 +650,8 @@ def render_health(report, show_details=False):
         error("Command integrity issues:")
 
         for warning in command_warnings:
-            error(f"- {warning['command']}")
+            command = warning.get("command", "Commands")
+            error(f"- {command}")
             error(f"  {warning['message']}")
 
         console.print()
