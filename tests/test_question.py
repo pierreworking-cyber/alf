@@ -437,3 +437,53 @@ def test_answer_question_admits_when_no_memory_matches(monkeypatch):
     assert result.research_question == (
         "What did we decide about something forgotten?"
     )
+
+
+def test_answer_question_declines_unsupported_question(monkeypatch):
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.DECLINE,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "interpret_question",
+        lambda question: pytest.fail(
+            "Declined questions must not be interpreted"
+        ),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "research_wikipedia_candidates",
+        lambda question: pytest.fail(
+            "Declined questions must not research Wikipedia"
+        ),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "research_web",
+        lambda question: pytest.fail(
+            "Declined questions must not research the web"
+        ),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        lambda *arguments, **kwargs: pytest.fail(
+            "Declined questions must not be passed to the LLM"
+        ),
+    )
+
+    result = question.answer_question(
+        "Can you make me a cup of tea?"
+    )
+
+    assert result.answer == "I can't help with that."
+    assert result.source is None
+    assert result.research_question == (
+        "Can you make me a cup of tea?"
+    )

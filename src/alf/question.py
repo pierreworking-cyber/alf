@@ -139,6 +139,13 @@ def answer_question(
             research_question=original_question,
         )
 
+    if selected_route == Route.DECLINE:
+        return QuestionResult(
+            answer="I can't help with that.",
+            source=None,
+            research_question=original_question,
+        )
+
     report("Interpreting question…")
     research_question = interpret_question(original_question)
 
