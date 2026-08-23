@@ -26,6 +26,8 @@
             font-size: 1.35rem;
             font-weight: 500;
             letter-spacing: 0.04em;
+            color: inherit;
+            text-decoration: none;
         }
 
         .back {
@@ -179,7 +181,7 @@
 <body>
     <main>
         <div class="top">
-            <p class="brand">ALF</p>
+            <a class="brand" href="{{ url_for('home') }}">ALF</a>
             <a class="back" href="{{ url_for('home') }}">All capabilities</a>
         </div>
 
