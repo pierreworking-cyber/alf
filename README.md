@@ -255,7 +255,7 @@ Current limitations include:
 
 ## Project status
 
-**Version:** 0.1.x development
+**Version:** 0.2.0 development
 
 ALF is deliberately being developed as infrastructure before attempting more
 ambitious forms of intelligence.

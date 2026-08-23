@@ -11,6 +11,7 @@ dependencies = [
     "rich",
     "sympy",
     "flask",
+    "textual"
 ]
 
 [project.scripts]
@@ -18,7 +19,7 @@ alf = "alf.main:main"
 
 [tool.ruff]
 line-length = 88
-target-version = "py314"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
