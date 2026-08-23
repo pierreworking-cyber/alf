@@ -20,7 +20,7 @@ OLLAMA_TAGS_URL = "http://127.0.0.1:11434/api/tags"
 OLLAMA_MODEL = "qwen3:8b"
 
 
-def _generate(prompt):
+def generate(prompt):
     """
     Send a prompt to ALF's configured local language model.
 
@@ -77,6 +77,20 @@ def ask(answer_request):
         evidence_text = str(evidence)
     else:
         evidence_text = "No evidence was available."
+
+    if evidence:
+        evidence_instruction = (
+            "Answer using only the supplied evidence. "
+            "Do not use your own general knowledge to fill gaps. "
+            "If the evidence does not contain enough information to answer "
+            "the question, say so clearly rather than guessing."
+        )
+    else:
+        evidence_instruction = (
+            "No evidence was supplied. You may answer from your general "
+            "knowledge."
+        )
+
     if verbose:
         answer_style = (
             "Give a detailed, well-developed answer. "
@@ -98,6 +112,10 @@ Evidence supplied by ALF:
 
 {evidence_text}
 
+Evidence handling:
+
+{evidence_instruction}
+
 User's question:
 
 {question}
@@ -107,7 +125,7 @@ Answer style:
 {answer_style}
 """
 
-    return _generate(prompt)
+    return generate(prompt)
 
 
 def evaluate_research(question, candidates):
@@ -161,7 +179,7 @@ Research:
 {research_text}
 """
 
-    response = _generate(prompt)
+    response = generate(prompt)
 
     try:
         evaluation = json.loads(response)

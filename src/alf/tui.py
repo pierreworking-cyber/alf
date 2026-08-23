@@ -504,8 +504,10 @@ class ALFTUI(App):
                                     id=f"calc-example-{index}",
                                 )
                                 for index, example in enumerate(
-                                    commands["calc"]["examples"][:4]
+                                    commands["calc"]["examples"]
                                 )
+                                if example
+                                not in commands["calc"]["tui"]["symbolic_examples"]
                             ],
                             id="calc-examples",
                         )
@@ -522,11 +524,13 @@ class ALFTUI(App):
                                         example.removeprefix('alf calc "')
                                         .removesuffix('"')
                                     ),
-                                    id=f"calc-example-{index + 4}",
+                                    id=f"calc-example-{index}",
                                 )
                                 for index, example in enumerate(
-                                    commands["calc"]["examples"][4:]
+                                    commands["calc"]["examples"]
                                 )
+                                if example
+                                in commands["calc"]["tui"]["symbolic_examples"]
                             ],
                             id="calc-symbolic-examples",
                         )
@@ -754,7 +758,7 @@ class ALFTUI(App):
 
     def show_question_error(self, error: str) -> None:
         self.query_one("#question-status", Static).update("Failed")
-        self.query_one("#answer", Static).update(
+        self.query_one("#answer Static", Static).update(
             "I couldn't get an answer to the question."
         )
         self.query_one("#answer-source", Static).update(
@@ -908,7 +912,7 @@ class ALFTUI(App):
 
             memory_id = selected.id.removeprefix("memory-")
             archive_memory(int(memory_id))
-            await self.refresh_memories()
+            await self.refresh_memory_list()
 
         elif event.button.id == "memory-delete":
             selected = self.query_one("#memories", ListView).highlighted_child
@@ -918,7 +922,7 @@ class ALFTUI(App):
 
             memory_id = selected.id.removeprefix("memory-")
             delete_memory(int(memory_id))
-            await self.refresh_memories()
+            await self.refresh_memory_list()
 
     async def save_remembered_memory(self) -> None:
         category = self.query_one("#remember-category", Select).value
@@ -955,7 +959,7 @@ class ALFTUI(App):
         self.clear_related_memories()
         guidance.update("Memory saved.")
 
-        await self.refresh_memories()
+        await self.refresh_memory_list()
 
 
     async def refresh_memories(self) -> None:

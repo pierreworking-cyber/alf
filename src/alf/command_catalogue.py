@@ -31,12 +31,21 @@ commands = {
                 "Display a numeric result to n decimal places (1-10). "
                 "Defaults to 3."
             ),
+            "--degrees": (
+                "Evaluate trigonometric functions in degrees. "
+                "The option may be abbreviated as --deg."
+            ),
+            "--radians": (
+                "Evaluate trigonometric functions in radians. "
+                "This is the default. The option may be abbreviated as --rad."
+            ),
         },
         "examples": [
             'alf calc "12 * 7"',
             'alf calc "2^8"',
             'alf calc "sqrt(144) + 3"',
             'alf calc "sin(pi / 2)"',
+            'alf calc "sin(90)" --degrees',
             'alf calc "solve(x^2 - 4, x)"',
             'alf calc "expand((x + 2)^2)"',
             'alf calc "factor(x^2 - 4)"',

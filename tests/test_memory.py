@@ -696,6 +696,122 @@ def test_find_related_memory_candidates_ignores_short_input(database):
     assert memory.find_related_memory_candidates("Al") == []
 
 
+def test_find_relevant_memories_finds_matching_memory(database):
+    memory.remember(
+        "preference",
+        "Peter prefers Neovim for Python programming.",
+    )
+    memory.remember(
+        "note",
+        "The garden needs watering this evening.",
+    )
+
+    results = memory.find_relevant_memories(
+        "What editor does Peter prefer for Python programming?"
+    )
+
+    assert len(results) == 1
+    assert results[0]["content"] == (
+        "Peter prefers Neovim for Python programming."
+    )
+
+
+def test_find_relevant_memories_allows_single_matching_term(database):
+    memory.remember(
+        "note",
+        "Peter uses Neovim every day.",
+    )
+    memory.remember(
+        "note",
+        "The garden needs watering.",
+    )
+
+    results = memory.find_relevant_memories(
+        "What is Neovim?"
+    )
+
+    assert [item["id"] for item in results] == [1]
+
+
+def test_find_relevant_memories_returns_empty_for_only_stop_words(
+    database,
+):
+    memory.remember(
+        "note",
+        "The garden needs watering.",
+    )
+
+    results = memory.find_relevant_memories(
+        "What is the?"
+    )
+
+    assert results == []
+
+
+def test_find_relevant_memories_is_case_insensitive(database):
+    memory.remember(
+        "note",
+        "Peter prefers Neovim for Python programming.",
+    )
+
+    results = memory.find_relevant_memories(
+        "PYTHON PROGRAMMING"
+    )
+
+    assert len(results) == 1
+    assert results[0]["id"] == 1
+
+
+def test_find_relevant_memories_ignores_archived_memories(database):
+    memory.remember(
+        "note",
+        "Peter prefers Neovim for Python programming.",
+    )
+
+    memory.archive_memory(1)
+
+    results = memory.find_relevant_memories(
+        "What editor does Peter prefer?"
+    )
+
+    assert results == []
+
+
+def test_find_relevant_memories_limits_results(database):
+    for index in range(6):
+        memory.remember(
+            "note",
+            f"Python programming memory {index}.",
+        )
+
+    results = memory.find_relevant_memories(
+        "Tell me about Python programming."
+    )
+
+    assert len(results) == 5
+
+
+def test_find_relevant_memories_ranks_by_matching_terms(database):
+    memory.remember(
+        "note",
+        "Python is useful.",
+    )
+    memory.remember(
+        "note",
+        "Python programming is useful.",
+    )
+    memory.remember(
+        "note",
+        "Python programming with Neovim is useful.",
+    )
+
+    results = memory.find_relevant_memories(
+        "Tell me about Python programming with Neovim."
+    )
+
+    assert [item["id"] for item in results] == [3, 2, 1]
+
+
 def test_archive_memory(database):
     memory.remember("note", "Archive me.")
 

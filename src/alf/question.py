@@ -17,9 +17,11 @@ from dataclasses import dataclass
 from .answer import prepare_answer
 from .interpretation import interpret_question
 from .llm import evaluate_research
+from .memory import find_relevant_memories
 from .research import research_web, research_wikipedia_candidates
 from .router import route
 from .routes import Route
+from .system import get_system_information
 
 
 @dataclass
@@ -85,6 +87,55 @@ def answer_question(
         return QuestionResult(
             answer=answer,
             source="llm",
+            research_question=original_question,
+        )
+    if selected_route == Route.SYSTEM:
+        report("Reading system information…")
+
+        system_information = get_system_information()
+
+        report("Asking local language model…")
+
+        answer = prepare_answer(
+            original_question,
+            original_question,
+            [system_information],
+            verbose=verbose,
+        )
+
+        return QuestionResult(
+            answer=answer,
+            source="system",
+            research_question=original_question,
+        )
+
+    if selected_route == Route.MEMORY:
+        report("Searching memory…")
+
+        memories = find_relevant_memories(original_question)
+
+        if memories:
+            report("Asking local language model…")
+
+            answer = prepare_answer(
+                original_question,
+                original_question,
+                memories,
+                verbose=verbose,
+            )
+
+            return QuestionResult(
+                answer=answer,
+                source="memory",
+                research_question=original_question,
+            )
+
+        return QuestionResult(
+            answer=(
+                "I couldn't find any relevant memories about that. "
+                "I don't want to guess."
+            ),
+            source=None,
             research_question=original_question,
         )
 

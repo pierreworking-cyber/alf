@@ -108,12 +108,15 @@ def calc_command(*arguments):
     expression_arguments = []
     symbolic = False
     places = 3
+    angle_mode = "radians"
     index = 0
 
     options = {
         "--symbolic": "--symbolic",
         "-p": "--places",
         "--places": "--places",
+        "--degrees": "--degrees",
+        "--radians": "--radians",
     }
 
     while index < len(arguments):
@@ -132,6 +135,15 @@ def calc_command(*arguments):
                     return
 
                 symbolic = True
+                index += 1
+                continue
+
+            if option in {"--degrees", "--radians"}:
+                if angle_mode != "radians":
+                    render_command_structure_error("calc")
+                    return
+
+                angle_mode = option.removeprefix("--")
                 index += 1
                 continue
 
@@ -170,9 +182,10 @@ def calc_command(*arguments):
             expression,
             symbolic=symbolic,
             places=places,
+            angle_mode=angle_mode,
         )
     except CalculationError as error:
-        render_calculation_error(error)
+        render_calculation_error(error, expression)
         return
 
     render_calculation(result)
@@ -248,11 +261,12 @@ def remember_command(*arguments):
 
         content = positional_arguments[0]
 
+    original_category = category
     category = resolve_category(category)
 
     if category is None:
         render_invalid_memory_category(
-            arguments[0],
+            original_category,
             get_memory_categories(),
         )
         return

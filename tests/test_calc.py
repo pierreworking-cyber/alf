@@ -1,5 +1,5 @@
 import pytest
-from sympy import Symbol
+from sympy import Symbol, pi, sin
 
 from alf.calc import CalculationError, calculate
 
@@ -25,6 +25,7 @@ def test_allowed_functions():
     assert calculate("integrate(x^2, x)", symbolic=True) == x**3 / 3
     assert calculate("solve(x^2 - 4, x)", symbolic=True) == [-2, 2]
     assert calculate("sin(pi / 2)") == 1.0
+    assert calculate("tan(pi / 4)") == 1.0
 
 
 def test_allowed_constants():
@@ -32,9 +33,39 @@ def test_allowed_constants():
     assert calculate("cos(0)") == 1.0
 
 
+def test_trigonometric_functions_default_to_radians():
+    assert calculate("sin(pi / 2)") == 1.0
+    assert calculate("cos(pi)") == -1.0
+    assert calculate("tan(pi / 4)") == 1.0
+
+
+def test_trigonometric_functions_support_degrees():
+    assert calculate("sin(90)", angle_mode="degrees") == 1.0
+    assert calculate("cos(180)", angle_mode="degrees") == -1.0
+    assert calculate("tan(45)", angle_mode="degrees") == 1.0
+
+
+def test_trigonometric_functions_support_symbolic_degrees():
+    x = Symbol("x")
+
+    assert calculate("sin(x)", symbolic=True, angle_mode="degrees") == (
+        sin(x * pi / 180)
+    )
+
+
+def test_invalid_angle_mode_is_rejected():
+    with pytest.raises(CalculationError):
+        calculate("sin(90)", angle_mode="gradians")
+
+
 def test_unknown_function_is_rejected():
     with pytest.raises(CalculationError):
-        calculate("tan(pi / 4)")
+        calculate("arctan(pi / 4)")
+
+
+def test_malformed_expression_is_rejected():
+    with pytest.raises(CalculationError):
+        calculate("pi(cos(45)")
 
 
 def test_python_import_is_rejected():

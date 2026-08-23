@@ -3,9 +3,12 @@ ALF's web interface.
 
 This module provides the Flask application used by ``alf web``.
 """
+import shlex
+
 from flask import Flask, jsonify, render_template, request
 
 from ..calc import CalculationError, calculate
+from ..command_catalogue import commands
 from ..memory import (
     find_related_memory_candidates,
     remember,
@@ -119,12 +122,14 @@ def calc():
     expression = ""
     symbolic = False
     places = 3
+    angle_mode = "radians"
     status = "Ready"
     result = "Your result will appear here."
 
     if request.method == "POST":
         expression = request.form.get("expression", "").strip()
         symbolic = request.form.get("symbolic") == "on"
+        angle_mode = request.form.get("angle_mode", "radians")
 
         try:
             places = int(request.form.get("places", "3"))
@@ -139,6 +144,7 @@ def calc():
                     expression,
                     symbolic=symbolic,
                     places=places,
+                    angle_mode=angle_mode,
                 )
 
                 status = "Complete"
@@ -148,54 +154,40 @@ def calc():
                 status = "Could not calculate"
                 result = str(error)
 
-    examples = [
-        {
-            "expression": "12 * 7",
-            "symbolic": False,
-        },
-        {
-            "expression": "2^8",
-            "symbolic": False,
-        },
-        {
-            "expression": "sqrt(144) + 3",
-            "symbolic": False,
-        },
-        {
-            "expression": "sin(pi / 2)",
-            "symbolic": False,
-        },
-        {
-            "expression": "solve(x^2 - 4, x)",
-            "symbolic": True,
-        },
-        {
-            "expression": "expand((x + 2)^2)",
-            "symbolic": True,
-        },
-        {
-            "expression": "factor(x^2 - 4)",
-            "symbolic": True,
-        },
-        {
-            "expression": "diff(x^3, x)",
-            "symbolic": True,
-        },
-        {
-            "expression": "integrate(x^2, x)",
-            "symbolic": True,
-        },
-        {
-            "expression": "limit(sin(x) / x, x, 0)",
-            "symbolic": True,
-        },
-    ]
+    symbolic_examples = commands["calc"]["tui"]["symbolic_examples"]
+
+    examples = []
+
+    for example in commands["calc"]["examples"]:
+        parts = shlex.split(example)
+
+        expression_parts = []
+        example_angle_mode = "radians"
+
+        for part in parts[2:]:
+            if part == "--degrees":
+                example_angle_mode = "degrees"
+            elif part == "--radians":
+                example_angle_mode = "radians"
+            else:
+                expression_parts.append(part)
+
+        expression = " ".join(expression_parts)
+
+        examples.append(
+            {
+                "expression": expression,
+                "symbolic": example in symbolic_examples,
+                "angle_mode": example_angle_mode,
+            }
+        )
 
     return render_template(
         "calc.html",
         expression=expression,
         symbolic=symbolic,
         places=places,
+        angle_mode=angle_mode,
         status=status,
         result=result,
         examples=examples,

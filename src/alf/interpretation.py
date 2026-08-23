@@ -5,7 +5,7 @@ Provides a small boundary between ALF's original user questions and
 language-model reformulation for research.
 """
 
-from .llm import _generate
+from .llm import generate
 
 
 def interpret_question(question):
@@ -54,4 +54,4 @@ User's question:
 {question}
 """
 
-    return _generate(prompt).strip()
+    return generate(prompt).strip()

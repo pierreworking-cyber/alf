@@ -4,7 +4,7 @@ from alf.routes import Route
 
 def test_classify_system_question(monkeypatch):
     monkeypatch.setattr(
-        "alf.classifier.llm._generate",
+        "alf.classifier.llm.generate",
         lambda prompt: "system",
     )
 
@@ -13,7 +13,7 @@ def test_classify_system_question(monkeypatch):
 
 def test_classify_memory_question(monkeypatch):
     monkeypatch.setattr(
-        "alf.classifier.llm._generate",
+        "alf.classifier.llm.generate",
         lambda prompt: "memory",
     )
 
@@ -22,7 +22,7 @@ def test_classify_memory_question(monkeypatch):
 
 def test_classify_research_question(monkeypatch):
     monkeypatch.setattr(
-        "alf.classifier.llm._generate",
+        "alf.classifier.llm.generate",
         lambda prompt: "research",
     )
 
@@ -31,7 +31,7 @@ def test_classify_research_question(monkeypatch):
 
 def test_classify_general_knowledge_question(monkeypatch):
     monkeypatch.setattr(
-        "alf.classifier.llm._generate",
+        "alf.classifier.llm.generate",
         lambda prompt: "llm",
     )
 
@@ -40,7 +40,7 @@ def test_classify_general_knowledge_question(monkeypatch):
 
 def test_classify_unsupported_question(monkeypatch):
     monkeypatch.setattr(
-        "alf.classifier.llm._generate",
+        "alf.classifier.llm.generate",
         lambda prompt: "decline",
     )
 
@@ -55,7 +55,7 @@ def test_classification_prompt_contains_safety_examples(monkeypatch):
         return "decline"
 
     monkeypatch.setattr(
-        "alf.classifier.llm._generate",
+        "alf.classifier.llm.generate",
         fake_generate,
     )
 

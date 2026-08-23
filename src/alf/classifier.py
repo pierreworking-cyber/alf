@@ -85,7 +85,7 @@ User's question:
 {question}
 """
 
-    result = llm._generate(prompt).strip().lower()
+    result = llm.generate(prompt).strip().lower()
 
     try:
         return Route(result)

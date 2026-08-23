@@ -13,7 +13,7 @@ def test_interpret_question_returns_llm_response(monkeypatch):
 
     monkeypatch.setattr(
         interpretation,
-        "_generate",
+        "generate",
         fake_generate,
     )
 
@@ -45,7 +45,7 @@ def test_interpret_question_allows_already_suitable_question(monkeypatch):
 
     monkeypatch.setattr(
         interpretation,
-        "_generate",
+        "generate",
         fake_generate,
     )
 
@@ -78,7 +78,7 @@ def test_interpret_question_preserves_searchable_question(monkeypatch):
 
     monkeypatch.setattr(
         interpretation,
-        "_generate",
+        "generate",
         fake_generate,
     )
 
@@ -99,7 +99,7 @@ def test_interpret_question_does_not_answer_question(monkeypatch):
 
     monkeypatch.setattr(
         interpretation,
-        "_generate",
+        "generate",
         fake_generate,
     )
 

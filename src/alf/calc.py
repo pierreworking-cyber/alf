@@ -7,6 +7,7 @@ vocabulary.
 """
 
 import re
+from tokenize import TokenError
 
 from sympy import (
     E,
@@ -26,6 +27,7 @@ from sympy import (
     sin,
     solve,
     sqrt,
+    tan,
 )
 from sympy.parsing.sympy_parser import (
     convert_xor,
@@ -67,6 +69,7 @@ LOCAL_DICT = {
     "sin": sin,
     "solve": solve,
     "sqrt": sqrt,
+    "tan": tan,
 }
 
 
@@ -82,14 +85,31 @@ def _validate_functions(expression):
             raise CalculationError("unsupported expression")
 
 
-def calculate(expression, symbolic=False, places=3):
+def _get_local_dict(angle_mode):
+    """Return the SymPy vocabulary for the requested angle mode."""
+
+    if angle_mode == "radians":
+        return LOCAL_DICT
+
+    if angle_mode == "degrees":
+        return {
+            **LOCAL_DICT,
+            "sin": lambda value: sin(value * pi / 180),
+            "cos": lambda value: cos(value * pi / 180),
+            "tan": lambda value: tan(value * pi / 180),
+        }
+
+    raise CalculationError("invalid angle mode")
+
+
+def calculate(expression, symbolic=False, places=3, angle_mode="radians"):
     """
     Evaluate a mathematical expression using ALF's allowed SymPy vocabulary.
 
     Expressions may be evaluated numerically or symbolically. Numeric
     results are rounded to the requested number of decimal places.
-    Unsupported functions, invalid expressions, and non-numeric results
-    raise ``CalculationError``.
+    Trigonometric functions use radians by default and may be evaluated
+    in degrees by setting ``angle_mode`` to ``"degrees"``.
 
     Args:
         expression: The mathematical expression to evaluate.
@@ -97,6 +117,8 @@ def calculate(expression, symbolic=False, places=3):
             value.
         places: Number of decimal places to use when rounding numeric
             results.
+        angle_mode: ``"radians"`` or ``"degrees"`` for trigonometric
+            functions.
 
     Returns:
         The evaluated SymPy expression when ``symbolic`` is true;
@@ -115,10 +137,10 @@ def calculate(expression, symbolic=False, places=3):
         result = parse_expr(
             expression,
             global_dict=PARSER_GLOBALS,
-            local_dict=LOCAL_DICT,
+            local_dict=_get_local_dict(angle_mode),
             transformations=TRANSFORMATIONS,
         )
-    except (SyntaxError, TypeError, ValueError) as error:
+    except (SyntaxError, TokenError, TypeError, ValueError) as error:
         raise CalculationError("unsupported expression") from error
 
     if symbolic:

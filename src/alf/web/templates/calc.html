@@ -118,6 +118,28 @@
                             </label>
                         </div>
 
+                        <div class="calc-angle">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="angle_mode"
+                                    value="radians"
+                                    {% if angle_mode == "radians" %}checked{% endif %}
+                                >
+                                Radians
+                            </label>
+
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="angle_mode"
+                                    value="degrees"
+                                    {% if angle_mode == "degrees" %}checked{% endif %}
+                                >
+                                Degrees
+                            </label>
+                        </div>
+
                         <label class="places-option">
                             Decimal places
                             <select

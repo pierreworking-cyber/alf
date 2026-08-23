@@ -151,6 +151,42 @@ def test_ask_handles_no_research(monkeypatch):
     assert result == "An answer without research."
 
 
+def test_ask_requires_answers_to_stay_within_evidence(monkeypatch):
+    captured = {}
+
+    def fake_generate(prompt):
+        captured["prompt"] = prompt
+        return "I don't have enough evidence to answer that."
+
+    monkeypatch.setattr(
+        llm,
+        "generate",
+        fake_generate,
+    )
+
+    result = llm.ask(
+        {
+            "question": "What did we decide about penguin mating habits?",
+            "evidence": [
+                {
+                    "source": "memory",
+                    "content": "ALF should use evidence rather than guesses.",
+                }
+            ],
+        }
+    )
+
+    assert (
+        "Answer using only the supplied evidence."
+        in captured["prompt"]
+    )
+    assert (
+        "Do not use your own general knowledge to fill gaps."
+        in captured["prompt"]
+    )
+    assert result == "I don't have enough evidence to answer that."
+
+
 def test_ask_uses_detailed_style_when_verbose(monkeypatch):
     captured = {}
 
@@ -160,7 +196,7 @@ def test_ask_uses_detailed_style_when_verbose(monkeypatch):
 
     monkeypatch.setattr(
         llm,
-        "_generate",
+        "generate",
         fake_generate,
     )
 
@@ -189,7 +225,7 @@ def test_ask_uses_concise_style_when_not_verbose(monkeypatch):
 
     monkeypatch.setattr(
         llm,
-        "_generate",
+        "generate",
         fake_generate,
     )
 

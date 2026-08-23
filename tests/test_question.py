@@ -274,3 +274,166 @@ def test_answer_question_admits_when_no_research_is_relevant(monkeypatch):
     )
     assert result.source is None
     assert result.research_question == "What film is this?"
+
+
+def test_answer_question_uses_system_information(monkeypatch):
+    system_information = {
+        "operating_system": "Linux",
+        "hostname": "alf-machine",
+        "architecture": "x86_64",
+        "python_version": "3.14.6",
+    }
+
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.SYSTEM,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "get_system_information",
+        lambda: system_information,
+    )
+
+    captured = {}
+
+    def fake_prepare_answer(
+        original_question,
+        research_question,
+        evidence,
+        verbose=False,
+    ):
+        captured["answer_request"] = {
+            "original_question": original_question,
+            "research_question": research_question,
+            "evidence": evidence,
+            "verbose": verbose,
+        }
+        return "You are running Linux."
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        fake_prepare_answer,
+    )
+
+    result = question.answer_question(
+        "What operating system am I running?"
+    )
+
+    assert captured["answer_request"] == {
+        "original_question": "What operating system am I running?",
+        "research_question": "What operating system am I running?",
+        "evidence": [system_information],
+        "verbose": False,
+    }
+
+    assert result.answer == "You are running Linux."
+    assert result.source == "system"
+    assert result.research_question == (
+        "What operating system am I running?"
+    )
+
+
+def test_answer_question_uses_memory_when_relevant(monkeypatch):
+    memories = [
+        {
+            "id": 1,
+            "category": "decision",
+            "status": "active",
+            "content": "ALF should use evidence rather than guesses.",
+        }
+    ]
+
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.MEMORY,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "find_relevant_memories",
+        lambda question: memories,
+    )
+
+    captured = {}
+
+    def fake_prepare_answer(
+        original_question,
+        research_question,
+        evidence,
+        verbose=False,
+    ):
+        captured["answer_request"] = {
+            "original_question": original_question,
+            "research_question": research_question,
+            "evidence": evidence,
+            "verbose": verbose,
+        }
+        return "We decided to use evidence rather than guesses."
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        fake_prepare_answer,
+    )
+
+    result = question.answer_question(
+        "What did we decide about how ALF should answer questions?"
+    )
+
+    assert captured["answer_request"] == {
+        "original_question": (
+            "What did we decide about how ALF should answer questions?"
+        ),
+        "research_question": (
+            "What did we decide about how ALF should answer questions?"
+        ),
+        "evidence": memories,
+        "verbose": False,
+    }
+
+    assert result.answer == (
+        "We decided to use evidence rather than guesses."
+    )
+    assert result.source == "memory"
+    assert result.research_question == (
+        "What did we decide about how ALF should answer questions?"
+    )
+
+
+def test_answer_question_admits_when_no_memory_matches(monkeypatch):
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.MEMORY,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "find_relevant_memories",
+        lambda question: [],
+    )
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        lambda *arguments, **kwargs: pytest.fail(
+            "ALF must not answer without memory evidence"
+        ),
+    )
+
+    result = question.answer_question(
+        "What did we decide about something forgotten?"
+    )
+
+    assert result.answer == (
+        "I couldn't find any relevant memories about that. "
+        "I don't want to guess."
+    )
+    assert result.source is None
+    assert result.research_question == (
+        "What did we decide about something forgotten?"
+    )

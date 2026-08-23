@@ -331,6 +331,7 @@ def update_memory(memory_id: int, content: str):
 
     return True
 
+
 def get_memories(options=None):
     """
     Retrieve memories matching the supplied query options.
@@ -476,6 +477,7 @@ def find_related_memory_candidates(content: str, limit=5):
     if len(terms) < 2:
         return []
 
+
     with get_connection() as connection:
         matches = {}
 
@@ -507,6 +509,162 @@ def find_related_memory_candidates(content: str, limit=5):
         )
 
         candidate_ids = candidate_ids[:limit]
+
+        if not candidate_ids:
+            return []
+
+        placeholders = ",".join("?" for _ in candidate_ids)
+
+        rows = connection.execute(
+            f"""
+            SELECT id, created, category, status, content,
+                   previous_memory_id, related_memory_ids
+            FROM memories
+            WHERE id IN ({placeholders})
+            ORDER BY id
+            """,
+            candidate_ids,
+        ).fetchall()
+
+    memories = {
+        row[0]: {
+            "id": row[0],
+            "created": row[1],
+            "category": row[2],
+            "status": row[3],
+            "content": row[4],
+            "previous_memory_id": row[5],
+            "related_memory_ids": row[6],
+        }
+        for row in rows
+    }
+
+    return [
+        memories[memory_id]
+        for memory_id in candidate_ids
+        if memory_id in memories
+    ]
+
+
+def find_relevant_memories(question: str, limit=5):
+    """
+    Find active memories that may contain information relevant to a question.
+
+    Candidate memories are identified from matching significant terms.
+    This function provides possible evidence only; it does not determine
+    whether a memory actually answers the question.
+
+    Args:
+        question: The user's question.
+        limit: Maximum number of candidate memories to return.
+
+    Returns:
+        A list of candidate memory dictionaries, ordered by relevance.
+    """
+
+    stop_words = {
+        "about",
+        "after",
+        "again",
+        "also",
+        "and",
+        "are",
+        "because",
+        "been",
+        "before",
+        "being",
+        "but",
+        "can",
+        "could",
+        "does",
+        "doing",
+        "for",
+        "from",
+        "had",
+        "has",
+        "have",
+        "how",
+        "into",
+        "its",
+        "just",
+        "more",
+        "most",
+        "not",
+        "only",
+        "our",
+        "should",
+        "some",
+        "than",
+        "that",
+        "the",
+        "their",
+        "there",
+        "these",
+        "they",
+        "this",
+        "those",
+        "through",
+        "to",
+        "was",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "will",
+        "with",
+        "would",
+        "you",
+        "your",
+    }
+
+    terms = []
+
+    for word in question.split():
+        term = "".join(
+            character
+            for character in word
+            if character.isalnum()
+        ).lower()
+
+        if (
+            len(term) >= 3
+            and term not in stop_words
+            and term not in terms
+        ):
+            terms.append(term)
+
+    if not terms:
+        return []
+
+    with get_connection() as connection:
+        matches = {}
+
+        for term in terms:
+            rows = connection.execute(
+                """
+                SELECT memories.id
+                FROM memory_fts
+                JOIN memories ON memories.id = memory_fts.rowid
+                WHERE memory_fts MATCH ?
+                  AND memories.status = 'active'
+                """,
+                (f'"{term}"',),
+            ).fetchall()
+
+            for row in rows:
+                memory_id = row[0]
+                matches[memory_id] = matches.get(memory_id, 0) + 1
+
+        candidate_ids = sorted(
+            matches,
+            key=lambda memory_id: (
+                -matches[memory_id],
+                memory_id,
+            ),
+        )[:limit]
 
         if not candidate_ids:
             return []

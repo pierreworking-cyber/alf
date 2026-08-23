@@ -117,28 +117,6 @@ def render_greeting(greeting):
     console.print(greeting)
 
 
-def render_ready(status):
-    """
-    Render ALF startup summary.
-    """
-
-    identity = status["identity"]
-    memory = status["memory"]
-    git = status["git"]
-
-    console.print()
-
-    info(f"ALF {identity['version']} ready.")
-
-    console.print()
-
-    info(f"Memories: {memory['total_memories']}")
-    info(f"Git: {git['branch']} ({git['status']})")
-    info("System: OK")
-
-    console.print()
-
-
 def render_about(about, show_details=False):
     """
     Render ALF about information.
@@ -409,7 +387,6 @@ def render_status(status):
 
     info(f"Stored memories: {memory['total_memories']}")
     info(f"Memory categories: {', '.join(memory['categories'])}")
-
 
 
 def render_capability_details(capability):

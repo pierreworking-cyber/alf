@@ -26,7 +26,7 @@ def introduce():
     command-line command.
     """
     render_greeting(f"{get_greeting()}, Peter.")
-    (show_status,)
+    show_status()
 
 
 def main():

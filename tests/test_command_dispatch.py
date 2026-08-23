@@ -593,8 +593,18 @@ def test_run_resolves_relate_command(monkeypatch):
 def test_calc_command_defaults_to_numeric_with_three_places(monkeypatch):
     captured = {}
 
-    def fake_calculate(expression, symbolic=False, places=3):
-        captured["arguments"] = (expression, symbolic, places)
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
         return 42
 
     monkeypatch.setattr(commands, "calculate", fake_calculate)
@@ -606,15 +616,25 @@ def test_calc_command_defaults_to_numeric_with_three_places(monkeypatch):
 
     commands.calc_command("12", "*", "7")
 
-    assert captured["arguments"] == ("12 * 7", False, 3)
+    assert captured["arguments"] == ("12 * 7", False, 3, "radians")
     assert captured["result"] == 42
 
 
 def test_calc_command_accepts_symbolic_option(monkeypatch):
     captured = {}
 
-    def fake_calculate(expression, symbolic=False, places=3):
-        captured["arguments"] = (expression, symbolic, places)
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
         return 42
 
     monkeypatch.setattr(commands, "calculate", fake_calculate)
@@ -626,14 +646,24 @@ def test_calc_command_accepts_symbolic_option(monkeypatch):
 
     commands.calc_command("x^2", "--symbolic")
 
-    assert captured["arguments"] == ("x^2", True, 3)
+    assert captured["arguments"] == ("x^2", True, 3, "radians")
 
 
 def test_calc_command_accepts_symbolic_prefix(monkeypatch):
     captured = {}
 
-    def fake_calculate(expression, symbolic=False, places=3):
-        captured["arguments"] = (expression, symbolic, places)
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
         return 42
 
     monkeypatch.setattr(commands, "calculate", fake_calculate)
@@ -645,14 +675,144 @@ def test_calc_command_accepts_symbolic_prefix(monkeypatch):
 
     commands.calc_command("x^2", "--sym")
 
-    assert captured["arguments"] == ("x^2", True, 3)
+    assert captured["arguments"] == ("x^2", True, 3, "radians")
+
+
+def test_calc_command_accepts_degrees_option(monkeypatch):
+    captured = {}
+
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command("sin(90)", "--degrees")
+
+    assert captured["arguments"] == (
+        "sin(90)",
+        False,
+        3,
+        "degrees",
+    )
+
+
+def test_calc_command_accepts_degrees_prefix(monkeypatch):
+    captured = {}
+
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command("sin(90)", "--deg")
+
+    assert captured["arguments"] == (
+        "sin(90)",
+        False,
+        3,
+        "degrees",
+    )
+
+
+def test_calc_command_accepts_radians_prefix(monkeypatch):
+    captured = {}
+
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
+        return 42
+
+    monkeypatch.setattr(commands, "calculate", fake_calculate)
+    monkeypatch.setattr(
+        commands,
+        "render_calculation",
+        lambda result: None,
+    )
+
+    commands.calc_command("sin(pi / 2)", "--rad")
+
+    assert captured["arguments"] == (
+        "sin(pi / 2)",
+        False,
+        3,
+        "radians",
+    )
+
+
+def test_calc_command_rejects_both_angle_modes(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    commands.calc_command(
+        "sin(90)",
+        "--degrees",
+        "--radians",
+    )
+
+    assert output == ["calc"]
 
 
 def test_calc_command_accepts_places_prefix(monkeypatch):
     captured = {}
 
-    def fake_calculate(expression, symbolic=False, places=3):
-        captured["arguments"] = (expression, symbolic, places)
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
         return 42
 
     monkeypatch.setattr(commands, "calculate", fake_calculate)
@@ -664,14 +824,24 @@ def test_calc_command_accepts_places_prefix(monkeypatch):
 
     commands.calc_command("sqrt(2)", "--pla", "5")
 
-    assert captured["arguments"] == ("sqrt(2)", False, 5)
+    assert captured["arguments"] == ("sqrt(2)", False, 5, "radians")
 
 
 def test_calc_command_accepts_places_option(monkeypatch):
     captured = {}
 
-    def fake_calculate(expression, symbolic=False, places=3):
-        captured["arguments"] = (expression, symbolic, places)
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
         return 42
 
     monkeypatch.setattr(commands, "calculate", fake_calculate)
@@ -683,14 +853,24 @@ def test_calc_command_accepts_places_option(monkeypatch):
 
     commands.calc_command("sqrt(2)", "--places", "5")
 
-    assert captured["arguments"] == ("sqrt(2)", False, 5)
+    assert captured["arguments"] == ("sqrt(2)", False, 5, "radians")
 
 
 def test_calc_command_accepts_short_places_option(monkeypatch):
     captured = {}
 
-    def fake_calculate(expression, symbolic=False, places=3):
-        captured["arguments"] = (expression, symbolic, places)
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
         return 42
 
     monkeypatch.setattr(commands, "calculate", fake_calculate)
@@ -702,14 +882,23 @@ def test_calc_command_accepts_short_places_option(monkeypatch):
 
     commands.calc_command("sqrt(2)", "-p", "5")
 
-    assert captured["arguments"] == ("sqrt(2)", False, 5)
+    assert captured["arguments"] == ("sqrt(2)", False, 5, "radians")
 
 
 def test_calc_command_options_are_order_independent(monkeypatch):
     captured = {}
-
-    def fake_calculate(expression, symbolic=False, places=3):
-        captured["arguments"] = (expression, symbolic, places)
+    def fake_calculate(
+        expression,
+        symbolic=False,
+        places=3,
+        angle_mode="radians",
+    ):
+        captured["arguments"] = (
+            expression,
+            symbolic,
+            places,
+            angle_mode,
+        )
         return 42
 
     monkeypatch.setattr(commands, "calculate", fake_calculate)
@@ -725,7 +914,7 @@ def test_calc_command_options_are_order_independent(monkeypatch):
         "sqrt(2)",
     )
 
-    assert captured["arguments"] == ("sqrt(2)", False, 5)
+    assert captured["arguments"] == ("sqrt(2)", False, 5, "radians")
 
 
 def test_calc_command_rejects_symbolic_with_places(monkeypatch):
