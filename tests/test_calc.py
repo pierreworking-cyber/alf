@@ -28,6 +28,16 @@ def test_allowed_functions():
     assert calculate("tan(pi / 4)") == 1.0
 
 
+def test_non_numeric_result_raises_calculation_error():
+    with pytest.raises(CalculationError):
+        calculate("solve(x^2 - 4, x)")
+
+
+def test_complex_result_raises_calculation_error():
+    with pytest.raises(CalculationError):
+        calculate("I")
+
+
 def test_allowed_constants():
     assert calculate("log(E)") == 1.0
     assert calculate("cos(0)") == 1.0

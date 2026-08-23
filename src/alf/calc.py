@@ -146,7 +146,10 @@ def calculate(expression, symbolic=False, places=3, angle_mode="radians"):
     if symbolic:
         return result
 
-    if not result.is_number:
-        raise CalculationError("invalid numeric entry")
+    try:
+        if not result.is_number:
+            raise CalculationError("invalid numeric entry")
 
-    return round(float(result), places)
+        return round(float(result), places)
+    except (AttributeError, TypeError, ValueError) as error:
+        raise CalculationError("invalid numeric entry") from error
