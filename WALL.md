@@ -1,377 +1,388 @@
-# WALL
+# ALF Architectural Principles
 
-Working architectural notes for ALF.
-
-This document records current design direction, architectural boundaries,
-important decisions and areas still under consideration.
-
-It is intentionally temporary.
-
-When an idea becomes an established and durable part of ALF's design, it
-should move into ALF's persistent memory and be removed from this document.
-
-The repository and current implementation remain the authoritative source for
-what ALF actually does. This document describes the design that should guide
-development.
-
----
-
-## Core philosophy
+## Purpose
 
 ALF is Peter's long-term local computing companion.
 
-ALF is not intended to become another chatbot.
+This document describes the architectural principles and design intentions that currently govern ALF development.
 
-The fundamental architectural principle is:
+It is an architectural guide, not a historical record and not an immutable constitution.
 
-**ALF owns the application. The LLM is a replaceable component.**
+ALF is an evolving system. Development experience, experimentation and newly discovered requirements may invalidate earlier decisions. When that happens, the architecture should be deliberately revised rather than preserving an obsolete rule merely for consistency.
 
-The LLM may interpret evidence and provide natural-language responses, but it
-must not quietly acquire responsibilities that belong to ALF's deterministic
-application layer.
-
-ALF should remain:
-
-* local;
-* persistent;
-* inspectable;
-* evidence-aware;
-* deterministic where appropriate;
-* LLM-assisted rather than LLM-controlled;
-* useful rather than theatrical.
-
-The design should make it possible to replace the LLM without replacing ALF.
+The purpose of this document is therefore to describe **the ALF we are currently trying to build**.
 
 ---
 
-# Architecture
+# 1. Core principles
 
-ALF is composed of small, focused subsystems.
+ALF should favour:
 
-Each subsystem should own its own knowledge and, where appropriate, describe
-its capabilities rather than requiring other parts of ALF to maintain
-duplicated knowledge.
+* **Correctness over speed**
+* **Tools and evidence over unsupported guesses**
+* **Records over assumed memories**
+* **Simplicity over unnecessary complexity**
+* **Clear ownership over duplicated application logic**
+* **Useful interaction over interface uniformity**
+* **Evolution over attachment to obsolete decisions**
 
-Interfaces should consume those capabilities rather than maintaining
-independent registration lists.
+These principles apply to the system as a whole.
 
-Prefer simple modules over clever abstractions.
-
-Keep modules focused on a single responsibility.
-
-Current major responsibilities include:
-
-* `identity.py` — ALF identity;
-* `memory.py` — persistent memory;
-* `presentation.py` — user-facing output;
-* `status.py` — runtime/status information;
-* `system.py` — controlled operating-system information;
-* `git.py` — repository awareness;
-* `commands.py` — command registration, dispatch and command metadata;
-* `command_catalogue.py` — structured command metadata;
-* `research.py` — external research and evidence retrieval;
-* `llm.py` — local LLM interaction;
-* routing/interpretation modules — determining how questions are handled and
-  interpreting supplied evidence.
-
-Capability discovery currently identifies reporting subsystems.
-
-Future introspection may distinguish between capability-reporting modules and
-internal helper modules.
+They do not require every interface to behave identically.
 
 ---
 
-# Evidence and the LLM
+# 2. ALF owns the application
 
-ALF follows the principle:
+ALF is the application.
 
-**Capabilities produce evidence → the LLM interprets evidence → presentation
-renders the answer.**
+The CLI, TUI, web interface and future interfaces are front-ends to ALF rather than separate applications.
 
-The LLM is not ALF's source of truth.
+The underlying application owns:
 
-ALF may obtain evidence from:
+* persistent state;
+* identity;
+* memory;
+* memory relationships;
+* command semantics;
+* capability information;
+* research and evidence retrieval;
+* routing and application decisions;
+* interaction with the local LLM;
+* system and repository information.
+
+An interface should not independently redefine these things.
+
+Where several interfaces perform the same underlying operation, the operation should have the same semantics regardless of which interface initiated it.
+
+Interfaces may, however, provide different workflows for reaching those operations.
+
+---
+
+# 3. Interfaces are specialised views
+
+ALF does not require every capability to be exposed through every interface.
+
+Different interfaces are appropriate for different kinds of interaction.
+
+The current interfaces are:
+
+* **CLI** — fast, deterministic, scriptable and suitable for direct commands;
+* **Textual TUI** — interactive terminal exploration and workflows;
+* **Web** — richer interactive presentation and browser-based workflows.
+
+Future interfaces may include visual or spatial interfaces that are fundamentally different from the terminal interfaces.
+
+The existence of a CLI does not require every future capability to have an equally good CLI representation.
+
+Likewise, a capability being available in the web interface does not imply that it should be forced into the TUI.
+
+The correct question is:
+
+> What is the best interaction for this capability in this medium?
+
+The application semantics remain shared even when the interaction is not.
+
+---
+
+# 4. Interfaces must not duplicate application rules
+
+Although interfaces may provide different workflows, they should not independently maintain competing definitions of ALF's capabilities.
+
+For example:
+
+* memory categories belong to the memory system;
+* command metadata belongs to the command catalogue;
+* capabilities belong to capability discovery;
+* memory validation belongs in the appropriate application layer;
+* interface-specific presentation belongs in the interface.
+
+A new interface should consume ALF's existing application information rather than creating a second registration system wherever practical.
+
+This principle exists to prevent interface drift.
+
+It does **not** require identical interfaces.
+
+---
+
+# 5. The CLI
+
+The CLI is the primary deterministic interface and remains an important reference implementation for direct ALF operations.
+
+Commands should have:
+
+* explicit semantics;
+* predictable argument handling;
+* deterministic dispatch;
+* useful error messages;
+* no dependence on natural-language guessing for command selection.
+
+Command prefixes may be accepted when they resolve unambiguously.
+
+Natural-language interpretation should not be silently substituted for deterministic command dispatch.
+
+The CLI should remain capable of performing the core application operations for which a command-line interaction is appropriate.
+
+It does not need to expose every visual, spatial or highly interactive capability of ALF.
+
+---
+
+# 6. The TUI and Web interfaces
+
+The TUI and web interface are not alternate implementations of ALF.
+
+They are specialised front-ends to the same application.
+
+They may provide workflows that would be cumbersome or inappropriate in the CLI.
+
+For example, interactive memory exploration, related-memory surfacing, editing workflows and contextual suggestions can be natural in a graphical or terminal UI while being awkward in a conventional command-line command.
+
+This is acceptable.
+
+A useful interface is more important than artificial feature parity.
+
+---
+
+# 7. Visual and spatial interaction
+
+ALF should be allowed to develop capabilities whose natural representation is visual or spatial.
+
+Examples may include:
+
+* mind maps;
+* memory relationship graphs;
+* knowledge maps;
+* timelines;
+* visual exploration of related information;
+* other spatial representations of ALF's state.
+
+Such capabilities should not be forced into the CLI merely to maintain theoretical interface parity.
+
+A mind map, for example, is fundamentally a spatial interaction. A graphical interface may therefore be the appropriate place to create and explore it.
+
+The underlying information and relationships remain owned by ALF.
+
+The visual representation is an interface to that information.
+
+---
+
+# 8. Persistent memory
+
+Memory is a first-class part of ALF.
+
+Memory is persistent application state rather than conversational context assumed by the LLM.
+
+The memory system currently supports categories including:
+
+* note;
+* fact;
+* decision;
+* preference.
+
+Memory operations include creation, searching, editing, history, relationships, archiving and permanent deletion.
+
+Memory semantics should remain explicit.
+
+In particular:
+
+* creating a new memory/revision is part of the memory-history model;
+* editing an existing memory is an explicit in-place operation;
+* archiving is distinct from deletion;
+* permanent deletion is irreversible;
+* deletion does not rewrite historical records or silently repair references that are intentionally retained by the memory model.
+
+The memory database is authoritative for persistent memory.
+
+---
+
+# 9. Memory relationships
+
+Memories may be related to one another.
+
+Relationships are application data, not merely annotations produced for presentation.
+
+Interfaces may surface relationships differently.
+
+For example:
+
+* the CLI may display textual related-memory information;
+* the TUI may allow interactive exploration;
+* the web interface may present relationships visually;
+* a future mind-map interface may represent relationships spatially.
+
+The underlying relationship semantics remain shared.
+
+---
+
+# 10. The local LLM
+
+The local LLM is a component of ALF, not the owner of ALF.
+
+The LLM must not be treated as an authoritative source merely because it produces fluent answers.
+
+The earlier model-qualification work established an important distinction:
+
+> A model may be unsuitable as an independent knowledge provider while still being useful as an interpreter, analyser or classifier.
+
+ALF therefore does not need to restrict the LLM to a single role.
+
+The LLM may be used where it provides useful assistance, including:
+
+* interpreting supplied evidence;
+* analysing questions;
+* classifying questions;
+* assisting with routing;
+* formulating research queries;
+* interpreting retrieved information;
+* composing responses;
+* assisting interactive interfaces.
+
+The LLM does not thereby become the authority over ALF's persistent state or factual evidence.
+
+---
+
+# 11. LLM authority and evidence
+
+The LLM should not be treated as an independent authority merely because it can answer a question without external evidence.
+
+Where factual evidence is required, ALF should obtain appropriate evidence and provide it to the LLM for interpretation.
+
+The distinction is:
+
+**ALF controls the evidence and application state.**
+
+**The LLM assists with interpretation and interaction.**
+
+The LLM may propose an interpretation or classification, but ALF should retain control over consequential application operations.
+
+The use of an LLM for classification or routing is therefore not inherently contrary to the architecture.
+
+It is acceptable when the LLM is being used as a component of ALF rather than being granted uncontrolled authority over ALF.
+
+---
+
+# 12. Question analysis and routing
+
+Question handling may use multiple stages.
+
+A question may require:
+
+* memory;
+* system information;
+* repository information;
+* external research;
+* calculation;
+* another ALF capability;
+* or interpretation using the local LLM.
+
+The routing system should select an appropriate path.
+
+Routing may use deterministic rules, LLM-assisted analysis, or a combination of both.
+
+The choice should be based on usefulness, reliability and simplicity rather than an absolute prohibition on one technique.
+
+In particular, semantic classification by the LLM is permitted when it provides useful analysis that ALF cannot reasonably obtain more simply.
+
+The LLM's routing decision should not be treated as an unquestionable authority.
+
+ALF remains responsible for executing the resulting application behaviour.
+
+---
+
+# 13. Research and external evidence
+
+External research exists to obtain evidence that is not reliably available from ALF's own records or local capabilities.
+
+The user's original question should be preserved faithfully.
+
+The research process may transform or analyse the question for search purposes, but meaningful information in the original wording should not be casually discarded.
+
+Research sources are evidence sources, not authorities over ALF.
+
+Wikipedia, web search and other sources may be used according to their usefulness for the particular question.
+
+No individual source should automatically be treated as authoritative merely because it is the first source consulted.
+
+Research should favour evidence appropriate to the question.
+
+The LLM may assist in interpreting retrieved evidence, but should not be allowed to manufacture evidence that ALF did not obtain.
+
+---
+
+# 14. Answers
+
+An ALF answer may be based on one or more forms of evidence, including:
 
 * persistent memory;
 * current system information;
 * repository information;
 * external research;
-* other explicitly permitted capabilities.
+* calculations or other deterministic capabilities;
+* local LLM interpretation.
 
-The LLM may then interpret and synthesise that evidence into a useful
-natural-language response.
+The answer pipeline should make sensible use of available evidence.
 
-Where appropriate, ALF may also allow the LLM's existing general knowledge
-to contribute to an answer. This does not make that knowledge authoritative.
+Memory should be considered where it is relevant.
 
-ALF must be able to distinguish between information it has obtained and an
-interpretation supplied by the LLM.
+The LLM should interpret evidence selected or obtained by ALF rather than being treated as a replacement for the underlying evidence.
 
-The routing mechanism should determine what evidence or capability is required
-before asking the LLM to formulate the final response.
+Where useful, ALF should make the provenance or nature of an answer understandable to the user.
 
 ---
 
-## LLM knowledge-provider qualification
+# 15. The LLM qualification benchmark
 
-The local LLM must not be assumed to be a reliable independent source of
-factual knowledge merely because it produces fluent answers.
+The model-qualification work remains valuable.
 
-The Qwen 3:4b model was tested against a fixed 20-question factual knowledge
-corpus.
+The original Qwen 3:4b model was tested against a fixed 20-question factual knowledge corpus.
 
-ALF currently configures qwen3:8b. The current model has not yet been
-independently qualified against this benchmark.
+The qualification standard was deliberately strict: one substantive factual failure was sufficient to reject a model as an independent knowledge provider.
 
-The qualification standard was deliberately strict: one substantive factual
-failure is sufficient to reject a model as an independent knowledge provider.
-
-The initial qualification produced:
+That test produced:
 
 * 20 questions tested;
 * 19 acceptable answers;
 * 1 substantive failure;
-* result: **rejected as a knowledge provider**.
+* result: **rejected as an independent knowledge provider**.
 
-The failed question concerned Python's `venv` module. The model described
-`venv` only as providing isolated environments for dependency management,
-rather than adequately identifying Python virtual environments.
+The failed question concerned Python's `venv` module.
 
-The conclusion is that the local LLM must remain an interpreter of supplied
-evidence rather than an authoritative knowledge provider.
+This result remains historical evidence about Qwen 3:4b and about the danger of treating fluent local-model output as authoritative knowledge.
 
-The qualification corpus and test are retained as an explicit model-
-qualification benchmark.
+ALF currently uses qwen3:8b.
 
-They are not part of normal ALF operation and are excluded from the ordinary
-pytest run.
+The qualification of one model does not automatically qualify another model.
 
-If the configured LLM changes, the benchmark may be rerun to determine
-whether the new model qualifies. The qualification standard should not be
-weakened to accommodate a model.
+The benchmark should therefore remain available as a model-qualification and regression resource, and its executable state should be maintained if it is described as an active qualification mechanism.
 
-### LLM evaluation experiment
-
-Two local LLMs were also tested as independent evaluators of candidate factual
-answers against the deterministic knowledge corpus.
-
-The experiment demonstrated that agreement between LLM evaluators does not
-establish factual correctness.
-
-Both Qwen3:4B and Qwen3:8B accepted some objectively rejected answers,
-including approximate or semantically incorrect answers.
-
-The experiment also exposed limitations in deterministic answer matching:
-exact string matching can reject semantically correct answers and can accept
-answers containing correct phrases while making an incorrect assertion.
-
-Therefore:
-
-**LLM agreement is not evidence of factual correctness.**
-
-This experiment reinforces the architectural boundary between evidence and
-interpretation.
+The benchmark does not imply that an unqualified model cannot be used for interpretation, analysis, routing or other bounded roles.
 
 ---
 
-# Question and knowledge routing
+# 16. Deterministic application behaviour
 
-ALF is responsible for deciding how a question should be answered.
+Determinism remains important where ALF is making application decisions or manipulating persistent state.
 
-Knowledge-source selection should be deterministic and implemented by ALF
-rather than delegated to the LLM.
+Examples include:
 
-The routing mechanism should remain:
-
-* small;
-* explicit;
-* deterministic;
-* testable.
-
-Do not introduce confidence scoring, secondary LLM judges, semantic
-classification or similar machinery unless simpler routing proves inadequate.
-
-Potential knowledge sources include:
-
-* persistent memory;
-* current system information;
-* repository information;
-* fresh external research;
-* the local LLM's general knowledge.
-
-Memory should be considered before external research where appropriate.
-
-The LLM should receive the evidence selected by ALF and interpret it rather
-than deciding what information ALF should obtain.
-
-### Research
-
-ALF currently uses Wikipedia as the first research source, followed by the
-local web-search service when Wikipedia does not provide relevant evidence.
-
-Wikipedia is used as a lightweight source of structured candidate evidence,
-not as an authoritative knowledge provider.
-
-The user's original question should be preserved faithfully.
-
-In particular, the local LLM has demonstrated that it can produce useful
-search queries but can be unreliable when interpreting punctuation.
-
-Therefore:
-
-* do not allow the LLM to casually rewrite away meaningful punctuation;
-* preserve the original question;
-* allow the research stage to determine what evidence is retrieved;
-* allow the evidence-evaluation stage to determine whether the evidence
-  actually answers the question.
-
-### Known limitation
-
-Questions classified as `Route.LLM` are currently answered by the local model
-without external evidence.
-
-Consequently, the model may confidently answer incorrectly when it lacks
-knowledge of a named application, library, command or other specific subject.
-
-This is currently considered a knowledge-provider limitation, not
-necessarily a routing failure.
-
-ALF may honestly decline to answer when no suitable capability or reliable
-source is available.
-
-An honest limitation is a valid outcome, not a failure.
-
----
-
-# Memory
-
-ALF's memory is persistent structured data stored in SQLite.
-
-The current development database is:
-
-`~/.local/share/alf/alf.db`
-
-The longer-term design is to keep runtime and personal data outside the source
-tree and version control.
-
-Memory is intended to preserve not only facts but also decisions, preferences,
-reasoning and the evolution of ideas over time.
-
-Current memory capabilities include:
-
-* persistent memory;
-* permanent memory IDs;
-* categories;
-* active/archived state;
-* memory search;
+* command dispatch;
+* memory storage;
+* memory deletion;
 * memory history;
-* relationships between memories;
-* `previous_memory_id`;
-* permanent deletion;
-* in-place editing.
+* database operations;
+* capability registration;
+* system operations;
+* repository operations.
 
-Memory relationships remain deliberately simple until a concrete use case
-requires richer relationship types.
+The presence of an LLM elsewhere in the pipeline does not justify making these operations unpredictable.
 
-## Memory history
-
-Memory history is based on the `previous_memory_id` chain.
-
-Creating a new memory or revision does not modify an existing memory.
-
-This preserves the evolution of knowledge rather than overwriting historical
-records.
-
-Newer memories may supersede older memories while the older records remain
-available.
-
-## Deletion
-
-The previous `forget` concept has been removed.
-
-ALF now supports permanent deletion through:
-
-* `delete_memory(memory_id)`;
-* `delete_memories(memory_ids)`.
-
-Deletion uses SQL `DELETE` and genuinely removes the selected records from the
-`memories` table.
-
-Deletion does not rewrite references held by surviving memories.
-
-Consequently:
-
-* `previous_memory_id` may refer to a deleted memory;
-* `related_memory_ids` may contain IDs that no longer exist;
-* history and relationship lookup naturally ignore missing records.
-
-This behaviour deliberately preserves surviving historical/reference
-information rather than silently rewriting it after deletion.
-
-## Editing
-
-`update_memory(memory_id, content)` edits an existing memory in place.
-
-It does not create a new memory.
-
-This distinction is intentional:
-
-* creating a new memory/revision participates in the memory-history model;
-* explicit editing is an in-place operation.
-
-The distinction should not be changed casually.
-
-## Future memory work
-
-Potential future work includes:
-
-* database migration support when the schema first requires it;
-* duplicate detection;
-* richer memory metadata;
-* timestamps and additional metadata;
-* further relationship facilities;
-* additional memory maintenance tools.
-
-Migration machinery should not be introduced until an actual schema change
-requires it.
+Where an operation has important persistent consequences, ALF should retain explicit control over the operation.
 
 ---
 
-# Presentation
+# 17. Command vocabulary and metadata
 
-Presentation is responsible only for displaying information.
-
-Rules:
-
-* business logic belongs outside renderers;
-* renderers receive structured data rather than formatted strings;
-* avoid capability-specific logic inside presentation;
-* never expose Python implementation details to the user;
-* use established presentation helpers rather than ad-hoc output in command
-  logic.
-
-User-facing ALF output should not expose internal Python namespaces such as
-`alf.some_module` unless explicitly requested.
-
-Rendering responsibilities should remain separate from application logic.
-
----
-
-# Commands
-
-Command dispatch is deliberately deterministic.
-
-Unambiguous command prefixes are permitted.
-
-For example:
-
-`alf rem`
-
-may resolve to:
-
-`alf remember`
-
-Natural-language guessing is not used for command dispatch.
+The command catalogue is the central source of command metadata.
 
 The command vocabulary currently includes commands such as:
 
@@ -393,301 +404,167 @@ The command vocabulary currently includes commands such as:
 * `tui`;
 * `web`.
 
-The command catalogue is the central source of command metadata.
+Future interfaces should consume command and capability metadata rather than maintaining independent descriptions of ALF's functionality wherever practical.
 
-Future interfaces should consume command metadata rather than duplicating
-command descriptions.
+The catalogue describes application commands.
 
----
-
-# System awareness
-
-ALF's system capability is defined by the **interfaces it is permitted to
-inspect**, rather than by a hard-coded inventory of system components.
-
-`system.py` should therefore provide controlled access to explicitly permitted
-system interfaces.
-
-The distinction is:
-
-* **Interfaces** — what ALF is permitted to inspect;
-* **System information** — what ALF has obtained from those interfaces;
-* **Presentation** — how that information is displayed;
-* **LLM** — how available information is interpreted and explained.
-
-The system capability should advertise its permitted interfaces rather than
-presenting a fixed machine snapshot as the definition of the capability.
-
-ALF must never be given unrestricted shell execution through the system
-capability.
-
-Interfaces must be explicit and controlled.
-
-The LLM should remain replaceable. System-interface descriptions and prompts
-should therefore use general, model-independent language and should not depend
-on behaviour specific to the current local model.
+It does not require every future interface to expose every command in the same form.
 
 ---
 
-# Privilege boundary and user-directed actions
+# 18. Capability discovery and self-description
 
-ALF must not autonomously invoke `sudo`, elevate privileges, or execute
-commands requiring elevated privileges.
+ALF should be able to describe its own capabilities.
 
-When privileged information is required, ALF may explain that the information
-requires a privileged operation.
+Capability discovery should be derived from the actual application rather than maintained as a disconnected list of claims.
 
-ALF must not turn a privileged operation into an instruction for the user to
-carry out.
+The `health` command should provide useful information about the operational state of ALF.
 
-If a privileged command needs to be mentioned for explanatory purposes, it
-should be described as an example of the operation that would be required,
-rather than presented as a requested or recommended action.
+The `about` interface should describe ALF's identity and available capabilities.
 
-ALF must never imply that an action has occurred when it has not.
-
-A harmless part of a question must not legitimise a dangerous part.
+Self-description is valuable because ALF is intended to be a long-lived system that can evolve without requiring every interface to be manually rewritten whenever a capability changes.
 
 ---
 
-# Health and self-inspection
+# 19. Identity and configuration
 
-ALF should be able to inspect its own internal health.
+ALF has a persistent identity distinct from transient runtime state.
 
-The health system should consume subsystem self-description rather than
-maintaining duplicated knowledge about individual subsystems.
+Identity, configuration and application data should have clear ownership and locations.
 
-Initial health responsibilities include:
+Runtime data should not accidentally become part of the source repository.
 
-* auditing capability providers;
-* reporting self-describing subsystems;
-* reporting non-reporting modules separately;
-* detecting malformed capability metadata;
-* detecting module import failures.
-
-Health reports should record complete subsystem state.
-
-User-facing health output should prioritise actionable problems over normal
-operation.
-
-Potential future health checks include:
-
-* database integrity;
-* configuration validation;
-* dependency checks;
-* migration status.
+Fresh installations should be capable of establishing the persistent state required for normal operation without relying on undocumented manual preparation.
 
 ---
 
-# TUI
+# 20. Data boundaries
 
-A Textual TUI exists as an experimental interface in:
+Source code belongs in the repository.
 
-`src/alf/tui.py`
+Persistent user data belongs outside the source tree.
 
-It currently provides workspaces for:
+Examples of persistent runtime data include:
 
-* Question;
-* Remember;
-* Memories;
-* Calc.
+* the ALF SQLite database;
+* identity information;
+* runtime configuration;
+* logs;
+* other machine-local application state.
 
-The Memories workspace supports:
+Generated build artefacts, caches and experiment output should not be confused with source or architectural records.
 
-* selecting a memory;
-* editing a memory;
-* saving an edit;
-* cancelling an edit;
-* archiving a memory;
-* permanently deleting a memory.
-
-The TUI should consume ALF's existing command and subsystem knowledge rather
-than becoming an independent implementation of ALF's architecture.
-
-The Question workspace remains partly a playground and does not yet represent
-the completed question machinery.
-
-The TUI is therefore an experimental interface, not a completed architectural
-commitment.
+Temporary development artefacts should be removed when they are no longer useful.
 
 ---
 
-# Data and project boundaries
+# 21. Testing
 
-User and runtime data should belong in the user data directory.
+Tests should protect actual application behaviour and important architectural guarantees.
 
-Examples include:
+The normal test suite should remain fast enough to run frequently.
 
-* SQLite databases;
-* identity data;
-* configuration;
-* future runtime state.
+Long-running, model-dependent or qualification-specific experiments may be maintained separately from the ordinary suite.
 
-The project directory should contain source code and project assets rather than
-personal runtime data.
+However, if a benchmark is described as an active safeguard or qualification mechanism, it should remain executable and its broken state should not be silently hidden.
 
+Tests should evolve with the architecture.
 
-Configuration should eventually be clearly separated from identity.
+A test that protects an obsolete design decision is a liability rather than a safeguard.
 
 ---
 
-# Development principles
+# 22. Development workflow
 
-When uncertain:
-
-* choose the simpler design;
-* prefer explicit code over abstraction;
-* preserve backwards compatibility where practical;
-* keep changes small and testable;
-* refactor only after duplication becomes obvious.
-
-If something is difficult to explain, it is probably too complicated.
-
-ALF's architecture should evolve through experience.
-
-Earlier assumptions are not sacred. If experience demonstrates that a feature
-or abstraction is unnecessary, ALF should become simpler rather than retaining
-it merely because it was previously planned.
-
----
-
-# Development workflow
-
-Development should proceed deliberately.
+ALF development should favour deliberate, incremental change.
 
 Before changing code:
 
-1. Understand the requested change fully.
-2. Consider the complete approach before proposing code.
-3. Inspect the relevant existing code.
-4. Use focused inspection such as `sed` output where appropriate.
-5. Identify an exact insertion point or provide a complete replacement
-   function.
-6. Make one coherent change at a time.
-7. Allow the result to be tested before proposing cascading changes.
+* understand the relevant architecture;
+* inspect the actual implementation;
+* identify the precise file and function involved;
+* consider the effect on other interfaces and application layers.
 
-After a coherent change:
+Changes should normally be made one coherent piece at a time.
 
-1. Run the relevant focused tests.
-2. Run Ruff.
-3. Inspect `git diff`.
-4. Run `git diff --check`.
-5. Check `git status`.
-6. Run the full test suite before a clean checkpoint.
-7. Commit meaningful, coherent changes.
+After a change:
 
-Do not knowingly commit failing tests or Ruff errors.
+* run Ruff;
+* run the relevant tests;
+* run the full test suite when appropriate;
+* run `git diff --check`;
+* inspect the resulting diff;
+* verify that documentation still describes the current system.
 
-When Peter supplies command output, it should be treated as authoritative
-evidence of the current repository state.
+A clean test suite is necessary but not sufficient.
 
-A clean committed checkpoint should be treated as a stable base. Avoid
-unnecessary changes to stable code merely for the sake of activity.
-
-Peter uses Neovim.
-
-Code changes should identify the exact file and function or provide a
-complete replacement. Instructions such as "find where this is registered"
-should be avoided.
-
-Code snippets should preserve the surrounding indentation so they can be
-pasted directly.
-
-Do not produce a large cascade of changes while an earlier change is still
-being applied or tested.
+Architectural coherence also requires checking whether the code, documentation and interfaces still agree with the current design.
 
 ---
 
-# Interfaces and future direction
+# 23. Documentation as a living architectural record
 
-As ALF grows, possible future interfaces include:
+WALL.md is the current architectural statement for ALF.
 
-* improved terminal interaction;
-* interactive shell mode;
-* Textual TUI;
-* natural-language command interpretation;
-* grouped commands for discoverability.
+It should describe the architecture we currently believe in, not preserve obsolete decisions merely because they were once made.
 
-These are possibilities, not commitments.
+When development deliberately changes an architectural assumption, WALL.md should be updated as part of that change.
 
-The CLI should remain a stable foundation.
+Historical decisions can be preserved elsewhere when their history is useful.
 
-Future interfaces should consume ALF's existing command and capability
-metadata rather than creating parallel descriptions of the system.
-
-Natural-language command interpretation, if introduced, must not undermine the
-deterministic command-dispatch model without a deliberate architectural
-decision.
+They should not remain in WALL.md as active prohibitions unless we still believe them.
 
 ---
 
-# Current future considerations
+# 24. Architectural evolution
 
-These are ideas that have been discussed but are not current implementation
-requirements:
+ALF is expected to change as we learn.
 
-* symbolic mathematics in help examples;
-* routing `alf status` to `alf health detail`;
-* examining command routing for questions such as:
-  "How do I close a terminal window in Ghostty?";
-* keeping ALF awake while an SSH connection is established;
-* further development of `alf relate`;
-* further TUI development;
-* deciding whether ALF should run manually or as a user service;
-* separating configuration from identity;
-* application logging;
-* reviewing module responsibilities;
-* memory duplicate detection;
-* richer memory metadata;
-* configurable greeting/personality behaviour.
+Earlier assumptions should be revisited when experience demonstrates that they are no longer useful.
 
-The roadmap is not a sequence of mandatory tasks.
+In particular:
 
-A simpler or more useful direction may supersede an earlier idea.
+* an interface rule may change when a new interface exposes a better interaction;
+* an LLM restriction may change when experimentation demonstrates a useful bounded role;
+* a routing design may change when actual usage demonstrates a better approach;
+* a capability may move to a more appropriate interface;
+* a previously simple mechanism may be replaced when its limitations become significant.
+
+The correct response to such changes is deliberate architectural revision.
+
+The goal is not consistency with ALF's past.
+
+The goal is coherence with **the ALF we are building now**.
 
 ---
 
-# ALF personality
+# 25. Future direction
 
-The local LLM is intended to act as ALF's mouthpiece.
+ALF should remain a single local application with multiple appropriate ways of interacting with it.
 
-The intended personality is:
+The long-term system may include:
 
-* serious;
-* thoughtful;
-* friendly;
-* useful;
-* a study companion;
-* an ideas repository;
-* with a small sense of soul.
+* deterministic command-line interaction;
+* interactive terminal workflows;
+* browser-based interaction;
+* visual exploration;
+* mind maps;
+* relationship graphs;
+* richer memory navigation;
+* additional forms of knowledge representation.
 
-ALF may occasionally offer a related exploration.
+These should not become separate applications with separate truths.
 
-For example:
+They should become different ways of experiencing the same underlying ALF system.
 
-> "On a related subject, shall we look at…?"
+The central architectural principle is therefore:
 
-Such suggestions must have a clear user-controlled yes/no mechanism.
+> **ALF owns the application; interfaces provide appropriate ways to interact with it.**
 
-Personality must remain subordinate to usefulness.
+And alongside that:
 
-It must never become intrusive, frivolous or distracting.
+> **The LLM is a useful component of ALF, but it is not ALF's authority.**
 
----
+And finally:
 
-# Long-term vision
-
-ALF is intended to become a long-lived personal computing companion whose
-knowledge accumulates over years.
-
-Its memory should preserve not only facts, but decisions, preferences,
-reasoning and the evolution of ideas that produced them.
-
-The intelligence layer may change.
-
-The underlying companion should not.
-
-The goal is not to accumulate features for their own sake.
-
-The goal is to develop a coherent, maintainable system whose architecture
-remains understandable as its capabilities grow.
+> **Architecture is allowed to evolve when experience shows that an earlier assumption was wrong.**
