@@ -479,7 +479,7 @@ def archive_command(*arguments):
         render_command_structure_error("archive")
         return
 
-    memory_ids = interpret_memory_selection("".join(arguments))
+    memory_ids = interpret_memory_selection(",".join(arguments))
 
     if memory_ids is None:
         render_command_structure_error("archive")
@@ -560,7 +560,7 @@ def delete_command(*arguments):
         render_command_structure_error("delete")
         return
 
-    memory_ids = interpret_memory_selection("".join(arguments))
+    memory_ids = interpret_memory_selection(",".join(arguments))
 
     if memory_ids is None:
         render_command_structure_error("delete")

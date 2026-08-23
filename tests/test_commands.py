@@ -84,6 +84,33 @@ def test_delete_command_deletes_single_memory(monkeypatch):
     }
 
 
+def test_delete_command_deletes_multiple_memory_ids(monkeypatch):
+    captured = {}
+
+    def fake_delete_memories(memory_ids):
+        captured["memory_ids"] = memory_ids
+        return {
+            "deleted": memory_ids,
+            "missing": [],
+        }
+
+    monkeypatch.setattr(
+        commands,
+        "delete_memories",
+        fake_delete_memories,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memories_deleted",
+        lambda memory_ids: None,
+    )
+
+    commands.delete_command("10", "12")
+
+    assert captured["memory_ids"] == [10, 12]
+
+
 def test_delete_command_deletes_memory_range(monkeypatch):
     captured = {}
 
@@ -266,6 +293,33 @@ def test_archive_command_archives_single_memory(monkeypatch):
     commands.archive_command("47")
 
     assert captured == [[47]]
+
+
+def test_archive_command_archives_multiple_memory_ids(monkeypatch):
+    captured = {}
+
+    def fake_archive_memories(memory_ids):
+        captured["memory_ids"] = memory_ids
+        return {
+            "archived": memory_ids,
+            "missing": [],
+        }
+
+    monkeypatch.setattr(
+        commands,
+        "archive_memories",
+        fake_archive_memories,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_memories_archived",
+        lambda memory_ids: None,
+    )
+
+    commands.archive_command("10", "12")
+
+    assert captured["memory_ids"] == [10, 12]
 
 
 def test_archive_command_archives_memory_selection(monkeypatch):
