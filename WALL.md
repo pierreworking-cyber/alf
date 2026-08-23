@@ -220,10 +220,6 @@ The local LLM is a component of ALF, not the owner of ALF.
 
 The LLM must not be treated as an authoritative source merely because it produces fluent answers.
 
-The earlier model-qualification work established an important distinction:
-
-> A model may be unsuitable as an independent knowledge provider while still being useful as an interpreter, analyser or classifier.
-
 ALF therefore does not need to restrict the LLM to a single role.
 
 The LLM may be used where it provides useful assistance, including:
@@ -330,35 +326,6 @@ Where useful, ALF should make the provenance or nature of an answer understandab
 
 ---
 
-# 15. The LLM qualification benchmark
-
-The model-qualification work remains valuable.
-
-The original Qwen 3:4b model was tested against a fixed 20-question factual knowledge corpus.
-
-The qualification standard was deliberately strict: one substantive factual failure was sufficient to reject a model as an independent knowledge provider.
-
-That test produced:
-
-* 20 questions tested;
-* 19 acceptable answers;
-* 1 substantive failure;
-* result: **rejected as an independent knowledge provider**.
-
-The failed question concerned Python's `venv` module.
-
-This result remains historical evidence about Qwen 3:4b and about the danger of treating fluent local-model output as authoritative knowledge.
-
-ALF currently uses qwen3:8b.
-
-The qualification of one model does not automatically qualify another model.
-
-The benchmark should therefore remain available as a model-qualification and regression resource, and its executable state should be maintained if it is described as an active qualification mechanism.
-
-The benchmark does not imply that an unqualified model cannot be used for interpretation, analysis, routing or other bounded roles.
-
----
-
 # 16. Deterministic application behaviour
 
 Determinism remains important where ALF is making application decisions or manipulating persistent state.
@@ -430,11 +397,30 @@ Self-description is valuable because ALF is intended to be a long-lived system t
 
 ALF has a persistent identity distinct from transient runtime state.
 
-Identity, configuration and application data should have clear ownership and locations.
+Identity is deliberately simple. It is represented by a plain, human-editable `identity.toml` file rather than by an ownership system, account model or identity-management subsystem.
 
-Runtime data should not accidentally become part of the source repository.
+The ALF distribution provides a default `identity.toml`. On installation, that default is copied into the user's ALF data directory:
 
-Fresh installations should be capable of establishing the persistent state required for normal operation without relying on undocumented manual preparation.
+The copied file belongs to the user and may be edited directly. A new user receiving ALF may therefore change the identity information to suit their own installation without requiring any special transfer or onboarding process.
+
+ALF simply reads the identity information when it needs to describe itself. There is no requirement for ALF to establish, verify or manage ownership relationships.
+
+Identity, configuration and application data should nevertheless have clear ownership and locations.
+
+Persistent runtime data belongs outside the source tree.
+
+Examples of persistent runtime data include:
+
+* the ALF SQLite database;
+* identity information;
+* runtime configuration;
+* logs;
+* other data created during normal operation.
+
+Source code belongs in the repository.
+
+Identity information is portable in the sense that the human-editable file can accompany an ALF installation, while runtime state such as memories remains local to the installation unless deliberately copied separately.
+
 
 ---
 
@@ -464,13 +450,7 @@ Tests should protect actual application behaviour and important architectural gu
 
 The normal test suite should remain fast enough to run frequently.
 
-Long-running, model-dependent or qualification-specific experiments may be maintained separately from the ordinary suite.
-
-However, if a benchmark is described as an active safeguard or qualification mechanism, it should remain executable and its broken state should not be silently hidden.
-
-Tests should evolve with the architecture.
-
-A test that protects an obsolete design decision is a liability rather than a safeguard.
+Long-running or model-dependent experiments may be maintained separately from the ordinary suite.
 
 ---
 

@@ -160,12 +160,6 @@ The intended flow is:
 
 **ALF gathers evidence → the LLM interprets it → ALF presents the result**
 
-The configured local Qwen model was deliberately tested against a factual
-knowledge qualification benchmark and was rejected as an independent
-knowledge provider after one substantive failure in twenty questions.
-
-The qualification benchmark is retained for evaluating future models.
-
 Consequently, ALF's architecture is designed so that the LLM can be replaced
 without replacing the underlying application.
 
