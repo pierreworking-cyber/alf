@@ -904,6 +904,15 @@ class ALFTUI(App):
         elif event.button.id == "remember-save":
             await self.save_remembered_memory()
 
+        elif event.button.id == "memory-edit":
+            self.action_edit_memory()
+
+        elif event.button.id == "memory-save":
+            await self.save_memory_edit()
+
+        elif event.button.id == "memory-cancel":
+            self.cancel_memory_edit()
+
         elif event.button.id == "memory-archive":
             selected = self.query_one("#memories", ListView).highlighted_child
 
