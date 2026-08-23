@@ -48,7 +48,7 @@ def generate(prompt):
         method="POST",
     )
 
-    with urlopen(request) as response:
+    with urlopen(request, timeout=10) as response:
         result = json.load(response)
 
     return result["response"]

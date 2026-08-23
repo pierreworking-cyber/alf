@@ -28,6 +28,7 @@ from .memory import (
     search_memories,
 )
 from .presentation import (
+    error,
     render_about,
     render_calculation,
     render_calculation_error,
@@ -609,10 +610,14 @@ def question_command(*arguments):
 
     original_question = " ".join(question_arguments).strip()
 
-    result = answer_question(
-        original_question,
-        verbose=verbose,
-    )
+    try:
+        result = answer_question(
+            original_question,
+            verbose=verbose,
+        )
+    except Exception:
+        error("I couldn't get an answer to the question.")
+        return
 
     render_question(
         result.answer,

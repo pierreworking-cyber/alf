@@ -99,7 +99,7 @@ def test_ask_returns_ollama_response(monkeypatch):
         def read(self):
             return json.dumps(response_data).encode("utf-8")
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, timeout):
         return FakeResponse()
 
     monkeypatch.setattr(llm, "urlopen", fake_urlopen)
@@ -136,7 +136,7 @@ def test_ask_handles_no_research(monkeypatch):
         def read(self):
             return json.dumps(response_data).encode("utf-8")
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, timeout):
         return FakeResponse()
 
     monkeypatch.setattr(llm, "urlopen", fake_urlopen)
@@ -263,7 +263,7 @@ def test_evaluate_research_returns_relevant_result(monkeypatch):
         def read(self):
             return json.dumps(response_data).encode("utf-8")
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, timeout):
         return FakeResponse()
 
     monkeypatch.setattr(llm, "urlopen", fake_urlopen)
@@ -308,7 +308,7 @@ def test_evaluate_research_returns_not_relevant_result(monkeypatch):
         def read(self):
             return json.dumps(response_data).encode("utf-8")
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, timeout):
         return FakeResponse()
 
     monkeypatch.setattr(llm, "urlopen", fake_urlopen)
@@ -347,7 +347,7 @@ def test_evaluate_research_rejects_invalid_response(monkeypatch):
         def read(self):
             return json.dumps(response_data).encode("utf-8")
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, timeout):
         return FakeResponse()
 
     monkeypatch.setattr(llm, "urlopen", fake_urlopen)
