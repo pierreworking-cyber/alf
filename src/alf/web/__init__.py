@@ -10,9 +10,13 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 from ..calc import CalculationError, calculate
 from ..command_catalogue import commands
 from ..memory import (
+    archive_memory,
+    delete_memory,
     find_related_memory_candidates,
     get_memories,
+    relate_memory,
     remember,
+    restore_memory,
     update_memory,
 )
 from ..question import answer_question
@@ -122,12 +126,23 @@ def memories():
 
     if request.method == "POST":
         memory_id = request.form.get("memory_id")
+
         content = request.form.get("content", "").strip()
+        related_memory_ids = request.form.get(
+            "related_memory_ids",
+            "",
+        ).strip()
 
         if memory_id and content:
             update_memory(
                 int(memory_id),
                 content,
+            )
+
+        if memory_id and related_memory_ids:
+            relate_memory(
+                int(memory_id),
+                related_memory_ids,
             )
 
         return redirect(
@@ -174,7 +189,50 @@ def memories():
         selected_memory=selected_memory,
         edit_id=edit_id,
     )
+@app.post("/memories/archive")
+def archive_memory_web():
+    """Archive a memory from the web interface."""
 
+    memory_id = request.form.get("memory_id")
+
+    if memory_id:
+        archive_memory(int(memory_id))
+
+    return redirect(
+        url_for(
+            "memories",
+            selected=memory_id,
+        )
+    )
+
+@app.post("/memories/restore")
+def restore_memory_web():
+    """Restore a memory from the web interface."""
+
+    memory_id = request.form.get("memory_id")
+
+    if memory_id:
+        restore_memory(int(memory_id))
+
+    return redirect(
+        url_for(
+            "memories",
+            selected=memory_id,
+        )
+    )
+
+@app.post("/memories/delete")
+def delete_memory_web():
+    """Delete a memory from the web interface."""
+
+    memory_id = request.form.get("memory_id")
+
+    if memory_id:
+        delete_memory(int(memory_id))
+
+    return redirect(
+        url_for("memories")
+    )
 
 @app.route("/calc", methods=["GET", "POST"])
 def calc():

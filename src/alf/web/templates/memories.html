@@ -115,6 +115,10 @@
             background: #34495a;
         }
 
+        .memory-archived {
+            opacity: 0.55;
+        }
+
         .memory-id {
             color: #aebdca;
             font-size: 0.85rem;
@@ -149,6 +153,7 @@
         .memory-text {
             line-height: 1.6;
             white-space: pre-wrap;
+            text-align: left;
         }
         #memory-editor {
             display: block;
@@ -169,7 +174,42 @@
             border-color: #b9cdd1;
             box-shadow: 0 0 0 3px rgba(185, 205, 209, 0.25);
         }
+        #related-memory-editor {
+            display: block;
+            width: 100%;
+            min-height: 50px;
+            padding: 14px 18px;
+            border: 1px solid #46596b;
+            border-radius: 16px;
+            background: #253341;
+            color: #edf1f3;
+            font: inherit;
+            line-height: 1.5;
+            outline: none;
+        }
 
+        #related-memory-editor:focus {
+            border-color: #b9cdd1;
+            box-shadow: 0 0 0 3px rgba(185, 205, 209, 0.25);
+        }
+          #related-memory-ids {
+            display: block;
+            width: 100%;
+            min-height: 50px;
+            padding: 14px 18px;
+            border: 1px solid #46596b;
+            border-radius: 16px;
+            background: #253341;
+            color: #edf1f3;
+            font: inherit;
+            line-height: 1.5;
+            outline: none;
+        }
+
+        #related-memory-ids:focus {
+            border-color: #b9cdd1;
+            box-shadow: 0 0 0 3px rgba(185, 205, 209, 0.25);
+        }
         .memory-actions {
             display: flex;
             gap: 12px;
@@ -257,12 +297,15 @@
                 <div class="memory-list">
                     {% for memory in memories %}
                         <a
-                            class="memory"
+                            class="memory{% if memory.status != 'active' %} memory-archived{% endif %}"
                             href="{{ url_for('memories', archived='on' if include_archived else None, selected=memory.id) }}"
                         >
                             <span class="memory-id">{{ memory.id }}</span>
                             <span class="memory-category">
                                 {{ memory.category }}
+                                {% if memory.status != "active" %}
+                                    *
+                                {% endif %}
                             </span>
                             <div class="memory-content">
                                 {{ memory.content }}
@@ -281,6 +324,9 @@
                     <div class="memory-meta">
                         Category: {{ selected_memory.category }}
                         · {{ selected_memory.created }}
+                        {% if selected_memory.status != "active" %}
+                            · {{ selected_memory.status|capitalize }}
+                        {% endif %}
                     </div>
 
                     {% if edit_id == selected_memory.id|string %}
@@ -296,6 +342,17 @@
                                 id="memory-editor"
                             >{{ selected_memory.content }}</textarea>
 
+                            <label for="related-memory-ids">
+                                Related memory IDs
+                            </label>
+
+                            <input
+                                type="text"
+                                name="related_memory_ids"
+                                id="related-memory-ids"
+                                value="{{ selected_memory.related_memory_ids or '' }}"
+                            >
+
                             <div class="memory-actions">
                                 <button type="submit">
                                     Save
@@ -309,9 +366,7 @@
                             </div>
                         </form>
                     {% else %}
-                        <div class="memory-text">
-                            {{ selected_memory.content }}
-                        </div>
+                        <div class="memory-text">{{ selected_memory.content }}</div>
 
                         <div class="memory-actions">
                             <a
@@ -319,6 +374,55 @@
                             >
                                 Edit
                             </a>
+
+                            {% if selected_memory.status == "active" %}
+                            <form
+                                method="post"
+                                action="{% if selected_memory.status == 'archived' %}{{ url_for('restore_memory_web') }}{% else %}{{ url_for('archive_memory_web') }}{% endif %}"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="memory_id"
+                                    value="{{ selected_memory.id }}"
+                                >
+
+                                <button type="submit">
+                                    {% if selected_memory.status == "archived" %}
+                                        Restore
+                                    {% else %}
+                                        Archive
+                                    {% endif %}
+                                </button>
+                            </form>
+                            {% else %}
+                                <form method="post" action="{{ url_for('restore_memory_web') }}">
+                                    <input
+                                        type="hidden"
+                                        name="memory_id"
+                                        value="{{ selected_memory.id }}"
+                                    >
+
+                                    <button type="submit">
+                                        Restore
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            <form
+                                method="post"
+                                action="{{ url_for('delete_memory_web') }}"
+                                onsubmit="return confirm('Delete this memory permanently?');"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="memory_id"
+                                    value="{{ selected_memory.id }}"
+                                >
+
+                                <button type="submit">
+                                    Delete
+                                </button>
+                            </form>
                         </div>
 
                         <div class="memory-related">

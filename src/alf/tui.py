@@ -35,6 +35,7 @@ from alf.memory import (
     get_memories,
     get_memory,
     remember,
+    restore_memory,
     update_memory,
 )
 from alf.question import answer_question
@@ -586,6 +587,7 @@ class ALFTUI(App):
                                     Label(
                                         f"{memory['id']}  "
                                         f"{memory['category']:<9} "
+                                        f"{'* ' if memory['status'] != 'active' else ''}"
                                         f"{memory['content']}"
                                     ),
                                     id=f"memory-{memory['id']}",
@@ -638,6 +640,16 @@ class ALFTUI(App):
             return
 
         details = self.query_one("#details", Static)
+
+        archive_button = self.query_one(
+            "#memory-archive",
+            Button,
+        )
+
+        if memory["status"] == "archived":
+            archive_button.label = "Restore"
+        else:
+            archive_button.label = "Archive"
 
         related = memory["related_memory_ids"] or "None"
 
@@ -867,11 +879,12 @@ class ALFTUI(App):
                             id=f"related-memory-{memory['id']}",
                             compact=True,
                         ),
-                        Label(
-                            f"{memory['id']}  "
-                            f"{memory['category']:<9} "
-                            f"{memory['content']}"
-                        ),
+                Label(
+                    f"{memory_id}  "
+                    f"{memory['category']:<9} "
+                    f"{'* ' if memory['status'] != 'active' else ''}"
+                    f"{memory['content']}"
+                ),
                     ),
                     id=f"related-memory-item-{memory['id']}",
                 )
@@ -905,7 +918,6 @@ class ALFTUI(App):
 
         elif event.button.id == "memory-cancel":
             self.cancel_memory_edit()
-
         elif event.button.id == "memory-archive":
             selected = self.query_one("#memories", ListView).highlighted_child
 
@@ -913,7 +925,16 @@ class ALFTUI(App):
                 return
 
             memory_id = selected.id.removeprefix("memory-")
-            archive_memory(int(memory_id))
+            memory = get_memory(int(memory_id))
+
+            if memory is None:
+                return
+
+            if memory["status"] == "archived":
+                restore_memory(int(memory_id))
+            else:
+                archive_memory(int(memory_id))
+
             await self.refresh_memory_list()
 
         elif event.button.id == "memory-delete":
@@ -1122,6 +1143,7 @@ class ALFTUI(App):
                     Label(
                         f"{memory_id}  "
                         f"{memory['category']:<9} "
+                        f"{'* ' if memory['status'] != 'active' else ''}"
                         f"{memory['content']}"
                     ),
                     id=f"memory-{memory_id}",

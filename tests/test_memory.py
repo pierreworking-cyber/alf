@@ -914,6 +914,34 @@ def test_archive_memories_reports_missing_ids(database):
     }
 
 
+def test_restore_memories_restores_archived_memories(database):
+    memory.remember("note", "First memory.")
+    memory.remember("note", "Second memory.")
+
+    memory.archive_memories([1, 2])
+
+    result = memory.restore_memories([1, 2])
+
+    assert result == {
+        "restored": [1, 2],
+        "missing": [],
+    }
+
+    assert memory.get_memory(1)["status"] == "active"
+    assert memory.get_memory(2)["status"] == "active"
+
+
+def test_restore_memories_reports_missing_ids(database):
+    memory.remember("note", "First memory.")
+
+    result = memory.restore_memories([1, 999])
+
+    assert result == {
+        "restored": [1],
+        "missing": [999],
+    }
+
+
 def test_delete_memory_removes_memory(database):
     memory.remember("note", "Delete me.")
 

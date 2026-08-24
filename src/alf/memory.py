@@ -842,6 +842,46 @@ def archive_memories(memory_ids):
     }
 
 
+def restore_memory(memory_id: int):
+    """
+    Mark an archived memory as active.
+    """
+
+    with get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            UPDATE memories
+            SET status = 'active'
+            WHERE id = ?
+            """,
+            (memory_id,),
+        )
+
+
+def restore_memories(memory_ids):
+    """
+    Restore multiple archived memories while preserving their identities.
+    """
+
+    restored = []
+    missing = []
+
+    for memory_id in memory_ids:
+        if get_memory(memory_id) is None:
+            missing.append(memory_id)
+            continue
+
+        restore_memory(memory_id)
+        restored.append(memory_id)
+
+    return {
+        "restored": restored,
+        "missing": missing,
+    }
+
+
 def delete_memory(memory_id: int):
     """
     Delete a memory permanently.
