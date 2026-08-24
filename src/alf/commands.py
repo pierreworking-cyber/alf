@@ -114,7 +114,6 @@ def calc_command(*arguments):
 
     options = {
         "--symbolic": "--symbolic",
-        "-p": "--places",
         "--places": "--places",
         "--degrees": "--degrees",
         "--radians": "--radians",
@@ -127,8 +126,13 @@ def calc_command(*arguments):
             option = resolve_option(argument, options)
 
             if option is None:
-                render_command_structure_error("calc")
-                return
+                if argument.startswith("--"):
+                    render_command_structure_error("calc")
+                    return
+
+                expression_arguments.append(argument)
+                index += 1
+                continue
 
             if option == "--symbolic":
                 if symbolic:

@@ -27,9 +27,9 @@ commands = {
         "usage": 'alf calc "expression" [options]',
         "options": {
             "--symbolic": "Evaluate the expression symbolically.",
-            "-p, --places <n>": (
+            "--places <n>": (
                 "Display a numeric result to n decimal places (1-10). "
-                "Defaults to 3."
+                "Defaults to 3. The option may be abbreviated as --pla."
             ),
             "--degrees": (
                 "Evaluate trigonometric functions in degrees. "

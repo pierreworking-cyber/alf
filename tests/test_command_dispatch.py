@@ -856,7 +856,7 @@ def test_calc_command_accepts_places_option(monkeypatch):
     assert captured["arguments"] == ("sqrt(2)", False, 5, "radians")
 
 
-def test_calc_command_accepts_short_places_option(monkeypatch):
+def test_calc_command_accepts_leading_negative_expression(monkeypatch):
     captured = {}
 
     def fake_calculate(
@@ -880,9 +880,9 @@ def test_calc_command_accepts_short_places_option(monkeypatch):
         lambda result: None,
     )
 
-    commands.calc_command("sqrt(2)", "-p", "5")
+    commands.calc_command("-5 + 3")
 
-    assert captured["arguments"] == ("sqrt(2)", False, 5, "radians")
+    assert captured["arguments"] == ("-5 + 3", False, 3, "radians")
 
 
 def test_calc_command_options_are_order_independent(monkeypatch):
