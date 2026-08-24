@@ -17,6 +17,15 @@ def test_render_command_structure_error(monkeypatch, capsys):
     assert "Press Return to continue..." in output
 
 
+def test_pause_ignores_closed_stdin(monkeypatch):
+    def raise_eof():
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", raise_eof)
+
+    presentation.pause()
+
+
 def test_render_memory_deleted(capsys):
     presentation.render_memory_deleted(12)
 

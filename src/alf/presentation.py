@@ -86,9 +86,15 @@ MEMORY_CATEGORY_PRIORITY = [
 def pause():
     """
     Pause until the user presses Return.
+
+    Ignore EOF so CLI errors can still be rendered when stdin
+    is non-interactive or already closed.
     """
 
-    input()
+    try:
+        input()
+    except EOFError:
+        pass
 
 
 def render_command_structure_error(command):
