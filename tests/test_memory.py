@@ -557,6 +557,28 @@ def test_search_memories_finds_matching_content(database):
     assert results[0]["content"] == "The moon looks larger near the horizon."
 
 
+def test_search_memories_treats_percent_as_literal(database):
+    memory.remember("note", "The completion rate is 100%.")
+    memory.remember("note", "The completion rate is 100 percent.")
+
+    results = memory.search_memories("100%")
+
+    assert [item["content"] for item in results] == [
+        "The completion rate is 100%."
+    ]
+
+
+def test_search_memories_treats_underscore_as_literal(database):
+    memory.remember("note", "Use ALF_DEBUG_MODE when debugging.")
+    memory.remember("note", "Use ALF debug mode when debugging.")
+
+    results = memory.search_memories("ALF_DEBUG")
+
+    assert [item["content"] for item in results] == [
+        "Use ALF_DEBUG_MODE when debugging."
+    ]
+
+
 def test_search_memories_respects_category_and_archive_options(database):
     memory.remember("note", "Active note about ALF.")
     memory.remember("fact", "Active fact about ALF.")

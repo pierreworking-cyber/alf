@@ -410,10 +410,14 @@ def search_memories(term, options=None):
         SELECT id, created, category, status, content,
         previous_memory_id, related_memory_ids
         FROM memories
-        WHERE content LIKE ?
+        WHERE content LIKE ? ESCAPE '\\'
     """
 
-    parameters = [f"%{term}%"]
+    escaped_term = term.replace("\\", "\\\\")
+    escaped_term = escaped_term.replace("%", "\\%")
+    escaped_term = escaped_term.replace("_", "\\_")
+
+    parameters = [f"%{escaped_term}%"]
 
     if not options["include_archived"]:
         query += " AND status = 'active'"
