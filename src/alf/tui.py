@@ -70,22 +70,6 @@ class ALFTUI(App):
         height: 1fr;
     }
 
-    #workspace-left {
-        width: 40%;
-        border: solid green;
-        padding: 1 2;
-    }
-
-    #remember-workspace #workspace-left {
-        padding-top: 0;
-    }
-
-    #workspace-right {
-        width: 60%;
-        border: solid blue;
-        padding: 1 2;
-    }
-
     .workspace-title {
         height: 3;
         content-align: left middle;
@@ -116,13 +100,6 @@ class ALFTUI(App):
         width: auto;
         height: 1;
         margin-left: 2;
-    }
-
-    #remember-status {
-        width: 1fr;
-        height: 3;
-        padding: 0 2;
-        content-align: left top;
     }
 
     #remember-related-title {
@@ -414,6 +391,7 @@ class ALFTUI(App):
                     with VerticalScroll(id="answer"):
                         yield Static(
                             "Your answer will appear here.",
+                            id="answer-text",
                         )
 
                     yield Static(
@@ -564,10 +542,11 @@ class ALFTUI(App):
                             id="remember-category",
                             compact=True,
                         )
-                        yield Static(
-                            "Ready",
-                            id="remember-status",
-                        )
+
+                    yield Static(
+                        "Ready",
+                        id="remember-status",
+                    )
 
                     yield Static(
                         "Related memories",
@@ -619,7 +598,6 @@ class ALFTUI(App):
                             with Horizontal(id="memory-edit-actions"):
                                 yield Button("Save", id="memory-save")
                                 yield Button("Cancel", id="memory-cancel")
-
         with Horizontal(id="footer"):
             yield Static(
                 "",
@@ -694,7 +672,7 @@ class ALFTUI(App):
         detailed = self.query_one("#detailed-answer", Checkbox).value
 
         status = self.query_one("#question-status", Static)
-        answer = self.query_one("#answer Static", Static)
+        answer = self.query_one("#answer-text", Static)
         source = self.query_one("#answer-source", Static)
         ok_button = self.query_one("#answer-ok", Button)
 
@@ -745,7 +723,7 @@ class ALFTUI(App):
 
     def show_question_answer(self, result) -> None:
         self.query_one("#question-status", Static).update("Complete")
-        self.query_one("#answer Static", Static).update(result.answer)
+        self.query_one("#answer-text", Static).update(result.answer)
 
         source = result.source or "No reliable source"
         self.query_one("#answer-source", Static).update(
@@ -757,7 +735,7 @@ class ALFTUI(App):
 
     def show_question_error(self, error: str) -> None:
         self.query_one("#question-status", Static).update("Failed")
-        self.query_one("#answer Static", Static).update(
+        self.query_one("#answer-text", Static).update(
             "I couldn't get an answer to the question."
         )
         self.query_one("#answer-source", Static).update(
@@ -770,7 +748,7 @@ class ALFTUI(App):
 
     def clear_question(self) -> None:
         self.query_one("#question-input", Input).value = ""
-        self.query_one("#answer Static", Static).update(
+        self.query_one("#answer-text", Static).update(
             "Your answer will appear here."
         )
         self.query_one("#answer-source", Static).update("Source: —")
@@ -936,14 +914,14 @@ class ALFTUI(App):
         category = self.query_one("#remember-category", Select).value
         content = self.query_one("#remember-input", TextArea).text.strip()
 
-        guidance = self.query_one("#footer-guidance", Static)
+        status = self.query_one("#remember-status", Static)
 
         if category is Select.BLANK:
-            guidance.update("Please choose a memory category.")
+            status.update("Please choose a memory category.")
             return
 
         if not content:
-            guidance.update("Please enter something to remember.")
+            status.update("Please enter something to remember.")
             return
 
         related = self.query_one("#remember-related", ListView)
@@ -960,12 +938,12 @@ class ALFTUI(App):
         )
 
         if result is not True:
-            guidance.update("I couldn't save that memory.")
+            status.update("I couldn't save that memory.")
             return
 
         self.query_one("#remember-input", TextArea).text = ""
         self.clear_related_memories()
-        guidance.update("Memory saved.")
+        status.update("Memory saved.")
 
         await self.refresh_memory_list()
 
