@@ -80,7 +80,7 @@ def test_calculator_example_selects_symbolic_mode():
             await pilot.pause()
 
             examples = app.query_one("#calc-symbolic-examples")
-            item = examples.query_one("#calc-example-5")
+            item = examples.query_one("#calc-example-symbolic-0")
 
             app.on_list_view_selected(
                 type(

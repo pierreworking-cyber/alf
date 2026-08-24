@@ -271,19 +271,22 @@ A question may require:
 * another ALF capability;
 * or interpretation using the local LLM.
 
-The routing system should select an appropriate path.
+## Routing Doctrine
 
-Routing may use deterministic rules, LLM-assisted analysis, or a combination of both.
+ALF does not delegate capability selection to an LLM.
 
-The choice should be based on usefulness, reliability and simplicity rather than an absolute prohibition on one technique.
+Routing is deterministic and owned by ALF.
+The router selects capabilities using explicit commands,
+registered vocabulary, application state, and known capability rules.
 
-In particular, semantic classification by the LLM is permitted when it provides useful analysis that ALF cannot reasonably obtain more simply.
+The LLM is an interpreter and reasoning assistant, not an authority.
 
-The LLM's routing decision should not be treated as an unquestionable authority.
+The LLM may help interpret questions, generate explanations,
+or assist with reasoning, but it does not decide which ALF
+capability should handle a request.
 
-ALF remains responsible for executing the resulting application behaviour.
-
----
+If the LLM is unavailable, ALF retains all deterministic
+capabilities.
 
 # 13. Research and external evidence
 

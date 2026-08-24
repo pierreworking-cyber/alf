@@ -154,33 +154,34 @@ def calc():
                 status = "Could not calculate"
                 result = str(error)
 
-    symbolic_examples = commands["calc"]["tui"]["symbolic_examples"]
+    symbolic_examples = commands["calc"]["examples"]["Symbolic mathematics"]
 
     examples = []
 
-    for example in commands["calc"]["examples"]:
-        parts = shlex.split(example)
+    for group_examples in commands["calc"]["examples"].values():
+        for example in group_examples:
+            parts = shlex.split(example)
 
-        expression_parts = []
-        example_angle_mode = "radians"
+            expression_parts = []
+            example_angle_mode = "radians"
 
-        for part in parts[2:]:
-            if part == "--degrees":
-                example_angle_mode = "degrees"
-            elif part == "--radians":
-                example_angle_mode = "radians"
-            else:
-                expression_parts.append(part)
+            for part in parts[2:]:
+                if part == "--degrees":
+                    example_angle_mode = "degrees"
+                elif part == "--radians":
+                    example_angle_mode = "radians"
+                else:
+                    expression_parts.append(part)
 
-        expression = " ".join(expression_parts)
+            expression = " ".join(expression_parts)
 
-        examples.append(
-            {
-                "expression": expression,
-                "symbolic": example in symbolic_examples,
-                "angle_mode": example_angle_mode,
-            }
-        )
+            examples.append(
+                {
+                    "expression": expression,
+                    "symbolic": example in symbolic_examples,
+                    "angle_mode": example_angle_mode,
+                }
+            )
 
     return render_template(
         "calc.html",

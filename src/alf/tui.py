@@ -472,21 +472,35 @@ class ALFTUI(App):
                             classes="calc-example-heading",
                         )
 
-                        yield ListView(
-                            *[
+                        example_index = 0
+
+                        numerical_items = []
+
+                        for group, examples in commands["calc"]["examples"].items():
+                            if group == "Symbolic mathematics":
+                                continue
+
+                            numerical_items.append(
                                 ListItem(
-                                    Label(
-                                        example.removeprefix('alf calc "')
-                                        .removesuffix('"')
-                                    ),
-                                    id=f"calc-example-{index}",
+                                    Label(group),
+                                    classes="calc-example-heading",
                                 )
-                                for index, example in enumerate(
-                                    commands["calc"]["examples"]
+                            )
+
+                            for example in examples:
+                                numerical_items.append(
+                                    ListItem(
+                                        Label(
+                                            example.removeprefix('alf calc "')
+                                            .removesuffix('"')
+                                        ),
+                                        id=f"calc-example-{example_index}",
+                                    )
                                 )
-                                if example
-                                not in commands["calc"]["tui"]["symbolic_examples"]
-                            ],
+                                example_index += 1
+
+                        yield ListView(
+                            *numerical_items,
                             id="calc-examples",
                         )
 
@@ -495,21 +509,23 @@ class ALFTUI(App):
                             classes="calc-example-heading",
                         )
 
-                        yield ListView(
-                            *[
+                        symbolic_items = []
+
+                        for index, example in enumerate(
+                            commands["calc"]["examples"]["Symbolic mathematics"]
+                        ):
+                            symbolic_items.append(
                                 ListItem(
                                     Label(
                                         example.removeprefix('alf calc "')
                                         .removesuffix('"')
                                     ),
-                                    id=f"calc-example-{index}",
+                                    id=f"calc-example-symbolic-{index}",
                                 )
-                                for index, example in enumerate(
-                                    commands["calc"]["examples"]
-                                )
-                                if example
-                                in commands["calc"]["tui"]["symbolic_examples"]
-                            ],
+                            )
+
+                        yield ListView(
+                            *symbolic_items,
                             id="calc-symbolic-examples",
                         )
   
@@ -995,19 +1011,16 @@ class ALFTUI(App):
             "calc-examples",
             "calc-symbolic-examples",
         }:
-            index = int(event.item.id.removeprefix("calc-example-"))
-            example = commands["calc"]["examples"][index]
-            expression = (
-                example.removeprefix('alf calc "')
-                .removesuffix('"')
-            )
+            label = event.item.query_one(Label)
+            expression = str(label.content)
 
-            symbolic_examples = commands["calc"]["tui"]["symbolic_examples"]
+            symbolic = event.list_view.id == "calc-symbolic-examples"
+
             mode = self.query_one("#calc-mode", RadioSet)
 
-            if example in symbolic_examples and mode.pressed_index == 0:
+            if symbolic and mode.pressed_index == 0:
                 mode.query_one("#calc-symbolic", RadioButton).value = True
-            elif example not in symbolic_examples and mode.pressed_index == 1:
+            elif not symbolic and mode.pressed_index == 1:
                 mode.query_one(RadioButton).value = True
 
             input_widget = self.query_one("#calc-input", Input)
