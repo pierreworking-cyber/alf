@@ -5,13 +5,15 @@ This module provides the Flask application used by ``alf web``.
 """
 import shlex
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from ..calc import CalculationError, calculate
 from ..command_catalogue import commands
 from ..memory import (
     find_related_memory_candidates,
+    get_memories,
     remember,
+    update_memory,
 )
 from ..question import answer_question
 
@@ -113,6 +115,65 @@ def remember_related():
 
     return jsonify(find_related_memory_candidates(content))
 
+
+@app.route("/memories", methods=["GET", "POST"])
+def memories():
+    """Display the ALF Memories workspace."""
+
+    if request.method == "POST":
+        memory_id = request.form.get("memory_id")
+        content = request.form.get("content", "").strip()
+
+        if memory_id and content:
+            update_memory(
+                int(memory_id),
+                content,
+            )
+
+        return redirect(
+            url_for(
+                "memories",
+                selected=memory_id,
+            )
+        )
+
+    include_archived = request.args.get("archived") == "on"
+    selected_id = request.args.get("selected")
+    edit_id = request.args.get("edit")
+
+    options = {
+        "category": None,
+        "include_archived": include_archived,
+        "group": None,
+    }
+
+    memories = get_memories(options)
+
+    selected_memory = None
+
+    if selected_id:
+        try:
+            selected_id = int(selected_id)
+        except ValueError:
+            selected_id = None
+
+    if selected_id:
+        selected_memory = next(
+            (
+                memory
+                for memory in memories
+                if memory["id"] == selected_id
+            ),
+            None,
+        )
+
+    return render_template(
+        "memories.html",
+        memories=memories,
+        include_archived=include_archived,
+        selected_memory=selected_memory,
+        edit_id=edit_id,
+    )
 
 
 @app.route("/calc", methods=["GET", "POST"])

@@ -182,31 +182,35 @@
             </section>
 
             <aside class="calc-examples">
-                <h2>Try some numerical calculations</h2>
+                <div class="example-group">
+                    <h2>Try some numerical calculations</h2>
 
-                {% for example in examples if not example.symbolic %}
-                    <button
-                        type="button"
-                        class="example"
-                        data-expression="{{ example.expression }}"
-                        data-symbolic="false"
-                    >
-                        {{ example.expression }}
-                    </button>
-                {% endfor %}
+                    {% for example in examples if not example.symbolic %}
+                        <button
+                            type="button"
+                            class="example"
+                            data-expression="{{ example.expression }}"
+                            data-symbolic="false"
+                        >
+                            {{ example.expression }}
+                        </button>
+                    {% endfor %}
+                </div>
 
-                <h2>Explore symbolic mathematics</h2>
+                <div class="example-group">
+                    <h2>Explore symbolic mathematics</h2>
 
-                {% for example in examples if example.symbolic %}
-                    <button
-                        type="button"
-                        class="example"
-                        data-expression="{{ example.expression }}"
-                        data-symbolic="true"
-                    >
-                        {{ example.expression }}
-                    </button>
-                {% endfor %}
+                    {% for example in examples if example.symbolic %}
+                        <button
+                            type="button"
+                            class="example"
+                            data-expression="{{ example.expression }}"
+                            data-symbolic="true"
+                        >
+                            {{ example.expression }}
+                        </button>
+                    {% endfor %}
+                </div>
             </aside>
         </div>
     </main>
