@@ -424,6 +424,9 @@ Source code belongs in the repository.
 
 Identity information is portable in the sense that the human-editable file can accompany an ALF installation, while runtime state such as memories remains local to the installation unless deliberately copied separately.
 
+Identity:
+- packaged identity.toml is a bootstrap resource
+- ~/.local/share/alf/identity.toml is the user-owned identity
 
 ---
 
