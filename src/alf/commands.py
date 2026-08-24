@@ -294,8 +294,9 @@ def remember_command(*arguments):
     render_memory_saved(category)
 
 
-def parse_memory_query_options(arguments):
+def parse_memory_query_options(arguments, command="memories"):
     options = get_memory_query_options()
+    positional_arguments = []
 
     index = 0
 
@@ -309,7 +310,7 @@ def parse_memory_query_options(arguments):
             index += 1
 
             if index >= len(arguments):
-                render_command_structure_error("memories")
+                render_command_structure_error(command)
                 return None
 
             category = resolve_category(arguments[index])
@@ -327,24 +328,29 @@ def parse_memory_query_options(arguments):
             index += 1
 
             if index >= len(arguments):
-                render_command_structure_error("memories")
+                render_command_structure_error(command)
                 return None
 
             options["group"] = arguments[index]
 
         else:
-            render_command_structure_error("memories")
-            return None
+            positional_arguments.append(argument)
 
         index += 1
 
-    return options
+    return options, positional_arguments
 
 
 def memories_command(*arguments):
-    options = parse_memory_query_options(arguments)
+    result = parse_memory_query_options(arguments)
 
-    if options is None:
+    if result is None:
+        return
+
+    options, positional_arguments = result
+
+    if positional_arguments:
+        render_command_structure_error("memories")
         return
 
     memories = get_memories(options)
@@ -357,12 +363,21 @@ def search_command(*arguments):
         render_memory_usage(commands["search"]["usage"])
         return
 
-    term = arguments[0]
+    result = parse_memory_query_options(
+        arguments,
+        command="search",
+    )
 
-    options = parse_memory_query_options(arguments[1:])
-
-    if options is None:
+    if result is None:
         return
+
+    options, positional_arguments = result
+
+    if len(positional_arguments) != 1:
+        render_command_structure_error("search")
+        return
+
+    term = positional_arguments[0]
 
     memories = search_memories(term, options)
 

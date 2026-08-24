@@ -411,6 +411,33 @@ def test_search_accepts_short_category_option(monkeypatch):
     assert captured["options"]["category"] == "preference"
 
 
+def test_search_accepts_options_before_term(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        commands,
+        "search_memories",
+        lambda term, options: captured.setdefault(
+            "arguments",
+            (term, options),
+        ) or [],
+    )
+    monkeypatch.setattr(
+        commands,
+        "render_memories",
+        lambda memories, options: None,
+    )
+
+    commands.search_command(
+        "-c",
+        "pref",
+        "Peter",
+    )
+
+    assert captured["arguments"][0] == "Peter"
+    assert captured["arguments"][1]["category"] == "preference"
+
+
 def test_memories_accepts_short_all_option(monkeypatch):
     captured = {}
 
@@ -474,6 +501,23 @@ def test_memories_rejects_unknown_short_category_option(monkeypatch):
             ["note", "fact", "decision", "preference"],
         )
     ]
+
+
+def test_search_option_error_points_to_search(monkeypatch):
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: output.append(command),
+    )
+
+    commands.search_command(
+        "Peter",
+        "--category",
+    )
+
+    assert output == ["search"]
 
 
 def test_search_rejects_unknown_short_category_option(monkeypatch):
