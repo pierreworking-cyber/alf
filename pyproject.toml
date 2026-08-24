@@ -17,6 +17,9 @@ dependencies = [
 [project.scripts]
 alf = "alf.main:main"
 
+[tool.setuptools.package-data]
+alf = ["identity.toml"]
+
 [tool.ruff]
 line-length = 88
 target-version = "py311"

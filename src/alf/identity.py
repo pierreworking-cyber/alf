@@ -17,14 +17,23 @@ def get_identity():
     """
     Load ALF's persistent identity information.
 
-    The identity is read from ``identity.toml`` in ALF's data directory.
-    The installed package version is added to the returned data.
+    If no user identity exists yet, bootstrap the packaged default
+    identity into ALF's data directory. An existing user identity is
+    never overwritten.
 
     Returns:
         A dictionary containing ALF's identity information and current
         installed package version.
     """
     identity_file = get_data_directory() / "identity.toml"
+
+    if not identity_file.exists():
+        identity_file.parent.mkdir(parents=True, exist_ok=True)
+
+        from importlib.resources import files
+
+        default_identity = files("alf").joinpath("identity.toml")
+        identity_file.write_bytes(default_identity.read_bytes())
 
     with open(identity_file, "rb") as file:
         identity = tomllib.load(file)
