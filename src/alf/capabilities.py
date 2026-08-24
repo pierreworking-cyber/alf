@@ -53,22 +53,6 @@ def get_provider_modules():
     return providers
 
 
-def get_capabilities():
-    """
-    Collect the capabilities advertised by all provider modules.
-
-    Returns:
-        A list containing the capability returned by each provider.
-    """
-
-    capabilities = []
-
-    for provider in get_provider_modules():
-        capabilities.append(provider.get_capability())
-
-    return capabilities
-
-
 def discover_capabilities():
     """
     Discover capabilities and validate their basic contracts.
