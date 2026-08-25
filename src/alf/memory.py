@@ -21,7 +21,7 @@ from .paths import get_data_directory
 DATABASE = get_data_directory() / "alf.db"
 
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 VALID_MEMORY_CATEGORIES = [
     "note",
@@ -84,31 +84,6 @@ def initialise_database(connection):
 
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS mindmaps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category TEXT NOT NULL,
-            project TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'active',
-            created TEXT NOT NULL,
-            modified TEXT NOT NULL
-        )
-        """
-    )
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS mindmap_documents (
-            mindmap_id INTEGER PRIMARY KEY,
-            content TEXT NOT NULL,
-            FOREIGN KEY (mindmap_id)
-                REFERENCES mindmaps(id)
-                ON DELETE CASCADE
-        )
-        """
-    )
-
-    cursor.execute(
-        """
         CREATE TABLE IF NOT EXISTS mindmap_categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
@@ -133,6 +108,152 @@ def initialise_database(connection):
         )
         """
     )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mindmaps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            created TEXT NOT NULL,
+            modified TEXT NOT NULL,
+            FOREIGN KEY (category_id)
+                REFERENCES mindmap_categories(id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mindmap_documents (
+            mindmap_id INTEGER PRIMARY KEY,
+            content TEXT NOT NULL,
+            FOREIGN KEY (mindmap_id)
+                REFERENCES mindmaps(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    if version == 4:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        categories = cursor.execute(
+            """
+            SELECT DISTINCT category
+            FROM mindmaps
+            """
+        ).fetchall()
+
+        for (category_name,) in categories:
+            cursor.execute(
+                """
+                INSERT OR IGNORE INTO mindmap_categories (
+                    name,
+                    status,
+                    created,
+                    modified
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    category_name,
+                    "active",
+                    now,
+                    now,
+                ),
+            )
+
+        cursor.execute(
+            """
+            ALTER TABLE mindmap_documents
+            RENAME TO mindmap_documents_v4
+            """
+        )
+
+        cursor.execute(
+            """
+            ALTER TABLE mindmaps
+            RENAME TO mindmaps_v4
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE mindmaps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                created TEXT NOT NULL,
+                modified TEXT NOT NULL,
+                FOREIGN KEY (category_id)
+                    REFERENCES mindmap_categories(id)
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE mindmap_documents (
+                mindmap_id INTEGER PRIMARY KEY,
+                content TEXT NOT NULL,
+                FOREIGN KEY (mindmap_id)
+                    REFERENCES mindmaps(id)
+                    ON DELETE CASCADE
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            INSERT INTO mindmaps (
+                id,
+                category_id,
+                name,
+                status,
+                created,
+                modified
+            )
+            SELECT
+                m.id,
+                c.id,
+                m.project,
+                m.status,
+                m.created,
+                m.modified
+            FROM mindmaps_v4 AS m
+            JOIN mindmap_categories AS c
+                ON c.name = m.category
+            """
+        )
+
+        cursor.execute(
+            """
+            INSERT INTO mindmap_documents (
+                mindmap_id,
+                content
+            )
+            SELECT
+                mindmap_id,
+                content
+            FROM mindmap_documents_v4
+            """
+        )
+
+        cursor.execute(
+            """
+            DROP TABLE mindmap_documents_v4
+            """
+        )
+
+        cursor.execute(
+            """
+            DROP TABLE mindmaps_v4
+            """
+        )
+
 
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
@@ -545,7 +666,6 @@ def delete_mindmap_project(project_id: int):
 
     return True
 
-
 def create_mindmap(category: str, project: str, content: str):
     """
     Create a new mind map and its associated document.
@@ -554,16 +674,47 @@ def create_mindmap(category: str, project: str, content: str):
         The new mind map ID.
     """
 
-    created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     with get_connection() as connection:
         cursor = connection.cursor()
 
+        category_row = cursor.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE name = ?
+            """,
+            (category,),
+        ).fetchone()
+
+        if category_row is None:
+            cursor.execute(
+                """
+                INSERT INTO mindmap_categories (
+                    name,
+                    status,
+                    created,
+                    modified
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    category,
+                    "active",
+                    now,
+                    now,
+                ),
+            )
+            category_id = cursor.lastrowid
+        else:
+            category_id = category_row[0]
+
         cursor.execute(
             """
             INSERT INTO mindmaps (
-                category,
-                project,
+                category_id,
+                name,
                 status,
                 created,
                 modified
@@ -571,11 +722,11 @@ def create_mindmap(category: str, project: str, content: str):
             VALUES (?, ?, ?, ?, ?)
             """,
             (
-                category,
+                category_id,
                 project,
                 "active",
-                created,
-                created,
+                now,
+                now,
             ),
         )
 
@@ -608,13 +759,15 @@ def get_mindmap(mindmap_id: int):
             """
             SELECT
                 m.id,
-                m.category,
-                m.project,
+                c.name,
+                m.name,
                 m.status,
                 m.created,
                 m.modified,
                 d.content
             FROM mindmaps AS m
+            JOIN mindmap_categories AS c
+                ON c.id = m.category_id
             JOIN mindmap_documents AS d
                 ON d.mindmap_id = m.id
             WHERE m.id = ?
@@ -649,13 +802,15 @@ def get_mindmaps():
             """
             SELECT
                 m.id,
-                m.category,
-                m.project,
+                c.name,
+                m.name,
                 m.status,
                 m.created,
                 m.modified,
                 d.content
             FROM mindmaps AS m
+            JOIN mindmap_categories AS c
+                ON c.id = m.category_id
             JOIN mindmap_documents AS d
                 ON d.mindmap_id = m.id
             ORDER BY m.id
@@ -707,19 +862,31 @@ def update_mindmap(
         if existing is None:
             return False
 
+        category_row = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE name = ?
+            """,
+            (category,),
+        ).fetchone()
+
+        if category_row is None:
+            return False
+
         modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         connection.execute(
             """
             UPDATE mindmaps
-            SET category = ?,
-                project = ?,
+            SET category_id = ?,
+                name = ?,
                 status = ?,
                 modified = ?
             WHERE id = ?
             """,
             (
-                category,
+                category_row[0],
                 project,
                 status,
                 modified,

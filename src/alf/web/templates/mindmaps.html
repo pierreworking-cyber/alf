@@ -165,73 +165,60 @@
 
           <div class="mindmaps-toolbar">
               <button type="button" id="new-mindmap">＋ New</button>
+              <input
+                  type="text"
+                  id="mindmap-name"
+                  placeholder="Mind map name"
+              >
+              <select id="mindmap-selector">
+                  <option value="">Select a mind map...</option>
+                  {% for saved_mindmap in mindmaps %}
+                      <option value="{{ saved_mindmap['id'] }}">
+                          {{ saved_mindmap['project'] }}
+                      </option>
+                  {% endfor %}
+              </select>
               <button type="button" id="open-mindmap">📂 Open</button>
               <button type="button" id="save-mindmap">💾 Save</button>
           </div>
 
-        <section class="mindmaps-workspace">
-            <div id="jsmind-container"></div>
-        </section>
+          <section class="mindmaps-workspace">
+              <div id="mindmap-empty" class="mindmap-empty">
+                  Choose a mind map to open, or create a new one.
+              </div>
+              <div id="jsmind-container"></div>
+          </section>
 
         <script src="{{ url_for('static', filename='jsmind/jsmind.js') }}"></script>
 
         <script>
-            const mind = {
-                meta: {
-                    name: "alf-mindmap-test",
-                    author: "ALF",
-                    version: "0.1"
-                },
-                format: "node_array",
-                data: [
-                    {
-                        id: "root",
-                        isroot: true,
-                        topic: "Mind Map"
-                    },
-                    {
-                        id: "ideas",
-                        parentid: "root",
-                        topic: "Ideas"
-                    },
-                    {
-                        id: "projects",
-                        parentid: "root",
-                        topic: "Projects"
-                    },
-                    {
-                        id: "example-idea",
-                        parentid: "ideas",
-                        topic: "Example"
-                    },
-                    {
-                        id: "example-project",
-                        parentid: "projects",
-                        topic: "Example"
-                    }
-                ]
-            };
+            let currentMindmapId = null;
 
-            const options = {
-                container: "jsmind-container",
-                editable: true,
-                theme: "primary",
-                mode: "full",
-                view: {
-                    draggable: true
-                }
-            };
+              const options = {
+                  container: "jsmind-container",
+                  editable: true,
+                  theme: "primary",
+                  mode: "full",
+                  view: {
+                      draggable: true
+                  }
+              };
 
-            const mindmap = new jsMind(options);
-
-            mindmap.show(mind);
+              const mindmap = new jsMind(options);
 
             document
                 .querySelector("#new-mindmap")
                 .addEventListener("click", function () {
+                    currentMindmapId = null;
+                    document.querySelector("#mindmap-empty").style.display = "none";
+
+                    const mindmapName = document.querySelector(
+                        "#mindmap-name"
+                    ).value.trim() || "New Mindmap";
+
                     const newMind = {
                         meta: {
-                            name: "New Mindmap",
+                            name: mindmapName,
                             author: "ALF",
                             version: "0.1"
                         },
@@ -240,20 +227,79 @@
                             {
                                 id: "root",
                                 isroot: true,
-                                topic: "New Mindmap"
+                                topic: mindmapName,
+                                expanded: true
+                            },
+                            {
+                                id: "test-child",
+                                parentid: "root",
+                                topic: "Test"
                             }
                         ]
                     };
 
                     mindmap.show(newMind);
+                    mindmap.select_node("root");
+                    mindmap.view.e_panel.focus();
+                });
+
+                 document
+                .querySelector("#open-mindmap")
+                .addEventListener("click", async function () {
+                    const mindmapId = document.querySelector(
+                        "#mindmap-selector"
+                    ).value;
+
+                    if (!mindmapId) {
+                        return;
+                    }
+
+                    const response = await fetch(
+                        `/mindmaps/${mindmapId}`
+                    );
+
+                    if (!response.ok) {
+                        return;
+                    }
+                    const savedMindmap = await response.json();
+                    const savedContent = JSON.parse(savedMindmap.content);
+
+                    currentMindmapId = savedMindmap.id;
+                    document.querySelector("#mindmap-name").value =
+                        savedMindmap.project;
+                    document.querySelector("#mindmap-empty").style.display =
+                        "none";
+
+                    mindmap.show(savedContent);
+                    mindmap.select_node("root");
+                    mindmap.view.e_panel.focus();
                 });
 
             document
                 .querySelector("#save-mindmap")
-                .addEventListener("click", function () {
+                .addEventListener("click", async function () {
                     const documentData = mindmap.get_data("node_array");
 
-                    console.log(documentData);
+                    const response = await fetch("/mindmaps/save", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            id: currentMindmapId,
+                            category: "Uncategorised",
+                            project: document.querySelector(
+                                "#mindmap-name"
+                            ).value.trim() || "New Mindmap",
+                            content: JSON.stringify(documentData)
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    currentMindmapId = result.id;
+
+                    console.log(result);
                 });
         </script>
     </main>

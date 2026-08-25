@@ -11,13 +11,17 @@ from ..calc import CalculationError, calculate
 from ..command_catalogue import commands
 from ..memory import (
     archive_memory,
+    create_mindmap,
     delete_memory,
     find_related_memory_candidates,
     get_memories,
+    get_mindmap,
+    get_mindmaps,
     relate_memory,
     remember,
     restore_memory,
     update_memory,
+    update_mindmap,
 )
 from ..question import answer_question
 
@@ -107,7 +111,6 @@ def remember_memory():
         status=status,
     )
 
-
 @app.get("/remember/related")
 def remember_related():
     """Return memories related to text being composed."""
@@ -118,7 +121,6 @@ def remember_related():
         return jsonify([])
 
     return jsonify(find_related_memory_candidates(content))
-
 
 @app.route("/memories", methods=["GET", "POST"])
 def memories():
@@ -317,7 +319,59 @@ def calc():
 def mindmaps():
     """Display the experimental ALF Mind Maps workspace."""
 
-    return render_template("mindmaps.html")
+    mindmaps = get_mindmaps()
+
+    return render_template(
+        "mindmaps.html",
+        mindmaps=mindmaps,
+    )
+
+
+@app.post("/mindmaps/save")
+def save_mindmap_web():
+    """Save a mind map from the web interface."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No mind map data supplied"}), 400
+
+    mindmap_id = data.get("id")
+    category = data.get("category", "")
+    project = data.get("project", "")
+    content = data.get("content", "")
+
+    if mindmap_id:
+        updated = update_mindmap(
+            int(mindmap_id),
+            category,
+            project,
+            "active",
+            content,
+        )
+
+        if not updated:
+            return jsonify({"error": "Mind map not found"}), 404
+    else:
+        mindmap_id = create_mindmap(
+            category,
+            project,
+            content,
+        )
+
+    return jsonify({"id": mindmap_id})
+
+
+@app.get("/mindmaps/<int:mindmap_id>")
+def get_mindmap_web(mindmap_id):
+    """Return a saved mind map to the web interface."""
+
+    mindmap = get_mindmap(mindmap_id)
+
+    if mindmap is None:
+        return jsonify({"error": "Mind map not found"}), 404
+
+    return jsonify(mindmap)
 
 def main() -> None:
     """Start ALF's web interface."""
