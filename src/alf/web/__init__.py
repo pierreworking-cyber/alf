@@ -313,6 +313,11 @@ def calc():
         examples=examples,
     )
 
+@app.get("/mindmaps")
+def mindmaps():
+    """Display the experimental ALF Mind Maps workspace."""
+
+    return render_template("mindmaps.html")
 
 def main() -> None:
     """Start ALF's web interface."""

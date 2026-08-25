@@ -21,7 +21,7 @@ from .paths import get_data_directory
 DATABASE = get_data_directory() / "alf.db"
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 4
 
 VALID_MEMORY_CATEGORIES = [
     "note",
@@ -82,6 +82,58 @@ def initialise_database(connection):
             """
         )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mindmaps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category TEXT NOT NULL,
+            project TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            created TEXT NOT NULL,
+            modified TEXT NOT NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mindmap_documents (
+            mindmap_id INTEGER PRIMARY KEY,
+            content TEXT NOT NULL,
+            FOREIGN KEY (mindmap_id)
+                REFERENCES mindmaps(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mindmap_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL DEFAULT 'active',
+            created TEXT NOT NULL,
+            modified TEXT NOT NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mindmap_projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            created TEXT NOT NULL,
+            modified TEXT NOT NULL,
+            FOREIGN KEY (category_id)
+                REFERENCES mindmap_categories(id)
+        )
+        """
+    )
+
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
 
@@ -100,9 +152,638 @@ def get_connection():
 
     connection = sqlite3.connect(DATABASE)
 
+    connection.execute("PRAGMA foreign_keys = ON")
+
     initialise_database(connection)
 
     return connection
+
+
+def create_mindmap_category(name: str):
+    """
+    Create a new mind map category.
+
+    Args:
+        name: The category name.
+
+    Returns:
+        The ID of the newly created category.
+    """
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    with get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO mindmap_categories (
+                name,
+                status,
+                created,
+                modified
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                name,
+                "active",
+                now,
+                now,
+            ),
+        )
+
+        return cursor.lastrowid
+
+
+def get_mindmap_categories():
+    """
+    Return all mind map categories ordered by ID.
+
+    Returns:
+        A list of category dictionaries.
+    """
+
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, name, status, created, modified
+            FROM mindmap_categories
+            ORDER BY id
+            """
+        ).fetchall()
+
+    return [
+        {
+            "id": row[0],
+            "name": row[1],
+            "status": row[2],
+            "created": row[3],
+            "modified": row[4],
+        }
+        for row in rows
+    ]
+
+
+def update_mindmap_category(
+    category_id: int,
+    name: str,
+    status: str,
+):
+    """
+    Update an existing mind map category.
+
+    Returns:
+        ``True`` when the category is updated, otherwise ``False``.
+    """
+
+    with get_connection() as connection:
+        category = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        connection.execute(
+            """
+            UPDATE mindmap_categories
+            SET name = ?,
+                status = ?,
+                modified = ?
+            WHERE id = ?
+            """,
+            (
+                name,
+                status,
+                modified,
+                category_id,
+            ),
+        )
+
+    return True
+
+
+def archive_mindmap_category(category_id: int):
+    """
+    Archive an existing mind map category.
+
+    Returns:
+        ``True`` when the category is archived, otherwise ``False``.
+    """
+
+    with get_connection() as connection:
+        category = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        connection.execute(
+            """
+            UPDATE mindmap_categories
+            SET status = 'archived',
+                modified = ?
+            WHERE id = ?
+            """,
+            (modified, category_id),
+        )
+
+    return True
+
+
+def delete_mindmap_category(category_id: int):
+    """
+    Delete an existing mind map category.
+
+    Returns:
+        ``True`` when the category is deleted, otherwise ``False``.
+    """
+
+    with get_connection() as connection:
+        category = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        connection.execute(
+            """
+            DELETE FROM mindmap_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        )
+
+    return True
+
+
+def create_mindmap_project(category_id: int, name: str):
+    """
+    Create a new mind map project within a category.
+
+    Returns:
+        The new project ID, or ``False`` when the category does not exist.
+    """
+
+    with get_connection() as connection:
+        category = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO mindmap_projects (
+                category_id,
+                name,
+                status,
+                created,
+                modified
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                category_id,
+                name,
+                "active",
+                now,
+                now,
+            ),
+        )
+
+        return cursor.lastrowid
+
+
+def get_mindmap_projects():
+    """
+    Return all mind map projects ordered by ID.
+
+    Returns:
+        A list of project dictionaries.
+    """
+
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, category_id, name, status, created, modified
+            FROM mindmap_projects
+            ORDER BY id
+            """
+        ).fetchall()
+
+    return [
+        {
+            "id": row[0],
+            "category_id": row[1],
+            "name": row[2],
+            "status": row[3],
+            "created": row[4],
+            "modified": row[5],
+        }
+        for row in rows
+    ]
+
+
+def update_mindmap_project(
+    project_id: int,
+    category_id: int,
+    name: str,
+    status: str,
+):
+    """
+    Update an existing mind map project.
+
+    Returns:
+        ``True`` when the project is updated, otherwise ``False``.
+    """
+
+    with get_connection() as connection:
+        project = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_projects
+            WHERE id = ?
+            """,
+            (project_id,),
+        ).fetchone()
+
+        if project is None:
+            return False
+
+        category = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        connection.execute(
+            """
+            UPDATE mindmap_projects
+            SET category_id = ?,
+                name = ?,
+                status = ?,
+                modified = ?
+            WHERE id = ?
+            """,
+            (
+                category_id,
+                name,
+                status,
+                modified,
+                project_id,
+            ),
+        )
+
+    return True
+
+
+def archive_mindmap_project(project_id: int):
+    """
+    Archive an existing mind map project.
+
+    Returns:
+        ``True`` when the project is archived, otherwise ``False``.
+    """
+
+    with get_connection() as connection:
+        project = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_projects
+            WHERE id = ?
+            """,
+            (project_id,),
+        ).fetchone()
+
+        if project is None:
+            return False
+
+        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        connection.execute(
+            """
+            UPDATE mindmap_projects
+            SET status = 'archived',
+                modified = ?
+            WHERE id = ?
+            """,
+            (modified, project_id),
+        )
+
+    return True
+
+
+def delete_mindmap_project(project_id: int):
+    """
+    Permanently delete an existing mind map project.
+
+    Returns:
+        ``True`` when the project is deleted, otherwise ``False``.
+    """
+
+    with get_connection() as connection:
+        project = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_projects
+            WHERE id = ?
+            """,
+            (project_id,),
+        ).fetchone()
+
+        if project is None:
+            return False
+
+        connection.execute(
+            """
+            DELETE FROM mindmap_projects
+            WHERE id = ?
+            """,
+            (project_id,),
+        )
+
+    return True
+
+
+def create_mindmap(category: str, project: str, content: str):
+    """
+    Create a new mind map and its associated document.
+
+    Returns:
+        The new mind map ID.
+    """
+
+    created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    with get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO mindmaps (
+                category,
+                project,
+                status,
+                created,
+                modified
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                category,
+                project,
+                "active",
+                created,
+                created,
+            ),
+        )
+
+        mindmap_id = cursor.lastrowid
+
+        cursor.execute(
+            """
+            INSERT INTO mindmap_documents (
+                mindmap_id,
+                content
+            )
+            VALUES (?, ?)
+            """,
+            (mindmap_id, content),
+        )
+
+    return mindmap_id
+
+
+def get_mindmap(mindmap_id: int):
+    """
+    Retrieve a mind map and its associated document.
+
+    Returns:
+        The mind map as a dictionary, or ``None`` if it does not exist.
+    """
+
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT
+                m.id,
+                m.category,
+                m.project,
+                m.status,
+                m.created,
+                m.modified,
+                d.content
+            FROM mindmaps AS m
+            JOIN mindmap_documents AS d
+                ON d.mindmap_id = m.id
+            WHERE m.id = ?
+            """,
+            (mindmap_id,),
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    return {
+        "id": row[0],
+        "category": row[1],
+        "project": row[2],
+        "status": row[3],
+        "created": row[4],
+        "modified": row[5],
+        "content": row[6],
+    }
+
+
+def get_mindmaps():
+    """
+    Retrieve all mind maps.
+
+    Returns:
+        A list of mind maps ordered by ID.
+    """
+
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                m.id,
+                m.category,
+                m.project,
+                m.status,
+                m.created,
+                m.modified,
+                d.content
+            FROM mindmaps AS m
+            JOIN mindmap_documents AS d
+                ON d.mindmap_id = m.id
+            ORDER BY m.id
+            """
+        ).fetchall()
+
+    return [
+        {
+            "id": row[0],
+            "category": row[1],
+            "project": row[2],
+            "status": row[3],
+            "created": row[4],
+            "modified": row[5],
+            "content": row[6],
+        }
+        for row in rows
+    ]
+
+
+def update_mindmap(
+    mindmap_id: int,
+    category: str,
+    project: str,
+    status: str,
+    content: str,
+):
+    """
+    Update a mind map and its associated document.
+
+    The modified timestamp is refreshed whenever the mind map is
+    updated.
+
+    Returns:
+        ``True`` when the mind map is updated, otherwise ``False`` when
+        the mind map does not exist.
+    """
+
+    with get_connection() as connection:
+        existing = connection.execute(
+            """
+            SELECT id
+            FROM mindmaps
+            WHERE id = ?
+            """,
+            (mindmap_id,),
+        ).fetchone()
+
+        if existing is None:
+            return False
+
+        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        connection.execute(
+            """
+            UPDATE mindmaps
+            SET category = ?,
+                project = ?,
+                status = ?,
+                modified = ?
+            WHERE id = ?
+            """,
+            (
+                category,
+                project,
+                status,
+                modified,
+                mindmap_id,
+            ),
+        )
+
+        connection.execute(
+            """
+            UPDATE mindmap_documents
+            SET content = ?
+            WHERE mindmap_id = ?
+            """,
+            (content, mindmap_id),
+        )
+
+    return True
+
+
+def archive_mindmap(mindmap_id: int):
+    """
+    Mark a mind map as archived.
+
+    Returns:
+        ``True`` when the mind map is archived, otherwise ``False``
+        when it does not exist.
+    """
+
+    with get_connection() as connection:
+        result = connection.execute(
+            """
+            UPDATE mindmaps
+            SET status = 'archived',
+                modified = ?
+            WHERE id = ?
+            """,
+            (
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                mindmap_id,
+            ),
+        )
+
+    return result.rowcount > 0
+
+
+def delete_mindmap(mindmap_id: int):
+    """
+    Permanently delete a mind map and its associated document.
+
+    Returns:
+        ``True`` when the mind map is deleted, otherwise ``False``
+        when it does not exist.
+    """
+
+    with get_connection() as connection:
+        result = connection.execute(
+            """
+            DELETE FROM mindmaps
+            WHERE id = ?
+            """,
+            (mindmap_id,),
+        )
+
+    return result.rowcount > 0
 
 
 def get_memory_categories():

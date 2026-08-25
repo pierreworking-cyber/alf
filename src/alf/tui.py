@@ -587,7 +587,7 @@ class ALFTUI(App):
                                     Label(
                                         f"{memory['id']}  "
                                         f"{memory['category']:<9} "
-                                        f"{'* ' if memory['status'] != 'active' else ''}"
+                                        f"{'* ' if memory['status'] != 'active' else ''}"  # noqa: E501
                                         f"{memory['content']}"
                                     ),
                                     id=f"memory-{memory['id']}",
@@ -880,7 +880,7 @@ class ALFTUI(App):
                             compact=True,
                         ),
                 Label(
-                    f"{memory_id}  "
+                    f"{memory['id']}  "
                     f"{memory['category']:<9} "
                     f"{'* ' if memory['status'] != 'active' else ''}"
                     f"{memory['content']}"
@@ -1141,7 +1141,7 @@ class ALFTUI(App):
             await memories.append(
                 ListItem(
                     Label(
-                        f"{memory_id}  "
+                        f"{memory['id']}  "
                         f"{memory['category']:<9} "
                         f"{'* ' if memory['status'] != 'active' else ''}"
                         f"{memory['content']}"
