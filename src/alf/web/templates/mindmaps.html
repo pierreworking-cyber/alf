@@ -145,7 +145,8 @@
 
            #jsmind-container {
             width: 100%;
-            height: 100%;
+            height: 500px;
+            min-height: 500px;
         }
     </style>
 </head>
@@ -163,58 +164,74 @@
             <p>Create and explore visual maps of ideas.</p>
         </header>
 
-          <div class="mindmaps-toolbar">
-              <button type="button" id="new-mindmap">＋ New</button>
-              <input
-                  type="text"
-                  id="mindmap-name"
-                  placeholder="Mind map name"
-              >
-              <select id="mindmap-selector">
-                  <option value="">Select a mind map...</option>
-                  {% for saved_mindmap in mindmaps %}
-                      <option value="{{ saved_mindmap['id'] }}">
-                          {{ saved_mindmap['project'] }}
-                      </option>
-                  {% endfor %}
-              </select>
-              <button type="button" id="open-mindmap">📂 Open</button>
-              <button type="button" id="save-mindmap">💾 Save</button>
-          </div>
+            <section class="mindmaps-workspace">
+                <aside class="mindmap-library">
+                    <h2>Map Library</h2>
 
-          <section class="mindmaps-workspace">
-              <div id="mindmap-empty" class="mindmap-empty">
-                  Choose a mind map to open, or create a new one.
-              </div>
-              <div id="jsmind-container"></div>
-          </section>
+                    {% for category in categories %}
+                        <div class="mindmap-category">
+                            <h3>{{ category['name'] }}</h3>
+
+                            <div class="mindmap-list">
+                                {% for saved_mindmap in mindmaps %}
+                                    {% if saved_mindmap['category'] == category['name'] %}
+                                        <button
+                                            type="button"
+                                            class="mindmap-item"
+                                            data-mindmap-id="{{ saved_mindmap['id'] }}"
+                                        >
+                                            <span>{{ saved_mindmap['name'] }}</span>
+                                        </button>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    <div class="mindmap-library-actions">
+                        <button type="button" id="new-mindmap">
+                            ＋ New map
+                        </button>
+                    </div>
+                </aside>
+
+                <section class="mindmap-editor">
+                    <div id="mindmap-empty" class="mindmap-empty">
+                        Choose a map, or create a new one.
+                    </div>
+
+                    <div id="jsmind-container"></div>
+                </section>
+            </section>
+
+        </section>
 
         <script src="{{ url_for('static', filename='jsmind/jsmind.js') }}"></script>
 
         <script>
             let currentMindmapId = null;
 
-              const options = {
-                  container: "jsmind-container",
-                  editable: true,
-                  theme: "primary",
-                  mode: "full",
-                  view: {
-                      draggable: true
-                  }
-              };
+            const options = {
+                container: "jsmind-container",
+                editable: true,
+                theme: "primary",
+                mode: "full",
+                view: {
+                    draggable: true
+                }
+            };
 
-              const mindmap = new jsMind(options);
+            const mindmap = new jsMind(options);
 
             document
                 .querySelector("#new-mindmap")
                 .addEventListener("click", function () {
                     currentMindmapId = null;
-                    document.querySelector("#mindmap-empty").style.display = "none";
 
-                    const mindmapName = document.querySelector(
-                        "#mindmap-name"
-                    ).value.trim() || "New Mindmap";
+                    document.querySelector("#mindmap-empty").style.display =
+                        "none";
+
+                    const mindmapName = "New Mindmap";
 
                     const newMind = {
                         meta: {
@@ -229,11 +246,6 @@
                                 isroot: true,
                                 topic: mindmapName,
                                 expanded: true
-                            },
-                            {
-                                id: "test-child",
-                                parentid: "root",
-                                topic: "Test"
                             }
                         ]
                     };
@@ -243,63 +255,34 @@
                     mindmap.view.e_panel.focus();
                 });
 
-                 document
-                .querySelector("#open-mindmap")
-                .addEventListener("click", async function () {
-                    const mindmapId = document.querySelector(
-                        "#mindmap-selector"
-                    ).value;
-
-                    if (!mindmapId) {
-                        return;
-                    }
-
-                    const response = await fetch(
-                        `/mindmaps/${mindmapId}`
-                    );
-
-                    if (!response.ok) {
-                        return;
-                    }
-                    const savedMindmap = await response.json();
-                    const savedContent = JSON.parse(savedMindmap.content);
-
-                    currentMindmapId = savedMindmap.id;
-                    document.querySelector("#mindmap-name").value =
-                        savedMindmap.project;
-                    document.querySelector("#mindmap-empty").style.display =
-                        "none";
-
-                    mindmap.show(savedContent);
-                    mindmap.select_node("root");
-                    mindmap.view.e_panel.focus();
-                });
-
             document
-                .querySelector("#save-mindmap")
-                .addEventListener("click", async function () {
-                    const documentData = mindmap.get_data("node_array");
+                .querySelectorAll(".mindmap-item")
+                .forEach(function (item) {
+                    item.addEventListener("click", async function () {
+                        const mindmapId = item.dataset.mindmapId;
 
-                    const response = await fetch("/mindmaps/save", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            id: currentMindmapId,
-                            category: "Uncategorised",
-                            project: document.querySelector(
-                                "#mindmap-name"
-                            ).value.trim() || "New Mindmap",
-                            content: JSON.stringify(documentData)
-                        })
+                        const response = await fetch(
+                            `/mindmaps/${mindmapId}`
+                        );
+
+                        if (!response.ok) {
+                            return;
+                        }
+
+                        const savedMindmap = await response.json();
+                        const savedContent = JSON.parse(
+                            savedMindmap.content
+                        );
+
+                        currentMindmapId = savedMindmap.id;
+
+                        document.querySelector("#mindmap-empty").style.display =
+                            "none";
+
+                        mindmap.show(savedContent);
+                        mindmap.select_node("root");
+                        mindmap.view.e_panel.focus();
                     });
-
-                    const result = await response.json();
-
-                    currentMindmapId = result.id;
-
-                    console.log(result);
                 });
         </script>
     </main>

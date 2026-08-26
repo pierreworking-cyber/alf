@@ -337,111 +337,19 @@ def test_delete_missing_mindmap_category(database):
     assert memory.delete_mindmap_category(999) is False
 
 
-def test_create_mindmap_project(database):
-    category_id = memory.create_mindmap_category("House")
-
-    project_id = memory.create_mindmap_project(
-        category_id,
-        "Living room redecorate",
+def test_delete_mindmap_category_deletes_maps(database):
+    category_id = memory.create_mindmap_category("Birthday")
+    mindmap_id = memory.create_mindmap(
+        "Birthday",
+        "Party plan",
+        '{"meta":{"name":"Party plan"},"format":"node_array","data":[]}',
     )
 
-    assert project_id == 1
-
-    with memory.get_connection() as connection:
-        row = connection.execute(
-            """
-            SELECT id, category_id, name, status
-            FROM mindmap_projects
-            WHERE id = ?
-            """,
-            (project_id,),
-        ).fetchone()
-
-    assert row == (
-        1,
-        category_id,
-        "Living room redecorate",
-        "active",
-    )
-
-
-def test_get_mindmap_projects(database):
-    category_id = memory.create_mindmap_category("House")
-
-    memory.create_mindmap_project(
-        category_id,
-        "Living room redecorate",
-    )
-    memory.create_mindmap_project(
-        category_id,
-        "Extension planning",
-    )
-
-    projects = memory.get_mindmap_projects()
-
-    assert [project["name"] for project in projects] == [
-        "Living room redecorate",
-        "Extension planning",
-    ]
-    assert all(project["category_id"] == category_id for project in projects)
-
-
-def test_get_mindmap_projects_returns_empty_list(database):
-    assert memory.get_mindmap_projects() == []
-
-
-def test_update_mindmap_project(database):
-    category_id = memory.create_mindmap_category("House")
-    new_category_id = memory.create_mindmap_category("Events")
-
-    memory.create_mindmap_project(
-        category_id,
-        "Living room redecorate",
-    )
-
-    result = memory.update_mindmap_project(
-        1,
-        category_id=new_category_id,
-        name="Sue birthday",
-        status="archived",
-    )
+    result = memory.delete_mindmap_category(category_id)
 
     assert result is True
-
-    project = memory.get_mindmap_projects()[0]
-
-    assert project["category_id"] == new_category_id
-    assert project["name"] == "Sue birthday"
-    assert project["status"] == "archived"
-
-
-def test_update_missing_mindmap_project(database):
-    result = memory.update_mindmap_project(
-        999,
-        category_id=1,
-        name="Missing project",
-        status="active",
-    )
-
-    assert result is False
-
-
-def test_delete_mindmap_project(database):
-    category_id = memory.create_mindmap_category("House")
-
-    memory.create_mindmap_project(
-        category_id,
-        "Living room redecorate",
-    )
-
-    result = memory.delete_mindmap_project(1)
-
-    assert result is True
-    assert memory.get_mindmap_projects() == []
-
-
-def test_delete_missing_mindmap_project(database):
-    assert memory.delete_mindmap_project(999) is False
+    assert memory.get_mindmaps() == []
+    assert memory.get_mindmap(mindmap_id) is None
 
 
 def test_connection_persists_data(database):
@@ -486,7 +394,7 @@ def test_get_mindmaps(database):
 
     assert [item["id"] for item in mindmaps] == [1, 2]
     assert [item["category"] for item in mindmaps] == ["House", "Events"]
-    assert [item["project"] for item in mindmaps] == [
+    assert [item["name"] for item in mindmaps] == [
         "Living room redecorate",
         "Sue birthday",
     ]
@@ -506,7 +414,7 @@ def test_update_mindmap(database):
     result = memory.update_mindmap(
         1,
         category="House",
-        project="Living room finished",
+        name="Living room finished",
         status="active",
         content="<map><node>Finished living room</node></map>",
     )
@@ -516,7 +424,7 @@ def test_update_mindmap(database):
     mindmap = memory.get_mindmap(1)
 
     assert mindmap["category"] == "House"
-    assert mindmap["project"] == "Living room finished"
+    assert mindmap["name"] == "Living room finished"
     assert mindmap["status"] == "active"
     assert mindmap["content"] == "<map><node>Finished living room</node></map>"
 
@@ -525,7 +433,7 @@ def test_update_missing_mindmap(database):
     result = memory.update_mindmap(
         999,
         category="House",
-        project="Missing project",
+        name="Missing map",
         status="active",
         content="<map><node>Missing</node></map>",
     )

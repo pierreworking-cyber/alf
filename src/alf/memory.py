@@ -94,20 +94,6 @@ def initialise_database(connection):
         """
     )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS mindmap_projects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category_id INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'active',
-            created TEXT NOT NULL,
-            modified TEXT NOT NULL,
-            FOREIGN KEY (category_id)
-                REFERENCES mindmap_categories(id)
-        )
-        """
-    )
 
     cursor.execute(
         """
@@ -120,6 +106,7 @@ def initialise_database(connection):
             modified TEXT NOT NULL,
             FOREIGN KEY (category_id)
                 REFERENCES mindmap_categories(id)
+                ON DELETE CASCADE
         )
         """
     )
@@ -190,6 +177,7 @@ def initialise_database(connection):
                 modified TEXT NOT NULL,
                 FOREIGN KEY (category_id)
                     REFERENCES mindmap_categories(id)
+                    ON DELETE CASCADE
             )
             """
         )
@@ -460,213 +448,7 @@ def delete_mindmap_category(category_id: int):
     return True
 
 
-def create_mindmap_project(category_id: int, name: str):
-    """
-    Create a new mind map project within a category.
-
-    Returns:
-        The new project ID, or ``False`` when the category does not exist.
-    """
-
-    with get_connection() as connection:
-        category = connection.execute(
-            """
-            SELECT id
-            FROM mindmap_categories
-            WHERE id = ?
-            """,
-            (category_id,),
-        ).fetchone()
-
-        if category is None:
-            return False
-
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        cursor = connection.cursor()
-
-        cursor.execute(
-            """
-            INSERT INTO mindmap_projects (
-                category_id,
-                name,
-                status,
-                created,
-                modified
-            )
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (
-                category_id,
-                name,
-                "active",
-                now,
-                now,
-            ),
-        )
-
-        return cursor.lastrowid
-
-
-def get_mindmap_projects():
-    """
-    Return all mind map projects ordered by ID.
-
-    Returns:
-        A list of project dictionaries.
-    """
-
-    with get_connection() as connection:
-        rows = connection.execute(
-            """
-            SELECT id, category_id, name, status, created, modified
-            FROM mindmap_projects
-            ORDER BY id
-            """
-        ).fetchall()
-
-    return [
-        {
-            "id": row[0],
-            "category_id": row[1],
-            "name": row[2],
-            "status": row[3],
-            "created": row[4],
-            "modified": row[5],
-        }
-        for row in rows
-    ]
-
-
-def update_mindmap_project(
-    project_id: int,
-    category_id: int,
-    name: str,
-    status: str,
-):
-    """
-    Update an existing mind map project.
-
-    Returns:
-        ``True`` when the project is updated, otherwise ``False``.
-    """
-
-    with get_connection() as connection:
-        project = connection.execute(
-            """
-            SELECT id
-            FROM mindmap_projects
-            WHERE id = ?
-            """,
-            (project_id,),
-        ).fetchone()
-
-        if project is None:
-            return False
-
-        category = connection.execute(
-            """
-            SELECT id
-            FROM mindmap_categories
-            WHERE id = ?
-            """,
-            (category_id,),
-        ).fetchone()
-
-        if category is None:
-            return False
-
-        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        connection.execute(
-            """
-            UPDATE mindmap_projects
-            SET category_id = ?,
-                name = ?,
-                status = ?,
-                modified = ?
-            WHERE id = ?
-            """,
-            (
-                category_id,
-                name,
-                status,
-                modified,
-                project_id,
-            ),
-        )
-
-    return True
-
-
-def archive_mindmap_project(project_id: int):
-    """
-    Archive an existing mind map project.
-
-    Returns:
-        ``True`` when the project is archived, otherwise ``False``.
-    """
-
-    with get_connection() as connection:
-        project = connection.execute(
-            """
-            SELECT id
-            FROM mindmap_projects
-            WHERE id = ?
-            """,
-            (project_id,),
-        ).fetchone()
-
-        if project is None:
-            return False
-
-        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        connection.execute(
-            """
-            UPDATE mindmap_projects
-            SET status = 'archived',
-                modified = ?
-            WHERE id = ?
-            """,
-            (modified, project_id),
-        )
-
-    return True
-
-
-def delete_mindmap_project(project_id: int):
-    """
-    Permanently delete an existing mind map project.
-
-    Returns:
-        ``True`` when the project is deleted, otherwise ``False``.
-    """
-
-    with get_connection() as connection:
-        project = connection.execute(
-            """
-            SELECT id
-            FROM mindmap_projects
-            WHERE id = ?
-            """,
-            (project_id,),
-        ).fetchone()
-
-        if project is None:
-            return False
-
-        connection.execute(
-            """
-            DELETE FROM mindmap_projects
-            WHERE id = ?
-            """,
-            (project_id,),
-        )
-
-    return True
-
-def create_mindmap(category: str, project: str, content: str):
+def create_mindmap(category: str, name: str, content: str):
     """
     Create a new mind map and its associated document.
 
@@ -723,7 +505,7 @@ def create_mindmap(category: str, project: str, content: str):
             """,
             (
                 category_id,
-                project,
+                name,
                 "active",
                 now,
                 now,
@@ -781,7 +563,7 @@ def get_mindmap(mindmap_id: int):
     return {
         "id": row[0],
         "category": row[1],
-        "project": row[2],
+        "name": row[2],
         "status": row[3],
         "created": row[4],
         "modified": row[5],
@@ -821,7 +603,7 @@ def get_mindmaps():
         {
             "id": row[0],
             "category": row[1],
-            "project": row[2],
+            "name": row[2],
             "status": row[3],
             "created": row[4],
             "modified": row[5],
@@ -834,7 +616,7 @@ def get_mindmaps():
 def update_mindmap(
     mindmap_id: int,
     category: str,
-    project: str,
+    name: str,
     status: str,
     content: str,
 ):
@@ -887,7 +669,7 @@ def update_mindmap(
             """,
             (
                 category_row[0],
-                project,
+                name,
                 status,
                 modified,
                 mindmap_id,

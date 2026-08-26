@@ -16,6 +16,7 @@ from ..memory import (
     find_related_memory_candidates,
     get_memories,
     get_mindmap,
+    get_mindmap_categories,
     get_mindmaps,
     relate_memory,
     remember,
@@ -320,12 +321,13 @@ def mindmaps():
     """Display the experimental ALF Mind Maps workspace."""
 
     mindmaps = get_mindmaps()
+    categories = get_mindmap_categories()
 
     return render_template(
         "mindmaps.html",
         mindmaps=mindmaps,
+        categories=categories,
     )
-
 
 @app.post("/mindmaps/save")
 def save_mindmap_web():
@@ -338,14 +340,14 @@ def save_mindmap_web():
 
     mindmap_id = data.get("id")
     category = data.get("category", "")
-    project = data.get("project", "")
+    name = data.get("name", "")
     content = data.get("content", "")
 
     if mindmap_id:
         updated = update_mindmap(
             int(mindmap_id),
             category,
-            project,
+            name,
             "active",
             content,
         )
@@ -355,7 +357,7 @@ def save_mindmap_web():
     else:
         mindmap_id = create_mindmap(
             category,
-            project,
+            name,
             content,
         )
 
