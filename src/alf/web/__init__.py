@@ -13,6 +13,7 @@ from ..memory import (
     archive_memory,
     create_mindmap,
     delete_memory,
+    delete_mindmap,
     find_related_memory_candidates,
     get_memories,
     get_mindmap,
@@ -374,6 +375,19 @@ def get_mindmap_web(mindmap_id):
         return jsonify({"error": "Mind map not found"}), 404
 
     return jsonify(mindmap)
+
+
+@app.delete("/mindmaps/<int:mindmap_id>")
+def delete_mindmap_web(mindmap_id):
+    """Delete a saved mind map from the web interface."""
+
+    deleted = delete_mindmap(mindmap_id)
+
+    if not deleted:
+        return jsonify({"error": "Mind map not found"}), 404
+
+    return jsonify({"deleted": True})
+
 
 def main() -> None:
     """Start ALF's web interface."""
