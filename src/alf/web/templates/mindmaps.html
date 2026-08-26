@@ -387,6 +387,7 @@
                         ? rootNode.topic.trim() || "New Mindmap"
                         : "New Mindmap";
 
+                    const isNewMindmap = currentMindmapId === null;
                     const response = await fetch("/mindmaps/save", {
                         method: "POST",
                         headers: {
@@ -407,6 +408,36 @@
                     const result = await response.json();
 
                     currentMindmapId = result.id;
+
+                    if (isNewMindmap) {
+                      const mapItem = document.createElement("button");
+                      mapItem.type = "button";
+                      mapItem.className = "mindmap-item";
+                      mapItem.dataset.mindmapId = result.id;
+
+                      const mapName = document.createElement("span");
+                      mapName.textContent = name;
+
+                      mapItem.append(mapName);
+
+                      const uncategorisedCategory =
+                          Array.from(
+                              document.querySelectorAll(".mindmap-category")
+                          ).find(
+                              function (category) {
+                                  return (
+                                      category.querySelector("h3")?.textContent.trim() ===
+                                      "Uncategorised"
+                                  );
+                              }
+                          );
+
+                      if (uncategorisedCategory) {
+                          uncategorisedCategory
+                              .querySelector(".mindmap-list")
+                              .append(mapItem);
+                      }
+                    }
                 });
 
             document
