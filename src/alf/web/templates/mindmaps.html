@@ -467,6 +467,15 @@
                       mapItem.className = "mindmap-item";
                       mapItem.dataset.mindmapId = result.id;
 
+                      mapItem.draggable = true;
+
+                      mapItem.addEventListener("dragstart", function (event) {
+                          event.dataTransfer.setData(
+                              "text/plain",
+                              mapItem.dataset.mindmapId
+                          );
+                      });
+
                       const mapName = document.createElement("span");
                       mapName.textContent = name;
 
@@ -592,6 +601,28 @@
                       mapItem.remove();
                   }
               });
+
+                document
+                    .querySelectorAll(".mindmap-category h3")
+                    .forEach(function (heading) {
+                        const category = heading.textContent.trim();
+                        const storageKey = `mindmap-category-collapsed:${category}`;
+
+                        if (localStorage.getItem(storageKey) === "true") {
+                            heading.parentElement.classList.add("collapsed");
+                        }
+
+                        heading.addEventListener("click", function () {
+                            const categoryElement = heading.parentElement;
+                            const collapsed =
+                                categoryElement.classList.toggle("collapsed");
+
+                            localStorage.setItem(
+                                storageKey,
+                                collapsed ? "true" : "false"
+                            );
+                        });
+                    });
 
 
             document
