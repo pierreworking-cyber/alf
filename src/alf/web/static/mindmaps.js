@@ -6,7 +6,8 @@ const options = {
     theme: "primary",
     mode: "full",
     view: {
-        draggable: true
+        draggable: true,
+        hide_scrollbars_when_draggable: true
     }
 };
 
