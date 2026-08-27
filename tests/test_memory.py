@@ -81,7 +81,7 @@ def test_database_migrates_schema_from_version_one(database):
             """
         ).fetchall()
 
-    assert version == 5
+    assert version == 6
     assert results == [(1,)]
     assert mindmap_tables == [
         ("mindmap_documents",),
@@ -232,7 +232,7 @@ def test_database_migrates_mindmaps_from_version_four(database):
             (mindmap_id,),
         ).fetchone()
 
-    assert version == 5
+    assert version == 6
     assert category is not None
     assert mindmap[0] == category[0]
     assert mindmap[1] == "Garden"
@@ -275,9 +275,163 @@ def test_get_mindmap_categories(database):
     categories = memory.get_mindmap_categories()
 
     assert [category["name"] for category in categories] == [
+        "House",
+        "Events",
+    ]
+
+
+def test_get_mindmap_categories_preserves_creation_order(database):
+    memory.create_mindmap_category("House")
+    memory.create_mindmap_category("Events")
+    memory.create_mindmap_category("Garden")
+
+    categories = memory.get_mindmap_categories()
+
+    assert [category["name"] for category in categories] == [
+        "House",
+        "Events",
+        "Garden",
+    ]
+
+
+def test_move_mindmap_category(database):
+    memory.create_mindmap_category("House")
+    memory.create_mindmap_category("Events")
+    memory.create_mindmap_category("Garden")
+
+    garden = next(
+        category
+        for category in memory.get_mindmap_categories()
+        if category["name"] == "Garden"
+    )
+
+    result = memory.move_mindmap_category(garden["id"], 1)
+
+    assert result is True
+
+    categories = memory.get_mindmap_categories()
+
+    assert [category["name"] for category in categories] == [
+        "House",
+        "Garden",
+        "Events",
+    ]
+
+
+def test_move_mindmap_category_to_same_position(database):
+    memory.create_mindmap_category("House")
+    memory.create_mindmap_category("Events")
+    memory.create_mindmap_category("Garden")
+
+    result = memory.move_mindmap_category(2, 1)
+
+    assert result is True
+
+    categories = memory.get_mindmap_categories()
+
+    assert [category["name"] for category in categories] == [
+        "House",
+        "Events",
+        "Garden",
+    ]
+
+
+def test_move_mindmap_category_down(database):
+    memory.create_mindmap_category("House")
+    memory.create_mindmap_category("Events")
+    memory.create_mindmap_category("Garden")
+
+    result = memory.move_mindmap_category(1, 2)
+
+    assert result is True
+
+    categories = memory.get_mindmap_categories()
+
+    assert [category["name"] for category in categories] == [
+        "Events",
+        "Garden",
+        "House",
+    ]
+
+
+def test_move_mindmap_category_cannot_move_to_position_zero(database):
+    memory.create_mindmap_category("Uncategorised")
+    memory.create_mindmap_category("House")
+    memory.create_mindmap_category("Events")
+
+    result = memory.move_mindmap_category(2, 0)
+
+    assert result is True
+
+    categories = memory.get_mindmap_categories()
+
+    assert [category["name"] for category in categories] == [
+        "Uncategorised",
+        "House",
+        "Events",
+    ]
+
+
+def test_uncategorised_cannot_be_moved(database):
+    memory.create_mindmap_category("Uncategorised")
+    memory.create_mindmap_category("House")
+    memory.create_mindmap_category("Events")
+
+    result = memory.move_mindmap_category(1, 2)
+
+    assert result is True
+
+    categories = memory.get_mindmap_categories()
+
+    assert [category["name"] for category in categories] == [
+        "Uncategorised",
+        "House",
+        "Events",
+    ]
+
+
+def test_uncategorised_stays_at_top_when_other_category_moves(database):
+    memory.create_mindmap_category("Uncategorised")
+    memory.create_mindmap_category("House")
+    memory.create_mindmap_category("Events")
+
+    house = next(
+        category
+        for category in memory.get_mindmap_categories()
+        if category["name"] == "House"
+    )
+
+    result = memory.move_mindmap_category(house["id"], 2)
+
+    assert result is True
+
+    categories = memory.get_mindmap_categories()
+
+    assert [category["name"] for category in categories] == [
+        "Uncategorised",
         "Events",
         "House",
     ]
+
+
+def test_move_missing_mindmap_category(database):
+    result = memory.move_mindmap_category(999, 0)
+
+    assert result is False
+
+
+def test_get_mindmaps_excludes_archived(database):
+    mindmap_id = memory.create_mindmap(
+        "House",
+        "Plans",
+        '{"meta":{"name":"Plans"},"format":"node_array","data":[]}',
+    )
+
+    assert len(memory.get_mindmaps()) == 1
+
+    assert memory.archive_mindmap(mindmap_id) is True
+
+    assert memory.get_mindmaps() == []
 
 
 def test_get_mindmap_categories_returns_empty_list(database):

@@ -327,7 +327,9 @@
                     <h2>Map Library</h2>
 
                     {% for category in categories %}
-                        <div class="mindmap-category">
+                        <div class="mindmap-category"
+                        data-category-id="{{ category['id'] }}"
+                        >
                             <h3>{{ category['name'] }}</h3>
 
                             <div class="mindmap-list">
@@ -514,93 +516,174 @@
                       });
                   });
 
-              document
-                  .querySelectorAll(".mindmap-category")
-                  .forEach(function (category) {
-                      category.addEventListener("dragover", function (event) {
-                          event.preventDefault();
-                      });
+                document
+                    .querySelectorAll(".mindmap-category")
+                    .forEach(function (category) {
+                        const heading = category.querySelector("h3");
 
-                      category.addEventListener("drop", async function (event) {
-                          event.preventDefault();
+                          if (
+                              heading.textContent.trim() !==
+                              "Uncategorised"
+                          ) {
+                              heading.draggable = true;
+                          }
 
-                          const mindmapId =
-                              event.dataTransfer.getData("text/plain");
+                        heading.addEventListener("dragstart", function (event) {
+                            event.dataTransfer.setData(
+                                "application/x-mindmap-category",
+                                category.dataset.categoryId
+                            );
+                        });
+                    });
 
-                          const categoryName = category
-                              .querySelector("h3")
-                              .textContent.trim();
-
-                          const response = await fetch(
-                              `/mindmaps/${mindmapId}/move`,
-                              {
-                                  method: "POST",
-                                  headers: {
-                                      "Content-Type": "application/json"
-                                  },
-                                  body: JSON.stringify({
-                                      category: categoryName
-                                  })
+                document
+                    .querySelectorAll(".mindmap-category")
+                    .forEach(function (category) {
+                          category.addEventListener("dragover", function (event) {
+                              if (
+                                  event.dataTransfer.types.includes(
+                                      "application/x-mindmap-category"
+                                  ) ||
+                                  event.dataTransfer.types.includes("text/plain")
+                              ) {
+                                  event.preventDefault();
                               }
-                          );
+                          });
 
-                          if (!response.ok) {
-                              return;
-                          }
+                        category.addEventListener("drop", async function (event) {
+                            event.preventDefault();
 
-                          const mapItem = document.querySelector(
-                              `.mindmap-item[data-mindmap-id="${mindmapId}"]`
-                          );
+                            const categoryId =
+                                event.dataTransfer.getData(
+                                    "application/x-mindmap-category"
+                                );
 
-                          if (!mapItem) {
-                              return;
-                          }
+                            if (categoryId) {
+                                const draggedCategory =
+                                    document.querySelector(
+                                        `.mindmap-category[data-category-id="${categoryId}"]`
+                                    );
 
-                          category
-                              .querySelector(".mindmap-list")
-                              .append(mapItem);
-                      });
-                  });
+                                if (!draggedCategory || draggedCategory === category) {
+                                    return;
+                                }
 
-              const archiveTarget = document.querySelector(
-                  "#mindmap-archive-target"
-              );
+                                const categories = Array.from(
+                                    document.querySelectorAll(".mindmap-category")
+                                );
 
-              archiveTarget.addEventListener("dragover", function (event) {
-                  event.preventDefault();
-                  archiveTarget.classList.add("drag-over");
-              });
+                                const draggedIndex =
+                                    categories.indexOf(draggedCategory);
+                                const targetIndex = categories.indexOf(category);
 
-              archiveTarget.addEventListener("dragleave", function () {
-                  archiveTarget.classList.remove("drag-over");
-              });
+                                const rect = category.getBoundingClientRect();
+                                const insertAfter =
+                                    event.clientY >= rect.top + rect.height / 2;
 
-              archiveTarget.addEventListener("drop", async function (event) {
-                  event.preventDefault();
-                  archiveTarget.classList.remove("drag-over");
+                                  let position = targetIndex;
 
-                  const mindmapId =
-                      event.dataTransfer.getData("text/plain");
+                                  if (insertAfter) {
+                                      position += 1;
+                                  }
 
-                  const response = await fetch(
-                      `/mindmaps/${mindmapId}/archive`,
-                      {
-                          method: "POST"
-                      }
-                  );
+                                  if (draggedIndex < position) {
+                                      position -= 1;
+                                  }
 
-                  if (!response.ok) {
-                      return;
-                  }
+                                  const uncategorisedCategory = categories.find(
+                                      function (item) {
+                                          return (
+                                              item.querySelector("h3")?.textContent.trim() ===
+                                              "Uncategorised"
+                                          );
+                                      }
+                                  );
 
-                  const mapItem = document.querySelector(
-                      `.mindmap-item[data-mindmap-id="${mindmapId}"]`
-                  );
+                                  if (uncategorisedCategory) {
+                                      const uncategorisedIndex =
+                                          categories.indexOf(uncategorisedCategory);
 
-                  if (mapItem) {
-                      mapItem.remove();
-                  }
-              });
+                                      if (position <= uncategorisedIndex) {
+                                          position = uncategorisedIndex + 1;
+                                      }
+                                  }
+
+                                const response = await fetch(
+                                    `/mindmap-categories/${categoryId}/move`,
+                                    {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify({
+                                            position: position
+                                        })
+                                    }
+                                );
+
+                                if (!response.ok) {
+                                    return;
+                                }
+
+                                  const orderedCategories = Array.from(
+                                      document.querySelectorAll(".mindmap-category")
+                                  );
+
+                                  const newIndex = position;
+
+                                  if (newIndex < orderedCategories.length) {
+                                      category.parentElement.insertBefore(
+                                          draggedCategory,
+                                          orderedCategories[newIndex]
+                                      );
+                                  } else {
+                                      category.parentElement.append(draggedCategory);
+                                  }
+
+                                return;
+                            }
+
+                            const mindmapId =
+                                event.dataTransfer.getData("text/plain");
+
+                            if (!mindmapId) {
+                                return;
+                            }
+
+                            const categoryName = category
+                                .querySelector("h3")
+                                .textContent.trim();
+
+                            const response = await fetch(
+                                `/mindmaps/${mindmapId}/move`,
+                                {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        category: categoryName
+                                    })
+                                }
+                            );
+
+                            if (!response.ok) {
+                                return;
+                            }
+
+                            const mapItem = document.querySelector(
+                                `.mindmap-item[data-mindmap-id="${mindmapId}"]`
+                            );
+
+                            if (!mapItem) {
+                                return;
+                            }
+
+                            category
+                                .querySelector(".mindmap-list")
+                                .append(mapItem);
+                        });
+                    });
 
                 document
                     .querySelectorAll(".mindmap-category h3")

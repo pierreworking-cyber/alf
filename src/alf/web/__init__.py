@@ -22,6 +22,7 @@ from ..memory import (
     get_mindmap_categories,
     get_mindmaps,
     move_mindmap,
+    move_mindmap_category,
     relate_memory,
     remember,
     restore_memory,
@@ -412,6 +413,27 @@ def move_mindmap_web(mindmap_id):
 
     if not moved:
         return jsonify({"error": "Mind map or category not found"}), 404
+
+    return jsonify({"moved": True})
+
+@app.post("/mindmap-categories/<int:category_id>/move")
+def move_mindmap_category_web(category_id):
+    """Move a mind map category to a different position."""
+
+    data = request.get_json()
+
+    if not data or "position" not in data:
+        return jsonify({"error": "No position supplied"}), 400
+
+    position = data["position"]
+
+    if not isinstance(position, int) or position < 0:
+        return jsonify({"error": "Invalid position"}), 400
+
+    moved = move_mindmap_category(category_id, position)
+
+    if not moved:
+        return jsonify({"error": "Mind map category not found"}), 404
 
     return jsonify({"moved": True})
 

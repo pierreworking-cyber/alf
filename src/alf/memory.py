@@ -21,7 +21,7 @@ from .paths import get_data_directory
 DATABASE = get_data_directory() / "alf.db"
 
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 VALID_MEMORY_CATEGORIES = [
     "note",
@@ -84,13 +84,14 @@ def initialise_database(connection):
 
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS mindmap_categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            status TEXT NOT NULL DEFAULT 'active',
-            created TEXT NOT NULL,
-            modified TEXT NOT NULL
-        )
+      CREATE TABLE IF NOT EXISTS mindmap_categories (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL UNIQUE,
+          status TEXT NOT NULL DEFAULT 'active',
+          created TEXT NOT NULL,
+          modified TEXT NOT NULL,
+          position INTEGER
+      )
         """
     )
 
@@ -243,6 +244,35 @@ def initialise_database(connection):
         )
 
 
+    if version == 5:
+        cursor.execute(
+            """
+            ALTER TABLE mindmap_categories
+            ADD COLUMN position INTEGER
+            """
+        )
+
+        categories = cursor.execute(
+            """
+            SELECT id, name
+            FROM mindmap_categories
+            ORDER BY
+                CASE WHEN name = 'Uncategorised' THEN 0 ELSE 1 END,
+                name
+            """
+        ).fetchall()
+
+        for position, (category_id, _) in enumerate(categories):
+            cursor.execute(
+                """
+                UPDATE mindmap_categories
+                SET position = ?
+                WHERE id = ?
+                """,
+                (position, category_id),
+            )
+
+
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
 
@@ -284,21 +314,30 @@ def create_mindmap_category(name: str):
     with get_connection() as connection:
         cursor = connection.cursor()
 
+        position = cursor.execute(
+            """
+            SELECT COALESCE(MAX(position), -1) + 1
+            FROM mindmap_categories
+            """
+        ).fetchone()[0]
+
         cursor.execute(
             """
             INSERT INTO mindmap_categories (
                 name,
                 status,
                 created,
-                modified
+                modified,
+                position
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 name,
                 "active",
                 now,
                 now,
+                position,
             ),
         )
 
@@ -317,11 +356,9 @@ def get_mindmap_categories():
     with get_connection() as connection:
         rows = connection.execute(
             """
-              SELECT id, name, status, created, modified
-              FROM mindmap_categories
-              ORDER BY
-                  CASE WHEN name = 'Uncategorised' THEN 0 ELSE 1 END,
-                  name
+            SELECT id, name, status, created, modified, position
+            FROM mindmap_categories
+            ORDER BY position
             """
         ).fetchall()
 
@@ -332,9 +369,87 @@ def get_mindmap_categories():
             "status": row[2],
             "created": row[3],
             "modified": row[4],
+            "position": row[5],
         }
         for row in rows
     ]
+
+def move_mindmap_category(category_id: int, position: int):
+    """
+    Move a mind map category to a new position.
+
+    Args:
+        category_id: The ID of the category to move.
+        position: The zero-based destination position.
+
+    Returns:
+        ``True`` when the category is moved, otherwise ``False``.
+    """
+
+    with get_connection() as connection:
+        category = connection.execute(
+            """
+            SELECT name, position
+            FROM mindmap_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        category_name = category[0]
+        current_position = category[1]
+
+        if category_name == "Uncategorised":
+            return True
+
+        uncategorised = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE name = 'Uncategorised'
+            """
+        ).fetchone()
+
+        if uncategorised is not None:
+            position = max(position, 1)
+
+        if current_position == position:
+            return True
+
+        if position < current_position:
+            connection.execute(
+                """
+                UPDATE mindmap_categories
+                SET position = position + 1
+                WHERE position >= ?
+                  AND position < ?
+                """,
+                (position, current_position),
+            )
+        else:
+            connection.execute(
+                """
+                UPDATE mindmap_categories
+                SET position = position - 1
+                WHERE position > ?
+                  AND position <= ?
+                """,
+                (current_position, position),
+            )
+
+        connection.execute(
+            """
+            UPDATE mindmap_categories
+            SET position = ?
+            WHERE id = ?
+            """,
+            (position, category_id),
+        )
+
+    return True
 
 
 def update_mindmap_category(
@@ -598,6 +713,7 @@ def get_mindmaps():
                 ON c.id = m.category_id
             JOIN mindmap_documents AS d
                 ON d.mindmap_id = m.id
+            WHERE m.status = 'active'
             ORDER BY m.id
             """
         ).fetchall()
