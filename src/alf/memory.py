@@ -307,7 +307,8 @@ def create_mindmap_category(name: str):
 
 def get_mindmap_categories():
     """
-    Return all mind map categories ordered by ID.
+      Return all mind map categories with Uncategorised first,
+      followed by alphabetical order.
 
     Returns:
         A list of category dictionaries.
@@ -316,9 +317,11 @@ def get_mindmap_categories():
     with get_connection() as connection:
         rows = connection.execute(
             """
-            SELECT id, name, status, created, modified
-            FROM mindmap_categories
-            ORDER BY id
+              SELECT id, name, status, created, modified
+              FROM mindmap_categories
+              ORDER BY
+                  CASE WHEN name = 'Uncategorised' THEN 0 ELSE 1 END,
+                  name
             """
         ).fetchall()
 
@@ -686,6 +689,45 @@ def update_mindmap(
         )
 
     return True
+
+
+def move_mindmap(mindmap_id: int, category: str):
+    """
+    Move a mind map to a different category.
+
+    Returns:
+        ``True`` when the mind map is moved, otherwise ``False`` when
+        the mind map or category does not exist.
+    """
+
+    with get_connection() as connection:
+        category_row = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE name = ?
+            """,
+            (category,),
+        ).fetchone()
+
+        if category_row is None:
+            return False
+
+        result = connection.execute(
+            """
+            UPDATE mindmaps
+            SET category_id = ?,
+                modified = ?
+            WHERE id = ?
+            """,
+            (
+                category_row[0],
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                mindmap_id,
+            ),
+        )
+
+    return result.rowcount > 0
 
 
 def archive_mindmap(mindmap_id: int):

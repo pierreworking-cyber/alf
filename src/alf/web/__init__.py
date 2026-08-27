@@ -11,7 +11,9 @@ from ..calc import CalculationError, calculate
 from ..command_catalogue import commands
 from ..memory import (
     archive_memory,
+    archive_mindmap,
     create_mindmap,
+    create_mindmap_category,
     delete_memory,
     delete_mindmap,
     find_related_memory_candidates,
@@ -19,6 +21,7 @@ from ..memory import (
     get_mindmap,
     get_mindmap_categories,
     get_mindmaps,
+    move_mindmap,
     relate_memory,
     remember,
     restore_memory,
@@ -34,8 +37,6 @@ app = Flask(__name__)
 def home():
     """Display the ALF web interface landing page."""
     return render_template("home.html")
-
-
 @app.route("/question", methods=["GET", "POST"])
 def question():
     """Display the ALF Question workspace and process questions."""
@@ -330,6 +331,24 @@ def mindmaps():
         categories=categories,
     )
 
+@app.post("/mindmap-categories")
+def create_mindmap_category_web():
+    """Create a mind map category from the web interface."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No category data supplied"}), 400
+
+    name = data.get("name", "").strip()
+
+    if not name:
+        return jsonify({"error": "Category name is required"}), 400
+
+    category_id = create_mindmap_category(name)
+
+    return jsonify({"id": category_id, "name": name})
+
 @app.post("/mindmaps/save")
 def save_mindmap_web():
     """Save a mind map from the web interface."""
@@ -364,6 +383,37 @@ def save_mindmap_web():
 
     return jsonify({"id": mindmap_id})
 
+@app.post("/mindmaps/<int:mindmap_id>/archive")
+def archive_mindmap_web(mindmap_id):
+    """Archive a saved mind map from the web interface."""
+
+    archived = archive_mindmap(mindmap_id)
+
+    if not archived:
+        return jsonify({"error": "Mind map not found"}), 404
+
+    return jsonify({"archived": True})
+
+@app.post("/mindmaps/<int:mindmap_id>/move")
+def move_mindmap_web(mindmap_id):
+    """Move a saved mind map to a different category."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No category supplied"}), 400
+
+    category = data.get("category", "").strip()
+
+    if not category:
+        return jsonify({"error": "No category supplied"}), 400
+
+    moved = move_mindmap(mindmap_id, category)
+
+    if not moved:
+        return jsonify({"error": "Mind map or category not found"}), 404
+
+    return jsonify({"moved": True})
 
 @app.get("/mindmaps/<int:mindmap_id>")
 def get_mindmap_web(mindmap_id):
@@ -376,7 +426,6 @@ def get_mindmap_web(mindmap_id):
 
     return jsonify(mindmap)
 
-
 @app.delete("/mindmaps/<int:mindmap_id>")
 def delete_mindmap_web(mindmap_id):
     """Delete a saved mind map from the web interface."""
@@ -387,7 +436,6 @@ def delete_mindmap_web(mindmap_id):
         return jsonify({"error": "Mind map not found"}), 404
 
     return jsonify({"deleted": True})
-
 
 def main() -> None:
     """Start ALF's web interface."""

@@ -275,8 +275,8 @@ def test_get_mindmap_categories(database):
     categories = memory.get_mindmap_categories()
 
     assert [category["name"] for category in categories] == [
-        "House",
         "Events",
+        "House",
     ]
 
 

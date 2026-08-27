@@ -148,6 +148,31 @@
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
+
+              .mindmap-category.collapsed h3 {
+              margin-bottom: 0;
+          }
+
+          .mindmap-category.collapsed .mindmap-list {
+              display: none;
+          }
+
+          .mindmap-category h3 {
+              cursor: pointer;
+              user-select: none;
+          }
+
+          .mindmap-category h3::before {
+              content: "▾";
+              display: inline-block;
+              width: 1em;
+              transition: transform 0.15s ease;
+          }
+
+          .mindmap-category.collapsed h3::before {
+              transform: rotate(-90deg);
+          }
+
         .mindmap-list {
             display: flex;
             flex-direction: column;
@@ -166,6 +191,27 @@
             text-align: left;
             cursor: pointer;
         }
+
+          .mindmap-archive {
+              margin-top: 12px;
+          }
+
+          #mindmap-archive-target {
+              padding: 9px 11px;
+              border: 1px dashed #46596b;
+              border-radius: 10px;
+              color: #aebdca;
+              font-size: 0.9rem;
+              text-align: left;
+              box-shadow: inset 0 4px 5px rgba(10, 18, 28, 0.28);
+          }
+
+          #mindmap-archive-target.drag-over {
+              background: #34495a;
+              border-color: #aebdca;
+              color: #edf1f3;
+          }
+
 
         .mindmap-library-actions {
             margin-top: 28px;
@@ -191,28 +237,28 @@
             border-color: #b9cdd1;
             color: #202b38;
         }
+          .mindmap-editor-actions button {
+              width: 100%;
+              padding: 9px 11px;
+              border: 1px solid #88a8ba;
+              border-radius: 10px;
+              background: transparent;
+              color: #aebdca;
+              font: inherit;
+              font-size: 0.9rem;
+              text-align: left;
+              cursor: pointer;
+          }
 
+          .mindmap-editor-actions button:hover {
+              background: #34495a;
+              border-color: #b9cdd1;
+              color: #edf1f3;
+          }
         .mindmap-editor-actions {
-            display: flex;
-            justify-content: flex-end;
-            padding: 18px 24px 0;
-        }
-
-        .mindmap-editor-actions button {
-            padding: 9px 16px;
-            border: 1px solid #46596b;
-            border-radius: 10px;
+            margin-top: 8px;
             background: #34495a;
-            color: #edf1f3;
-            font: inherit;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        .mindmap-editor-actions button:hover {
-            background: #88a8ba;
-            border-color: #b9cdd1;
-            color: #202b38;
+            border:thick;
         }
 
         .mindmap-item:hover {
@@ -300,11 +346,22 @@
                         </div>
                     {% endfor %}
 
-                    <div class="mindmap-library-actions">
-                        <button type="button" id="new-mindmap">
-                            ＋ New map
-                        </button>
-                    </div>
+                        <div class="mindmap-archive">
+                          <div id="mindmap-archive-target">
+                              Archive
+                          </div>
+                      </div>
+
+                      <div class="mindmap-library-actions">
+                          <button type="button" id="new-mindmap">
+                              ＋ New map
+                          </button>
+                          <div class="mindmap-editor-actions">
+                              <button type="button" id="save-mindmap">
+                                  Save map
+                              </button>
+                          </div>
+                      </div>
                 </aside>
 
                 <section class="mindmap-editor">
@@ -314,11 +371,6 @@
 
                     <div id="jsmind-container"></div>
 
-                    <div class="mindmap-editor-actions">
-                        <button type="button" id="save-mindmap">
-                            Save map
-                        </button>
-                    </div>
                 </section>
 
         </section>
@@ -439,6 +491,108 @@
                       }
                     }
                 });
+
+              document
+                  .querySelectorAll(".mindmap-item")
+                  .forEach(function (item) {
+                      item.draggable = true;
+
+                      item.addEventListener("dragstart", function (event) {
+                          event.dataTransfer.setData(
+                              "text/plain",
+                              item.dataset.mindmapId
+                          );
+                      });
+                  });
+
+              document
+                  .querySelectorAll(".mindmap-category")
+                  .forEach(function (category) {
+                      category.addEventListener("dragover", function (event) {
+                          event.preventDefault();
+                      });
+
+                      category.addEventListener("drop", async function (event) {
+                          event.preventDefault();
+
+                          const mindmapId =
+                              event.dataTransfer.getData("text/plain");
+
+                          const categoryName = category
+                              .querySelector("h3")
+                              .textContent.trim();
+
+                          const response = await fetch(
+                              `/mindmaps/${mindmapId}/move`,
+                              {
+                                  method: "POST",
+                                  headers: {
+                                      "Content-Type": "application/json"
+                                  },
+                                  body: JSON.stringify({
+                                      category: categoryName
+                                  })
+                              }
+                          );
+
+                          if (!response.ok) {
+                              return;
+                          }
+
+                          const mapItem = document.querySelector(
+                              `.mindmap-item[data-mindmap-id="${mindmapId}"]`
+                          );
+
+                          if (!mapItem) {
+                              return;
+                          }
+
+                          category
+                              .querySelector(".mindmap-list")
+                              .append(mapItem);
+                      });
+                  });
+
+              const archiveTarget = document.querySelector(
+                  "#mindmap-archive-target"
+              );
+
+              archiveTarget.addEventListener("dragover", function (event) {
+                  event.preventDefault();
+                  archiveTarget.classList.add("drag-over");
+              });
+
+              archiveTarget.addEventListener("dragleave", function () {
+                  archiveTarget.classList.remove("drag-over");
+              });
+
+              archiveTarget.addEventListener("drop", async function (event) {
+                  event.preventDefault();
+                  archiveTarget.classList.remove("drag-over");
+
+                  const mindmapId =
+                      event.dataTransfer.getData("text/plain");
+
+                  const response = await fetch(
+                      `/mindmaps/${mindmapId}/archive`,
+                      {
+                          method: "POST"
+                      }
+                  );
+
+                  if (!response.ok) {
+                      return;
+                  }
+
+                  const mapItem = document.querySelector(
+                      `.mindmap-item[data-mindmap-id="${mindmapId}"]`
+                  );
+
+                  if (mapItem) {
+                      mapItem.remove();
+                  }
+              });
+
 
             document
                 .querySelectorAll(".mindmap-item")
