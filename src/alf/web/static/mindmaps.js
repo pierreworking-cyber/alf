@@ -1,6 +1,42 @@
 let currentMindmapId = null;
 let currentMindmapCategory = "Uncategorised";
 
+function showNotification(message, isError = false) {
+    const notification = document.querySelector("#save-notification");
+
+    if (!notification) {
+        return;
+    }
+
+    clearTimeout(showNotification.timeout);
+
+    notification.textContent = message;
+    notification.classList.toggle("error", isError);
+
+    notification.classList.remove("show");
+    void notification.offsetWidth;
+    notification.classList.add("show");
+
+    if (!isError) {
+        showNotification.timeout = setTimeout(function () {
+            notification.classList.remove("show");
+        }, 3000);
+    }
+}
+
+async function readErrorMessage(response, fallback) {
+    try {
+        const data = await response.json();
+
+        if (data && typeof data.error === "string" && data.error) {
+            return data.error;
+        }
+    } catch (error) {
+    }
+
+    return fallback;
+}
+
 const options = {
     container: "jsmind-container",
     editable: true,
@@ -181,20 +217,36 @@ document
             return;
         }
 
-        const response = await fetch(
-            "/mindmap-categories",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    name: trimmedName
-                })
-            }
-        );
+        let response;
+
+        try {
+            response = await fetch(
+                "/mindmap-categories",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        name: trimmedName
+                    })
+                }
+            );
+        } catch (error) {
+            showNotification("Create failed: network error.", true);
+            return;
+        }
 
         if (!response.ok) {
+            const serverError = await readErrorMessage(
+                response,
+                "The category could not be created."
+            );
+
+            showNotification(
+                `Create failed: ${serverError}`,
+                true
+            );
             return;
         }
 
@@ -217,20 +269,34 @@ document
             : "New Mindmap";
 
         const isNewMindmap = currentMindmapId === null;
-        const response = await fetch("/mindmaps/save", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                id: currentMindmapId,
-                category: currentMindmapCategory,
-                name: name,
-                content: JSON.stringify(documentData)
-            })
-        });
+
+        let response;
+
+        try {
+            response = await fetch("/mindmaps/save", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    id: currentMindmapId,
+                    category: currentMindmapCategory,
+                    name: name,
+                    content: JSON.stringify(documentData)
+                })
+            });
+        } catch (error) {
+            showNotification("Save failed: network error.", true);
+            return;
+        }
 
         if (!response.ok) {
+            const serverError = await readErrorMessage(
+                response,
+                "The map could not be saved."
+            );
+
+            showNotification(`Save failed: ${serverError}`, true);
             return;
         }
 
@@ -238,15 +304,7 @@ document
 
         currentMindmapId = result.id;
 
-        const saveNotification = document.querySelector("#save-notification");
-
-        saveNotification.classList.remove("show");
-        void saveNotification.offsetWidth;
-        saveNotification.classList.add("show");
-
-        setTimeout(function () {
-            saveNotification.classList.remove("show");
-        }, 3000);
+        showNotification("Map saved");
 
         if (isNewMindmap) {
             const mapItem = document.createElement("button");
@@ -262,6 +320,8 @@ document
                     mapItem.dataset.mindmapId
                 );
             });
+
+            bindMindmapItemClick(mapItem);
 
             const mapName = document.createElement("span");
             mapName.textContent = name;
@@ -393,20 +453,39 @@ document
                             }
                         }
 
-                    const response = await fetch(
-                        `/mindmap-categories/${categoryId}/move`,
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                position: position
-                            })
-                        }
-                    );
+                    let response;
+
+                    try {
+                        response = await fetch(
+                            `/mindmap-categories/${categoryId}/move`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    position: position
+                                })
+                            }
+                        );
+                    } catch (error) {
+                        showNotification(
+                            "Move failed: network error.",
+                            true
+                        );
+                        return;
+                    }
 
                     if (!response.ok) {
+                        const serverError = await readErrorMessage(
+                            response,
+                            "The category could not be moved."
+                        );
+
+                        showNotification(
+                            `Move failed: ${serverError}`,
+                            true
+                        );
                         return;
                     }
 
@@ -442,20 +521,39 @@ document
                     .querySelector("h3")
                     .textContent.trim();
 
-                const response = await fetch(
-                    `/mindmaps/${mindmapId}/move`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            category: categoryName
-                        })
-                    }
-                );
+                let response;
+
+                try {
+                    response = await fetch(
+                        `/mindmaps/${mindmapId}/move`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                category: categoryName
+                            })
+                        }
+                    );
+                } catch (error) {
+                    showNotification(
+                        "Move failed: network error.",
+                        true
+                    );
+                    return;
+                }
 
                 if (!response.ok) {
+                    const serverError = await readErrorMessage(
+                        response,
+                        "The map could not be moved."
+                    );
+
+                    showNotification(
+                        `Move failed: ${serverError}`,
+                        true
+                    );
                     return;
                 }
 
@@ -502,14 +600,30 @@ deleteTarget.addEventListener("drop", async function (event) {
         return;
     }
 
-    const response = await fetch(
-        `/mindmaps/${mindmapId}/delete`,
-        {
-            method: "POST"
-        }
-    );
+    let response;
+
+    try {
+        response = await fetch(
+            `/mindmaps/${mindmapId}/delete`,
+            {
+                method: "POST"
+            }
+        );
+    } catch (error) {
+        showNotification("Delete failed: network error.", true);
+        return;
+    }
 
     if (!response.ok) {
+        const serverError = await readErrorMessage(
+            response,
+            "The map could not be deleted."
+        );
+
+        showNotification(
+            `Delete failed: ${serverError}`,
+            true
+        );
         return;
     }
 
@@ -603,21 +717,39 @@ document
                         return;
                     }
 
-                    const response = await fetch(
-                        `/mindmap-categories/${categoryId}`,
-                        {
-                            method: "PATCH",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                name: trimmedName,
-                                status: "active"
-                            })
-                        }
-                    );
+                    let response;
+
+                    try {
+                        response = await fetch(
+                            `/mindmap-categories/${categoryId}`,
+                            {
+                                method: "PATCH",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    name: trimmedName
+                                })
+                            }
+                        );
+                    } catch (error) {
+                        showNotification(
+                            "Rename failed: network error.",
+                            true
+                        );
+                        return;
+                    }
 
                     if (!response.ok) {
+                        const serverError = await readErrorMessage(
+                            response,
+                            "The category could not be renamed."
+                        );
+
+                        showNotification(
+                            `Rename failed: ${serverError}`,
+                            true
+                        );
                         return;
                     }
 
@@ -630,14 +762,33 @@ document
                 .addEventListener("click", async function () {
                     const categoryId = category.dataset.categoryId;
 
-                    const response = await fetch(
-                        `/mindmap-categories/${categoryId}`,
-                        {
-                            method: "DELETE"
-                        }
-                    );
+                    let response;
+
+                    try {
+                        response = await fetch(
+                            `/mindmap-categories/${categoryId}`,
+                            {
+                                method: "DELETE"
+                            }
+                        );
+                    } catch (error) {
+                        showNotification(
+                            "Delete failed: network error.",
+                            true
+                        );
+                        return;
+                    }
 
                     if (!response.ok) {
+                        const serverError = await readErrorMessage(
+                            response,
+                            "The category could not be deleted."
+                        );
+
+                        showNotification(
+                            `Delete failed: ${serverError}`,
+                            true
+                        );
                         return;
                     }
 
@@ -648,33 +799,55 @@ document
         });
     });
 
+async function openMindmapItem(item) {
+    const mindmapId = item.dataset.mindmapId;
+
+    let response;
+
+    try {
+        response = await fetch(
+            `/mindmaps/${mindmapId}`
+        );
+    } catch (error) {
+        showNotification("Open failed: network error.", true);
+        return;
+    }
+
+    if (!response.ok) {
+        const serverError = await readErrorMessage(
+            response,
+            "The map could not be opened."
+        );
+
+        showNotification(
+            `Open failed: ${serverError}`,
+            true
+        );
+        return;
+    }
+
+    const savedMindmap = await response.json();
+    const savedContent = JSON.parse(
+        savedMindmap.content
+    );
+
+    currentMindmapId = savedMindmap.id;
+    currentMindmapCategory = savedMindmap.category;
+
+    document.querySelector("#mindmap-empty").style.display =
+        "none";
+
+    mindmap.show(savedContent);
+    mindmap.select_node("root");
+    mindmap.view.e_panel.focus();
+}
+
+function bindMindmapItemClick(item) {
+    item.addEventListener("click", function () {
+        openMindmapItem(item);
+    });
+}
+
 document
     .querySelectorAll(".mindmap-item")
-    .forEach(function (item) {
-        item.addEventListener("click", async function () {
-            const mindmapId = item.dataset.mindmapId;
-
-            const response = await fetch(
-                `/mindmaps/${mindmapId}`
-            );
-
-            if (!response.ok) {
-                return;
-            }
-
-            const savedMindmap = await response.json();
-            const savedContent = JSON.parse(
-                savedMindmap.content
-            );
-
-            currentMindmapId = savedMindmap.id;
-            currentMindmapCategory = savedMindmap.category;
-
-            document.querySelector("#mindmap-empty").style.display =
-                "none";
-
-            mindmap.show(savedContent);
-            mindmap.select_node("root");
-            mindmap.view.e_panel.focus();
-        });
-    });
+    .forEach(bindMindmapItemClick);

@@ -300,12 +300,12 @@ def get_connection():
     return connection
 
 
-def create_mindmap_category(name: str):
+def _create_uncategorised(connection) -> int:
     """
-    Create a new mind map category.
+    Insert the reserved ``Uncategorised`` category at position 0.
 
-    Args:
-        name: The category name.
+    Existing categories are shifted up by one position so that
+    ``Uncategorised`` claims position 0 regardless of when it is created.
 
     Returns:
         The ID of the newly created category.
@@ -313,7 +313,63 @@ def create_mindmap_category(name: str):
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    connection.execute(
+        """
+        UPDATE mindmap_categories
+        SET position = position + 1
+        WHERE position >= 0
+        """
+    )
+
+    cursor = connection.execute(
+        """
+        INSERT INTO mindmap_categories (
+            name,
+            status,
+            created,
+            modified,
+            position
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        ("Uncategorised", "active", now, now, 0),
+    )
+
+    return cursor.lastrowid
+
+
+def create_mindmap_category(name: str):
+    """
+    Create a new mind map category.
+
+    The reserved ``Uncategorised`` category is always placed at position 0.
+
+    Args:
+        name: The category name.
+
+    Returns:
+        The ID of the newly created category, or ``"duplicate"`` when a
+        category with the given name already exists.
+    """
+
     with get_connection() as connection:
+        duplicate = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE name = ?
+            """,
+            (name,),
+        ).fetchone()
+
+        if duplicate is not None:
+            return "duplicate"
+
+        if name == "Uncategorised":
+            return _create_uncategorised(connection)
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         cursor = connection.cursor()
 
         position = cursor.execute(
@@ -456,14 +512,17 @@ def move_mindmap_category(category_id: int, position: int):
 def update_mindmap_category(
     category_id: int,
     name: str,
-    status: str,
 ):
     """
-    Update an existing mind map category.
+    Rename an existing mind map category.
+
+    Categories have no status lifecycle; they are either present or
+    deleted. Their status is always ``"active"``.
 
     Returns:
-        ``True`` when the category is updated, ``False`` when no category
-        with the given id exists, and ``"duplicate"`` when ``name`` is
+        ``True`` when the category is renamed, ``False`` when no category
+        with the given id exists or when the reserved ``"Uncategorised"``
+        category itself is renamed, and ``"duplicate"`` when ``name`` is
         already used by another category or is the reserved
         ``"Uncategorised"`` name.
     """
@@ -471,7 +530,7 @@ def update_mindmap_category(
     with get_connection() as connection:
         category = connection.execute(
             """
-            SELECT id
+            SELECT id, name
             FROM mindmap_categories
             WHERE id = ?
             """,
@@ -479,6 +538,9 @@ def update_mindmap_category(
         ).fetchone()
 
         if category is None:
+            return False
+
+        if category[1] == "Uncategorised":
             return False
 
         if name == "Uncategorised":
@@ -502,13 +564,11 @@ def update_mindmap_category(
             """
             UPDATE mindmap_categories
             SET name = ?,
-                status = ?,
                 modified = ?
             WHERE id = ?
             """,
             (
                 name,
-                status,
                 modified,
                 category_id,
             ),
@@ -522,7 +582,9 @@ def delete_mindmap_category(category_id: int):
     Delete an existing mind map category.
 
     Mind maps belonging to the category are moved to
-    ``Uncategorised`` before the category is deleted.
+    ``Uncategorised`` before the category is deleted. The remaining
+    categories are then renumbered sequentially from position 0 in
+    their existing order.
 
     Returns:
         ``True`` when the category is deleted, otherwise ``False``.
@@ -550,29 +612,7 @@ def delete_mindmap_category(category_id: int):
         ).fetchone()
 
         if uncategorised is None:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            connection.execute(
-                """
-                INSERT INTO mindmap_categories (
-                    name,
-                    status,
-                    created,
-                    modified,
-                    position
-                )
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                ("Uncategorised", "active", now, now, 0),
-            )
-
-            uncategorised = connection.execute(
-                """
-                SELECT id
-                FROM mindmap_categories
-                WHERE name = 'Uncategorised'
-                """,
-            ).fetchone()
+            uncategorised = (_create_uncategorised(connection),)
 
         if category[1] == "Uncategorised":
             return False
@@ -597,44 +637,23 @@ def delete_mindmap_category(category_id: int):
             (category_id,),
         )
 
-    return True
-
-
-def archive_mindmap_category(category_id: int):
-    """
-    Archive an existing mind map category.
-
-    Returns:
-        ``True`` when the category is archived, otherwise ``False``.
-    """
-
-    with get_connection() as connection:
-        category = connection.execute(
+        remaining = connection.execute(
             """
-            SELECT id, name
+            SELECT id
             FROM mindmap_categories
-            WHERE id = ?
-            """,
-            (category_id,),
-        ).fetchone()
-
-        if category is None:
-            return False
-
-        if category[1] == "Uncategorised":
-            return False
-
-        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        connection.execute(
+            ORDER BY position
             """
-            UPDATE mindmap_categories
-            SET status = 'archived',
-                modified = ?
-            WHERE id = ?
-            """,
-            (modified, category_id),
-        )
+        ).fetchall()
+
+        for new_position, row in enumerate(remaining):
+            connection.execute(
+                """
+                UPDATE mindmap_categories
+                SET position = ?
+                WHERE id = ?
+                """,
+                (new_position, row[0]),
+            )
 
     return True
 
@@ -662,24 +681,36 @@ def create_mindmap(category: str, name: str, content: str):
         ).fetchone()
 
         if category_row is None:
-            cursor.execute(
-                """
-                INSERT INTO mindmap_categories (
-                    name,
-                    status,
-                    created,
-                    modified
+            if category == "Uncategorised":
+                category_id = _create_uncategorised(connection)
+            else:
+                position = cursor.execute(
+                    """
+                    SELECT COALESCE(MAX(position), -1) + 1
+                    FROM mindmap_categories
+                    """
+                ).fetchone()[0]
+
+                cursor.execute(
+                    """
+                    INSERT INTO mindmap_categories (
+                        name,
+                        status,
+                        created,
+                        modified,
+                        position
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        category,
+                        "active",
+                        now,
+                        now,
+                        position,
+                    ),
                 )
-                VALUES (?, ?, ?, ?)
-                """,
-                (
-                    category,
-                    "active",
-                    now,
-                    now,
-                ),
-            )
-            category_id = cursor.lastrowid
+                category_id = cursor.lastrowid
         else:
             category_id = category_row[0]
 

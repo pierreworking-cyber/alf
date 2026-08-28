@@ -299,6 +299,10 @@ h1 {
     opacity: 1;
 }
 
+#save-notification.error {
+    background: #7f1d1d;
+}
+
 .mindmap-editor-actions button {
     width: 100%;
     padding: 9px 11px;

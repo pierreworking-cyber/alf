@@ -350,11 +350,16 @@ def create_mindmap_category_web():
 
     category_id = create_mindmap_category(name)
 
+    if category_id == "duplicate":
+        return jsonify(
+            {"error": "Mind map category name is already in use"}
+        ), 409
+
     return jsonify({"id": category_id, "name": name})
 
 @app.patch("/mindmap-categories/<int:category_id>")
 def update_mindmap_category_web(category_id):
-    """Update a mind map category."""
+    """Rename a mind map category."""
 
     data = request.get_json()
 
@@ -367,18 +372,13 @@ def update_mindmap_category_web(category_id):
         return jsonify({"error": "No category data supplied"}), 400
 
     name = data.get("name", "").strip()
-    status = data.get("status", "active")
 
     if not name:
         return jsonify({"error": "Category name is required"}), 400
 
-    if status not in {"active", "archived"}:
-        return jsonify({"error": "Invalid category status"}), 400
-
     updated = update_mindmap_category(
         category_id,
         name,
-        status,
     )
 
     if updated == "duplicate":
@@ -422,6 +422,9 @@ def save_mindmap_web():
     content = data.get("content", "")
 
     if mindmap_id:
+        if get_mindmap(int(mindmap_id)) is None:
+            return jsonify({"error": "Mind map not found"}), 404
+
         updated = update_mindmap(
             int(mindmap_id),
             category,
@@ -431,7 +434,9 @@ def save_mindmap_web():
         )
 
         if not updated:
-            return jsonify({"error": "Mind map not found"}), 404
+            return jsonify(
+                {"error": "Mind map category not found"}
+            ), 404
     else:
         mindmap_id = create_mindmap(
             category,
