@@ -46,6 +46,41 @@ document
     });
 
 document
+    .querySelector("#new-mindmap-category")
+    .addEventListener("click", async function () {
+        const name = window.prompt("New category:");
+
+        if (name === null) {
+            return;
+        }
+
+        const trimmedName = name.trim();
+
+        if (!trimmedName) {
+            return;
+        }
+
+        const response = await fetch(
+            "/mindmap-categories",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: trimmedName
+                })
+            }
+        );
+
+        if (!response.ok) {
+            return;
+        }
+
+        window.location.reload();
+    });
+
+document
     .querySelector("#save-mindmap")
     .addEventListener("click", async function () {
         const documentData = mindmap.get_data("node_array");

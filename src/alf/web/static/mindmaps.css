@@ -1,5 +1,6 @@
 main {
-    width: 100%;
+    width: min(1100px, 90%);
+    margin: 0 auto;
     padding: 55px 0 70px;
 }
 
@@ -271,28 +272,31 @@ h1 {
     border-color: #b9cdd1;
     color: #202b38;
 }
-    .mindmap-editor-actions button {
-        width: 100%;
-        padding: 9px 11px;
-        border: 1px solid #88a8ba;
-        border-radius: 10px;
-        background: transparent;
-        color: #aebdca;
-        font: inherit;
-        font-size: 0.9rem;
-        text-align: left;
-        cursor: pointer;
-    }
-
-    .mindmap-editor-actions button:hover {
-        background: #34495a;
-        border-color: #b9cdd1;
-        color: #edf1f3;
-    }
 .mindmap-editor-actions {
     margin-top: 8px;
+}
+
+#save-mindmap {
+    margin-top: 16px;
+}
+
+.mindmap-editor-actions button {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid #46596b;
+    border-radius: 10px;
     background: #34495a;
-    border:thick;
+    color: #edf1f3;
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mindmap-editor-actions button:hover {
+    background: #88a8ba;
+    border-color: #b9cdd1;
+    color: #202b38;
 }
 
 .mindmap-item:hover {
