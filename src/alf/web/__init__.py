@@ -381,6 +381,11 @@ def update_mindmap_category_web(category_id):
         status,
     )
 
+    if updated == "duplicate":
+        return jsonify(
+            {"error": "Mind map category name is already in use"}
+        ), 409
+
     if not updated:
         return jsonify({"error": "Mind map category not found"}), 404
 
@@ -436,8 +441,8 @@ def save_mindmap_web():
 
     return jsonify({"id": mindmap_id})
 
-@app.post("/mindmaps/<int:mindmap_id>/archive")
-def archive_mindmap_web(mindmap_id):
+@app.post("/mindmaps/<int:mindmap_id>/delete")
+def delete_mindmap_web(mindmap_id):
     """Delete a saved mind map from the web interface."""
 
     deleted = delete_mindmap(mindmap_id)
@@ -499,17 +504,6 @@ def get_mindmap_web(mindmap_id):
         return jsonify({"error": "Mind map not found"}), 404
 
     return jsonify(mindmap)
-
-@app.delete("/mindmaps/<int:mindmap_id>")
-def delete_mindmap_web(mindmap_id):
-    """Delete a saved mind map from the web interface."""
-
-    deleted = delete_mindmap(mindmap_id)
-
-    if not deleted:
-        return jsonify({"error": "Mind map not found"}), 404
-
-    return jsonify({"deleted": True})
 
 def _is_uncategorised_category(category_id):
     """Return whether a category is the permanent Uncategorised category."""

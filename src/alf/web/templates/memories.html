@@ -174,24 +174,6 @@
             border-color: #b9cdd1;
             box-shadow: 0 0 0 3px rgba(185, 205, 209, 0.25);
         }
-        #related-memory-editor {
-            display: block;
-            width: 100%;
-            min-height: 50px;
-            padding: 14px 18px;
-            border: 1px solid #46596b;
-            border-radius: 16px;
-            background: #253341;
-            color: #edf1f3;
-            font: inherit;
-            line-height: 1.5;
-            outline: none;
-        }
-
-        #related-memory-editor:focus {
-            border-color: #b9cdd1;
-            box-shadow: 0 0 0 3px rgba(185, 205, 209, 0.25);
-        }
           #related-memory-ids {
             display: block;
             width: 100%;
@@ -378,7 +360,7 @@
                             {% if selected_memory.status == "active" %}
                             <form
                                 method="post"
-                                action="{% if selected_memory.status == 'archived' %}{{ url_for('restore_memory_web') }}{% else %}{{ url_for('archive_memory_web') }}{% endif %}"
+                                action="{{ url_for('archive_memory_web') }}"
                             >
                                 <input
                                     type="hidden"

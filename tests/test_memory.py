@@ -196,6 +196,44 @@ def test_database_migrates_mindmaps_from_version_four(database):
         ),
     )
 
+    connection.execute(
+        """
+        INSERT INTO mindmaps (
+            category,
+            project,
+            status,
+            created,
+            modified
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            "House",
+            "Home",
+            "active",
+            "2026-08-25 12:00:00",
+            "2026-08-25 13:00:00",
+        ),
+    )
+
+    second_mindmap_id = connection.execute(
+        "SELECT last_insert_rowid()"
+    ).fetchone()[0]
+
+    connection.execute(
+        """
+        INSERT INTO mindmap_documents (
+            mindmap_id,
+            content
+        )
+        VALUES (?, ?)
+        """,
+        (
+            second_mindmap_id,
+            '{"meta":{"name":"Home"},"format":"node_array","data":[]}',
+        ),
+    )
+
     connection.execute("PRAGMA user_version = 4")
     connection.commit()
     connection.close()
@@ -232,6 +270,21 @@ def test_database_migrates_mindmaps_from_version_four(database):
             (mindmap_id,),
         ).fetchone()
 
+        columns = [
+            row[1]
+            for row in connection.execute(
+                "PRAGMA table_info(mindmap_categories)"
+            ).fetchall()
+        ]
+
+        positions = connection.execute(
+            """
+            SELECT name, position
+            FROM mindmap_categories
+            ORDER BY position
+            """
+        ).fetchall()
+
     assert version == 6
     assert category is not None
     assert mindmap[0] == category[0]
@@ -239,6 +292,16 @@ def test_database_migrates_mindmaps_from_version_four(database):
     assert document[0] == (
         '{"meta":{"name":"Garden"},"format":"node_array","data":[]}'
     )
+    assert "position" in columns
+    assert positions == [("Uncategorised", 0), ("House", 1)]
+
+    categories = memory.get_mindmap_categories()
+    assert [category["name"] for category in categories] == [
+        "Uncategorised",
+        "House",
+    ]
+    assert categories[0]["position"] == 0
+    assert categories[1]["position"] == 1
 
 
 def test_database_schema_version(database):
@@ -429,7 +492,15 @@ def test_get_mindmaps_excludes_archived(database):
 
     assert len(memory.get_mindmaps()) == 1
 
-    assert memory.archive_mindmap(mindmap_id) is True
+    with memory.get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE mindmaps
+            SET status = 'archived'
+            WHERE id = ?
+            """,
+            (mindmap_id,),
+        )
 
     assert memory.get_mindmaps() == []
 
@@ -465,10 +536,35 @@ def test_update_missing_mindmap_category(database):
     assert result is False
 
 
-def test_archive_mindmap_category(database):
+def test_update_mindmap_category_duplicate_name_is_rejected(database):
+    memory.create_mindmap_category("House")
+    memory.create_mindmap_category("Events")
+
+    result = memory.update_mindmap_category(
+        2,
+        name="House",
+        status="active",
+    )
+
+    assert result == "duplicate"
+
+
+def test_update_mindmap_category_to_reserved_name_is_rejected(database):
     memory.create_mindmap_category("House")
 
-    result = memory.archive_mindmap_category(1)
+    result = memory.update_mindmap_category(
+        1,
+        name="Uncategorised",
+        status="active",
+    )
+
+    assert result == "duplicate"
+
+
+def test_archive_mindmap_category(database):
+    category_id = memory.create_mindmap_category("House")
+
+    result = memory.archive_mindmap_category(category_id)
 
     assert result is True
     assert memory.get_mindmap_categories()[0]["status"] == "archived"
@@ -478,20 +574,28 @@ def test_archive_missing_mindmap_category(database):
     assert memory.archive_mindmap_category(999) is False
 
 
-def test_delete_mindmap_category(database):
-    memory.create_mindmap_category("House")
+def test_archive_uncategorised_category_is_rejected(database):
+    uncategorised = memory.create_mindmap_category("Uncategorised")
 
-    result = memory.delete_mindmap_category(1)
+    assert memory.archive_mindmap_category(uncategorised) is False
+
+
+def test_delete_mindmap_category(database):
+    category_id = memory.create_mindmap_category("House")
+
+    result = memory.delete_mindmap_category(category_id)
 
     assert result is True
-    assert memory.get_mindmap_categories() == []
+    assert [category["name"] for category in memory.get_mindmap_categories()] == [
+        "Uncategorised"
+    ]
 
 
 def test_delete_missing_mindmap_category(database):
     assert memory.delete_mindmap_category(999) is False
 
 
-def test_delete_mindmap_category_deletes_maps(database):
+def test_delete_mindmap_category_moves_maps_to_uncategorised(database):
     category_id = memory.create_mindmap_category("Birthday")
     mindmap_id = memory.create_mindmap(
         "Birthday",
@@ -502,8 +606,15 @@ def test_delete_mindmap_category_deletes_maps(database):
     result = memory.delete_mindmap_category(category_id)
 
     assert result is True
-    assert memory.get_mindmaps() == []
-    assert memory.get_mindmap(mindmap_id) is None
+    assert "Birthday" not in [
+        category["name"]
+        for category in memory.get_mindmap_categories()
+    ]
+
+    moved = memory.get_mindmap(mindmap_id)
+
+    assert moved is not None
+    assert moved["category"] == "Uncategorised"
 
 
 def test_connection_persists_data(database):
@@ -595,19 +706,6 @@ def test_update_missing_mindmap(database):
     assert result is False
 
 
-def test_archive_mindmap(database):
-    memory.create_mindmap(
-        "House",
-        "Living room redecorate",
-        "<map><node>Living room</node></map>",
-    )
-
-    result = memory.archive_mindmap(1)
-
-    assert result is True
-    assert memory.get_mindmap(1)["status"] == "archived"
-
-
 def test_delete_mindmap(database):
     memory.create_mindmap(
         "House",
@@ -634,10 +732,6 @@ def test_delete_mindmap(database):
 
 def test_delete_missing_mindmap(database):
     assert memory.delete_mindmap(999) is False
-
-
-def test_archive_missing_mindmap(database):
-    assert memory.archive_mindmap(999) is False
 
 
 def test_get_memory_categories():

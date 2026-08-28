@@ -11,14 +11,20 @@ dependencies = [
     "rich",
     "sympy",
     "flask",
-    "textual"
+    "textual",
+    "waitress"
 ]
 
 [project.scripts]
 alf = "alf.main:main"
 
 [tool.setuptools.package-data]
-alf = ["identity.toml"]
+alf = [
+    "identity.toml",
+    "web/templates/*",
+    "web/static/*",
+    "web/static/jsmind/*",
+]
 
 [tool.ruff]
 line-length = 88

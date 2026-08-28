@@ -78,17 +78,6 @@ commands = {
                 "ALF can work with arithmetic, algebra, functions, "
                 "equations, and calculus."
             ),
-            "symbolic_examples": [
-                'alf calc "solve(x^2 - 4, x)"',
-                'alf calc "expand((x + 2)^2)"',
-                'alf calc "factor(x^2 - 4)"',
-                'alf calc "diff(x^3, x)"',
-                'alf calc "integrate(x^2, x)"',
-                'alf calc "limit(sin(x) / x, x, 0)"',
-                'alf calc "simplify((x^2 - 1)/(x - 1))"',
-                'alf calc "solve(x^2 + 5*x + 6, x)"',
-                'alf calc "expand((x + 3)^3)"',
-            ],
         },
     },
     "remember": {

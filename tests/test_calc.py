@@ -28,6 +28,17 @@ def test_allowed_functions():
     assert calculate("tan(pi / 4)") == 1.0
 
 
+def test_advertised_abs_and_gcd_functions():
+    assert calculate("abs(-42)") == 42.0
+    assert calculate("gcd(84, 18)") == 6.0
+
+
+def test_advertised_simplify_function():
+    x = Symbol("x")
+
+    assert calculate("simplify((x^2 - 1)/(x - 1))", symbolic=True) == x + 1
+
+
 def test_non_numeric_result_raises_calculation_error():
     with pytest.raises(CalculationError):
         calculate("solve(x^2 - 4, x)")
@@ -71,6 +82,17 @@ def test_invalid_angle_mode_is_rejected():
 def test_unknown_function_is_rejected():
     with pytest.raises(CalculationError):
         calculate("arctan(pi / 4)")
+
+
+def test_unrelated_unsupported_function_is_still_rejected():
+    with pytest.raises(CalculationError):
+        calculate("floor(2.7)")
+
+    with pytest.raises(CalculationError):
+        calculate("sec(0)")
+
+    with pytest.raises(CalculationError):
+        calculate("cosh(0)")
 
 
 def test_malformed_expression_is_rejected():

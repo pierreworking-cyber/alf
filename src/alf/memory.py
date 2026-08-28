@@ -243,6 +243,8 @@ def initialise_database(connection):
             """
         )
 
+        version = 5
+
 
     if version == 5:
         cursor.execute(
@@ -346,8 +348,7 @@ def create_mindmap_category(name: str):
 
 def get_mindmap_categories():
     """
-      Return all mind map categories with Uncategorised first,
-      followed by alphabetical order.
+    Return all mind map categories in their stored position order.
 
     Returns:
         A list of category dictionaries.
@@ -461,7 +462,10 @@ def update_mindmap_category(
     Update an existing mind map category.
 
     Returns:
-        ``True`` when the category is updated, otherwise ``False``.
+        ``True`` when the category is updated, ``False`` when no category
+        with the given id exists, and ``"duplicate"`` when ``name`` is
+        already used by another category or is the reserved
+        ``"Uncategorised"`` name.
     """
 
     with get_connection() as connection:
@@ -476,6 +480,21 @@ def update_mindmap_category(
 
         if category is None:
             return False
+
+        if name == "Uncategorised":
+            return "duplicate"
+
+        duplicate = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE name = ? AND id != ?
+            """,
+            (name, category_id),
+        ).fetchone()
+
+        if duplicate is not None:
+            return "duplicate"
 
         modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -531,7 +550,29 @@ def delete_mindmap_category(category_id: int):
         ).fetchone()
 
         if uncategorised is None:
-            return False
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            connection.execute(
+                """
+                INSERT INTO mindmap_categories (
+                    name,
+                    status,
+                    created,
+                    modified,
+                    position
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                ("Uncategorised", "active", now, now, 0),
+            )
+
+            uncategorised = connection.execute(
+                """
+                SELECT id
+                FROM mindmap_categories
+                WHERE name = 'Uncategorised'
+                """,
+            ).fetchone()
 
         if category[1] == "Uncategorised":
             return False
@@ -554,6 +595,45 @@ def delete_mindmap_category(category_id: int):
             WHERE id = ?
             """,
             (category_id,),
+        )
+
+    return True
+
+
+def archive_mindmap_category(category_id: int):
+    """
+    Archive an existing mind map category.
+
+    Returns:
+        ``True`` when the category is archived, otherwise ``False``.
+    """
+
+    with get_connection() as connection:
+        category = connection.execute(
+            """
+            SELECT id, name
+            FROM mindmap_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        if category[1] == "Uncategorised":
+            return False
+
+        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        connection.execute(
+            """
+            UPDATE mindmap_categories
+            SET status = 'archived',
+                modified = ?
+            WHERE id = ?
+            """,
+            (modified, category_id),
         )
 
     return True
@@ -831,32 +911,6 @@ def move_mindmap(mindmap_id: int, category: str):
             """,
             (
                 category_row[0],
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                mindmap_id,
-            ),
-        )
-
-    return result.rowcount > 0
-
-
-def archive_mindmap(mindmap_id: int):
-    """
-    Mark a mind map as archived.
-
-    Returns:
-        ``True`` when the mind map is archived, otherwise ``False``
-        when it does not exist.
-    """
-
-    with get_connection() as connection:
-        result = connection.execute(
-            """
-            UPDATE mindmaps
-            SET status = 'archived',
-                modified = ?
-            WHERE id = ?
-            """,
-            (
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 mindmap_id,
             ),

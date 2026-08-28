@@ -1,4 +1,5 @@
 let currentMindmapId = null;
+let currentMindmapCategory = "Uncategorised";
 
 const options = {
     container: "jsmind-container",
@@ -136,6 +137,7 @@ document
     .querySelector("#new-mindmap")
     .addEventListener("click", function () {
         currentMindmapId = null;
+        currentMindmapCategory = "Uncategorised";
 
         document.querySelector("#mindmap-empty").style.display =
             "none";
@@ -222,7 +224,7 @@ document
             },
             body: JSON.stringify({
                 id: currentMindmapId,
-                category: "Uncategorised",
+                category: currentMindmapCategory,
                 name: name,
                 content: JSON.stringify(documentData)
             })
@@ -412,7 +414,10 @@ document
                             document.querySelectorAll(".mindmap-category")
                         );
 
-                        const newIndex = position;
+                        const newIndex =
+                            position > draggedIndex
+                                ? position + 1
+                                : position;
 
                         if (newIndex < orderedCategories.length) {
                             category.parentElement.insertBefore(
@@ -465,6 +470,10 @@ document
                 category
                     .querySelector(".mindmap-list")
                     .append(mapItem);
+
+                if (String(mindmapId) === String(currentMindmapId)) {
+                    currentMindmapCategory = categoryName;
+                }
             });
         });
 
@@ -494,7 +503,7 @@ deleteTarget.addEventListener("drop", async function (event) {
     }
 
     const response = await fetch(
-        `/mindmaps/${mindmapId}/archive`,
+        `/mindmaps/${mindmapId}/delete`,
         {
             method: "POST"
         }
@@ -514,6 +523,7 @@ deleteTarget.addEventListener("drop", async function (event) {
 
     if (currentMindmapId === Number(mindmapId)) {
         currentMindmapId = null;
+        currentMindmapCategory = "Uncategorised";
         document.querySelector("#mindmap-empty").style.display =
             "flex";
     }
@@ -658,6 +668,7 @@ document
             );
 
             currentMindmapId = savedMindmap.id;
+            currentMindmapCategory = savedMindmap.category;
 
             document.querySelector("#mindmap-empty").style.display =
                 "none";
