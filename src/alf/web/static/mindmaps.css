@@ -56,6 +56,33 @@ h1 {
     color: #aebdca;
 }
 
+.mindmap-category-actions {
+    margin: -4px 0 10px;
+    padding: 6px;
+    border: 1px solid #46596b;
+    border-radius: 8px;
+    background: #25313e;
+    box-shadow: 0 8px 20px rgba(10, 18, 28, 0.25);
+    display: flex;
+    gap: 4px;
+}
+
+.mindmap-category-actions button {
+    padding: 5px 8px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #aebdca;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.mindmap-category-actions button:hover {
+    background: #34495a;
+    color: #edf1f3;
+}
+
 .mindmaps-toolbar {
     display: flex;
     align-items: center;
@@ -126,6 +153,12 @@ h1 {
     margin-bottom: 24px;
 }
 
+.mindmap-category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .mindmap-category h3 {
     margin: 0 0 10px;
     color: #aebdca;
@@ -135,29 +168,44 @@ h1 {
     letter-spacing: 0.08em;
 }
 
-        .mindmap-category.collapsed h3 {
-        margin-bottom: 0;
-    }
+.mindmap-category-menu {
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    color: #aebdca;
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
 
-    .mindmap-category.collapsed .mindmap-list {
-        display: none;
-    }
+.mindmap-category-menu:hover {
+    color: #edf1f3;
+}
 
-    .mindmap-category h3 {
-        cursor: pointer;
-        user-select: none;
-    }
+    .mindmap-category.collapsed h3 {
+    margin-bottom: 0;
+}
 
-    .mindmap-category h3::before {
-        content: "▾";
-        display: inline-block;
-        width: 1em;
-        transition: transform 0.15s ease;
-    }
+.mindmap-category.collapsed .mindmap-list {
+    display: none;
+}
 
-    .mindmap-category.collapsed h3::before {
-        transform: rotate(-90deg);
-    }
+.mindmap-category h3 {
+    cursor: pointer;
+    user-select: none;
+}
+
+.mindmap-category h3::before {
+    content: "▾";
+    display: inline-block;
+    width: 1em;
+    transition: transform 0.15s ease;
+}
+
+.mindmap-category.collapsed h3::before {
+    transform: rotate(-90deg);
+}
 
 .mindmap-list {
     display: flex;

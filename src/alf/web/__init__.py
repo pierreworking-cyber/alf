@@ -14,6 +14,7 @@ from ..memory import (
     create_mindmap,
     create_mindmap_category,
     delete_memory,
+    delete_mindmap_category,
     delete_mindmap,
     find_related_memory_candidates,
     get_memories,
@@ -27,8 +28,10 @@ from ..memory import (
     restore_memory,
     update_memory,
     update_mindmap,
+    update_mindmap_category,
 )
 from ..question import answer_question
+from waitress import serve
 
 app = Flask(__name__)
 
@@ -349,6 +352,56 @@ def create_mindmap_category_web():
 
     return jsonify({"id": category_id, "name": name})
 
+@app.patch("/mindmap-categories/<int:category_id>")
+def update_mindmap_category_web(category_id):
+    """Update a mind map category."""
+
+    data = request.get_json()
+
+    if _is_uncategorised_category(category_id):
+        return jsonify(
+            {"error": "Uncategorised cannot be modified"}
+        ), 400
+
+    if not data:
+        return jsonify({"error": "No category data supplied"}), 400
+
+    name = data.get("name", "").strip()
+    status = data.get("status", "active")
+
+    if not name:
+        return jsonify({"error": "Category name is required"}), 400
+
+    if status not in {"active", "archived"}:
+        return jsonify({"error": "Invalid category status"}), 400
+
+    updated = update_mindmap_category(
+        category_id,
+        name,
+        status,
+    )
+
+    if not updated:
+        return jsonify({"error": "Mind map category not found"}), 404
+
+    return jsonify({"updated": True})
+
+@app.delete("/mindmap-categories/<int:category_id>")
+def delete_mindmap_category_web(category_id):
+    """Delete a mind map category."""
+
+    if _is_uncategorised_category(category_id):
+        return jsonify(
+            {"error": "Uncategorised cannot be modified"}
+        ), 400
+
+    deleted = delete_mindmap_category(category_id)
+
+    if not deleted:
+        return jsonify({"error": "Mind map category not found"}), 404
+
+    return jsonify({"deleted": True})
+
 @app.post("/mindmaps/save")
 def save_mindmap_web():
     """Save a mind map from the web interface."""
@@ -458,7 +511,22 @@ def delete_mindmap_web(mindmap_id):
 
     return jsonify({"deleted": True})
 
+def _is_uncategorised_category(category_id):
+    """Return whether a category is the permanent Uncategorised category."""
+
+    categories = get_mindmap_categories()
+
+    return any(
+        category["id"] == category_id
+        and category["name"] == "Uncategorised"
+        for category in categories
+    )
+
 def main() -> None:
     """Start ALF's web interface."""
 
-    app.run()
+    serve(app,
+          host="0.0.0.0",
+          port=5000,
+          threads=4,
+    )

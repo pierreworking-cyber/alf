@@ -366,7 +366,8 @@ deleteTarget.addEventListener("drop", async function (event) {
             }
 
             heading.addEventListener("click", function () {
-                const categoryElement = heading.parentElement;
+                const categoryElement =
+                    heading.closest(".mindmap-category");
                 const collapsed =
                     categoryElement.classList.toggle("collapsed");
 
@@ -377,6 +378,101 @@ deleteTarget.addEventListener("drop", async function (event) {
             });
         });
 
+document
+    .querySelectorAll(".mindmap-category")
+    .forEach(function (category) {
+        const menuButton =
+            category.querySelector(".mindmap-category-menu");
+
+        if (!menuButton) {
+            return;
+        }
+
+        menuButton.addEventListener("click", function (event) {
+            event.stopPropagation();
+
+            const existingMenu =
+                category.querySelector(".mindmap-category-actions");
+
+            if (existingMenu) {
+                existingMenu.remove();
+                return;
+            }
+
+            const menu = document.createElement("div");
+            menu.className = "mindmap-category-actions";
+
+            menu.innerHTML = `
+                <button type="button">Rename</button>
+                <button type="button">Delete</button>
+            `;
+
+            menu
+                .querySelector("button:first-child")
+                .addEventListener("click", async function () {
+                    const categoryId = category.dataset.categoryId;
+                    const heading = category.querySelector("h3");
+                    const currentName = heading.textContent.trim();
+
+                    const name = window.prompt(
+                        "Rename category:",
+                        currentName
+                    );
+
+                    if (name === null) {
+                        return;
+                    }
+
+                    const trimmedName = name.trim();
+
+                    if (!trimmedName || trimmedName === currentName) {
+                        return;
+                    }
+
+                    const response = await fetch(
+                        `/mindmap-categories/${categoryId}`,
+                        {
+                            method: "PATCH",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                name: trimmedName,
+                                status: "active"
+                            })
+                        }
+                    );
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    heading.textContent = trimmedName;
+                    menu.remove();
+                });
+
+            menu
+                .querySelector("button:last-child")
+                .addEventListener("click", async function () {
+                    const categoryId = category.dataset.categoryId;
+
+                    const response = await fetch(
+                        `/mindmap-categories/${categoryId}`,
+                        {
+                            method: "DELETE"
+                        }
+                    );
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    category.remove();
+                });
+
+            category.append(menu);
+        });
+    });
 
 document
     .querySelectorAll(".mindmap-item")

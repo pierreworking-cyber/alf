@@ -498,45 +498,12 @@ def update_mindmap_category(
     return True
 
 
-def archive_mindmap_category(category_id: int):
-    """
-    Archive an existing mind map category.
-
-    Returns:
-        ``True`` when the category is archived, otherwise ``False``.
-    """
-
-    with get_connection() as connection:
-        category = connection.execute(
-            """
-            SELECT id
-            FROM mindmap_categories
-            WHERE id = ?
-            """,
-            (category_id,),
-        ).fetchone()
-
-        if category is None:
-            return False
-
-        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        connection.execute(
-            """
-            UPDATE mindmap_categories
-            SET status = 'archived',
-                modified = ?
-            WHERE id = ?
-            """,
-            (modified, category_id),
-        )
-
-    return True
-
-
 def delete_mindmap_category(category_id: int):
     """
     Delete an existing mind map category.
+
+    Mind maps belonging to the category are moved to
+    ``Uncategorised`` before the category is deleted.
 
     Returns:
         ``True`` when the category is deleted, otherwise ``False``.
@@ -545,7 +512,7 @@ def delete_mindmap_category(category_id: int):
     with get_connection() as connection:
         category = connection.execute(
             """
-            SELECT id
+            SELECT id, name
             FROM mindmap_categories
             WHERE id = ?
             """,
@@ -554,6 +521,32 @@ def delete_mindmap_category(category_id: int):
 
         if category is None:
             return False
+
+        uncategorised = connection.execute(
+            """
+            SELECT id
+            FROM mindmap_categories
+            WHERE name = 'Uncategorised'
+            """,
+        ).fetchone()
+
+        if uncategorised is None:
+            return False
+
+        if category[1] == "Uncategorised":
+            return False
+
+        connection.execute(
+            """
+            UPDATE mindmaps
+            SET category_id = ?
+            WHERE category_id = ?
+            """,
+            (
+                uncategorised[0],
+                category_id,
+            ),
+        )
 
         connection.execute(
             """
