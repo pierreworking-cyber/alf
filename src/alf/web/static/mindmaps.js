@@ -662,15 +662,8 @@ document
             document.querySelector("#mindmap-empty").style.display =
                 "none";
 
-            console.log("ABOUT TO SHOW MAP", savedContent);
-
-            try {
-                mindmap.show(savedContent);
-                console.log("MAP SHOW COMPLETE");
-                mindmap.select_node("root");
-                mindmap.view.e_panel.focus();
-            } catch (error) {
-                console.error("MINDMAP SHOW FAILED", error);
-            }
+            mindmap.show(savedContent);
+            mindmap.select_node("root");
+            mindmap.view.e_panel.focus();
         });
     });
