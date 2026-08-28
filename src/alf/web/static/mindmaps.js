@@ -304,6 +304,57 @@ document
             });
         });
 
+const deleteTarget =
+    document.querySelector("#mindmap-delete-target");
+
+deleteTarget.addEventListener("dragover", function (event) {
+    if (event.dataTransfer.types.includes("text/plain")) {
+        event.preventDefault();
+        deleteTarget.classList.add("drag-over");
+    }
+});
+
+deleteTarget.addEventListener("dragleave", function () {
+    deleteTarget.classList.remove("drag-over");
+});
+
+deleteTarget.addEventListener("drop", async function (event) {
+    event.preventDefault();
+    deleteTarget.classList.remove("drag-over");
+
+    const mindmapId =
+        event.dataTransfer.getData("text/plain");
+
+    if (!mindmapId) {
+        return;
+    }
+
+    const response = await fetch(
+        `/mindmaps/${mindmapId}/archive`,
+        {
+            method: "POST"
+        }
+    );
+
+    if (!response.ok) {
+        return;
+    }
+
+    const mapItem = document.querySelector(
+        `.mindmap-item[data-mindmap-id="${mindmapId}"]`
+    );
+
+    if (mapItem) {
+        mapItem.remove();
+    }
+
+    if (currentMindmapId === Number(mindmapId)) {
+        currentMindmapId = null;
+        document.querySelector("#mindmap-empty").style.display =
+            "flex";
+    }
+});
+
     document
         .querySelectorAll(".mindmap-category h3")
         .forEach(function (heading) {

@@ -182,7 +182,7 @@ h1 {
         margin-top: 12px;
     }
 
-    #mindmap-archive-target {
+    #mindmap-delete-target {
         padding: 9px 11px;
         border: 1px dashed #46596b;
         border-radius: 10px;
@@ -192,7 +192,7 @@ h1 {
         box-shadow: inset 0 4px 5px rgba(10, 18, 28, 0.28);
     }
 
-    #mindmap-archive-target.drag-over {
+    #mindmap-delete-target.drag-over {
         background: #34495a;
         border-color: #aebdca;
         color: #edf1f3;

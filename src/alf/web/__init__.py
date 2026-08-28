@@ -11,7 +11,6 @@ from ..calc import CalculationError, calculate
 from ..command_catalogue import commands
 from ..memory import (
     archive_memory,
-    archive_mindmap,
     create_mindmap,
     create_mindmap_category,
     delete_memory,
@@ -386,14 +385,14 @@ def save_mindmap_web():
 
 @app.post("/mindmaps/<int:mindmap_id>/archive")
 def archive_mindmap_web(mindmap_id):
-    """Archive a saved mind map from the web interface."""
+    """Delete a saved mind map from the web interface."""
 
-    archived = archive_mindmap(mindmap_id)
+    deleted = delete_mindmap(mindmap_id)
 
-    if not archived:
+    if not deleted:
         return jsonify({"error": "Mind map not found"}), 404
 
-    return jsonify({"archived": True})
+    return jsonify({"deleted": True})
 
 @app.post("/mindmaps/<int:mindmap_id>/move")
 def move_mindmap_web(mindmap_id):
