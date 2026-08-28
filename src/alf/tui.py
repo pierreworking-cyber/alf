@@ -11,6 +11,7 @@ import asyncio
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.screen import ModalScreen
 from textual.widgets import (
     Button,
     Checkbox,
@@ -39,6 +40,73 @@ from alf.memory import (
     update_memory,
 )
 from alf.question import answer_question
+
+
+class DeleteMemoryConfirm(ModalScreen):
+    """Confirmation dialog before permanently deleting a memory."""
+
+    CSS = """
+    DeleteMemoryConfirm {
+        align: center middle;
+    }
+
+    #delete-confirm {
+        width: 62;
+        height: auto;
+        padding: 1 2;
+        border: thick $error;
+        background: $surface;
+        layout: vertical;
+    }
+
+    #delete-confirm-message {
+        width: 100%;
+        height: auto;
+        padding: 0 1 1 1;
+    }
+
+    #delete-confirm-buttons {
+        width: 100%;
+        height: 3;
+        align: center middle;
+    }
+
+    #delete-confirm-buttons Button {
+        width: 18;
+        margin: 0 1;
+    }
+    """
+
+    BINDINGS = [
+        ("escape", "cancel_delete", "Cancel"),
+    ]
+
+    def __init__(self, memory_id: int) -> None:
+        super().__init__()
+        self._memory_id = memory_id
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="delete-confirm"):
+            yield Static(
+                f"Permanently delete memory {self._memory_id}?\n"
+                "This cannot be undone.",
+                id="delete-confirm-message",
+            )
+            with Horizontal(id="delete-confirm-buttons"):
+                yield Button("Cancel", id="delete-cancel")
+                yield Button("Delete", id="delete-permanent", variant="error")
+
+    def on_mount(self) -> None:
+        self.query_one("#delete-cancel", Button).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "delete-permanent":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
+
+    def action_cancel_delete(self) -> None:
+        self.dismiss(False)
 
 
 class ALFTUI(App):
@@ -943,9 +1011,8 @@ class ALFTUI(App):
             if selected is None:
                 return
 
-            memory_id = selected.id.removeprefix("memory-")
-            delete_memory(int(memory_id))
-            await self.refresh_memory_list()
+            memory_id = int(selected.id.removeprefix("memory-"))
+            self.confirm_and_delete_memory(memory_id)
 
     async def save_remembered_memory(self) -> None:
         category = self.query_one("#remember-category", Select).value
@@ -1127,6 +1194,21 @@ class ALFTUI(App):
             "group": None,
         }
 
+
+    @work
+    async def confirm_and_delete_memory(self, memory_id: int) -> None:
+        """Confirm a permanent deletion before performing it.
+
+        The memory is deleted only when the user explicitly confirms.
+        """
+
+        confirmed = await self.push_screen_wait(DeleteMemoryConfirm(memory_id))
+
+        if confirmed is not True:
+            return
+
+        delete_memory(memory_id)
+        await self.refresh_memory_list()
 
     async def refresh_memory_list(self) -> None:
         memories = self.query_one("#memories", ListView)
