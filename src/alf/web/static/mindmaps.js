@@ -13,6 +13,125 @@ const options = {
 
 const mindmap = new jsMind(options);
 
+const mindmapContainer = document.getElementById("jsmind-container");
+
+let touchStartX = 0;
+let touchStartY = 0;
+let draggingCanvas = false;
+
+mindmapContainer.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) {
+        draggingCanvas = false;
+        return;
+    }
+
+    const target = event.target;
+
+    // Don't canvas-drag when touching a node or expander.
+    if (target.closest("jmnode, jmexpander")) {
+        draggingCanvas = false;
+        return;
+    }
+
+    draggingCanvas = true;
+    touchStartX = event.touches[0].clientX;
+    touchStartY = event.touches[0].clientY;
+}, { passive: true });
+
+mindmapContainer.addEventListener("touchmove", (event) => {
+    if (!draggingCanvas || event.touches.length !== 1) {
+        return;
+    }
+
+    const touch = event.touches[0];
+    const dx = touchStartX - touch.clientX;
+    const dy = touchStartY - touch.clientY;
+
+    mindmapContainer.querySelector(".jsmind-inner").scrollBy(dx, dy);
+
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+
+    event.preventDefault();
+}, { passive: false });
+
+mindmapContainer.addEventListener("touchend", () => {
+    draggingCanvas = false;
+}, { passive: true });
+
+mindmapContainer.addEventListener("touchcancel", () => {
+    draggingCanvas = false;
+}, { passive: true });
+
+document
+    .querySelector("#add-child-node")
+    .addEventListener("click", function () {
+        const selectedNode = mindmap.get_selected_node();
+
+        if (!selectedNode) {
+            return;
+        }
+
+        const nodeId = jsMind.util.uuid.newid();
+
+        mindmap.add_node(
+            selectedNode,
+            nodeId,
+            "New Node"
+        );
+
+        mindmap.select_node(nodeId);
+        mindmap.begin_edit(nodeId);
+    });
+
+document
+    .querySelector("#add-sibling-node")
+    .addEventListener("click", function () {
+        const selectedNode = mindmap.get_selected_node();
+
+        if (!selectedNode || selectedNode.isroot) {
+            return;
+        }
+
+        const nodeId = jsMind.util.uuid.newid();
+
+        mindmap.insert_node_after(
+            selectedNode,
+            nodeId,
+            "New Node"
+        );
+
+        mindmap.select_node(nodeId);
+        mindmap.begin_edit(nodeId);
+    });
+
+document
+    .querySelector("#edit-node")
+    .addEventListener("click", function () {
+        const selectedNode = mindmap.get_selected_node();
+
+        if (!selectedNode) {
+            return;
+        }
+
+        mindmap.begin_edit(selectedNode);
+    });
+
+document
+    .querySelector("#delete-node")
+    .addEventListener("click", function () {
+        const selectedNode = mindmap.get_selected_node();
+
+        if (!selectedNode || selectedNode.isroot) {
+            return;
+        }
+
+        const parentNode = selectedNode.parent;
+
+        mindmap.select_node(parentNode);
+        mindmap.remove_node(selectedNode);
+    });
+
 document
     .querySelector("#new-mindmap")
     .addEventListener("click", function () {
@@ -116,6 +235,16 @@ document
         const result = await response.json();
 
         currentMindmapId = result.id;
+
+        const saveNotification = document.querySelector("#save-notification");
+
+        saveNotification.classList.remove("show");
+        void saveNotification.offsetWidth;
+        saveNotification.classList.add("show");
+
+        setTimeout(function () {
+            saveNotification.classList.remove("show");
+        }, 3000);
 
         if (isNewMindmap) {
             const mapItem = document.createElement("button");
@@ -533,8 +662,15 @@ document
             document.querySelector("#mindmap-empty").style.display =
                 "none";
 
-            mindmap.show(savedContent);
-            mindmap.select_node("root");
-            mindmap.view.e_panel.focus();
+            console.log("ABOUT TO SHOW MAP", savedContent);
+
+            try {
+                mindmap.show(savedContent);
+                console.log("MAP SHOW COMPLETE");
+                mindmap.select_node("root");
+                mindmap.view.e_panel.focus();
+            } catch (error) {
+                console.error("MINDMAP SHOW FAILED", error);
+            }
         });
     });
