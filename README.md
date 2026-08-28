@@ -49,6 +49,7 @@ ALF currently provides:
 * self-inspection through the `health` command;
 * external research and evidence retrieval;
 * local LLM interpretation of supplied information;
+* mind maps through the web interface, with connected nodes organised into categories;
 * an experimental Textual TUI;
 * a local web interface.
 
@@ -202,6 +203,8 @@ ALF currently provides three interfaces:
 * **Web** — a local web interface.
 
 The TUI currently includes Question, Remember, Memories and Calc workspaces.
+
+The web interface includes Question, Remember, Memories, Calc and Mind Maps workspaces.
 
 The TUI and web interface are front-ends to the same underlying ALF
 application; they do not define separate application logic.

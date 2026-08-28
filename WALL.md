@@ -147,9 +147,10 @@ A useful interface is more important than artificial feature parity.
 
 ALF should be allowed to develop capabilities whose natural representation is visual or spatial.
 
-Examples may include:
+Mind maps are now an implemented capability, provided through the web interface as a specialised visual workspace.
 
-* mind maps;
+Further examples may include:
+
 * memory relationship graphs;
 * knowledge maps;
 * timelines;
@@ -208,7 +209,7 @@ For example:
 * the CLI may display textual related-memory information;
 * the TUI may allow interactive exploration;
 * the web interface may present relationships visually;
-* a future mind-map interface may represent relationships spatially.
+* the mind-map interface may in future represent relationships spatially.
 
 The underlying relationship semantics remain shared.
 
@@ -534,7 +535,6 @@ The long-term system may include:
 * interactive terminal workflows;
 * browser-based interaction;
 * visual exploration;
-* mind maps;
 * relationship graphs;
 * richer memory navigation;
 * additional forms of knowledge representation.

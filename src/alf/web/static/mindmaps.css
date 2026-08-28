@@ -227,10 +227,6 @@ h1 {
     cursor: pointer;
 }
 
-    .mindmap-archive {
-        margin-top: 12px;
-    }
-
     #mindmap-delete-target {
         padding: 9px 11px;
         border: 1px dashed #46596b;
