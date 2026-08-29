@@ -2,33 +2,65 @@ import asyncio
 
 from textual.widgets import ListView, RadioSet
 
+from alf.command_catalogue import commands
 from alf.tui import ALFTUI, DeleteMemoryConfirm
 
 
-def make_delete_fakes(monkeypatch):
-    deleted = []
+def make_sample_memory(memory_id=7, content=None, status="active"):
+    return {
+        "id": memory_id,
+        "created": "2026-01-01 00:00:00",
+        "category": "note",
+        "status": status,
+        "content": content or "A memory that survives the test session.",
+        "previous_memory_id": None,
+        "related_memory_ids": None,
+    }
+
+
+def make_memory_fakes(monkeypatch, memories=None):
+    """Install fake memory functions so TUI tests avoid the real database.
+
+    Mutation calls are recorded on the returned store so tests can assert
+    what the TUI asked ALF to do.
+    """
+
+    if memories is None:
+        memories = [make_sample_memory()]
+
+    store = {
+        "memories": memories,
+        "deleted": [],
+    }
 
     def fake_get_memories(options=None):
+        if options is not None and options.get("include_archived"):
+            return list(store["memories"])
+
         return [
-            {
-                "id": 7,
-                "created": "2026-01-01 00:00:00",
-                "category": "note",
-                "status": "active",
-                "content": "A memory that must survive confirmation.",
-                "previous_memory_id": None,
-                "related_memory_ids": None,
-            }
+            memory
+            for memory in store["memories"]
+            if memory["status"] != "archived"
         ]
 
+    def fake_get_memory(memory_id):
+        return next(
+            (memory for memory in store["memories"] if memory["id"] == memory_id),
+            None,
+        )
+
     def fake_delete_memory(memory_id):
-        deleted.append(memory_id)
+        store["deleted"].append(memory_id)
+        store["memories"] = [
+            memory for memory in store["memories"] if memory["id"] != memory_id
+        ]
         return True
 
     monkeypatch.setattr("alf.tui.get_memories", fake_get_memories)
+    monkeypatch.setattr("alf.tui.get_memory", fake_get_memory)
     monkeypatch.setattr("alf.tui.delete_memory", fake_delete_memory)
 
-    return deleted
+    return store
 
 
 def test_calculator_passes_selected_options(monkeypatch):
@@ -134,7 +166,7 @@ def test_calculator_example_selects_symbolic_mode():
 
 
 def test_memory_delete_does_not_happen_immediately(monkeypatch):
-    deleted = make_delete_fakes(monkeypatch)
+    store = make_memory_fakes(monkeypatch)
 
     async def run_test():
         app = ALFTUI()
@@ -147,14 +179,14 @@ def test_memory_delete_does_not_happen_immediately(monkeypatch):
 
             await pilot.click("#memory-delete")
 
-            assert deleted == []
+            assert store["deleted"] == []
             assert isinstance(app.screen, DeleteMemoryConfirm)
 
     asyncio.run(run_test())
 
 
 def test_memory_delete_cancel_leaves_memory_intact(monkeypatch):
-    deleted = make_delete_fakes(monkeypatch)
+    store = make_memory_fakes(monkeypatch)
 
     async def run_test():
         app = ALFTUI()
@@ -169,14 +201,14 @@ def test_memory_delete_cancel_leaves_memory_intact(monkeypatch):
             await pilot.click("#delete-cancel")
             await pilot.pause()
 
-            assert deleted == []
+            assert store["deleted"] == []
             assert not isinstance(app.screen, DeleteMemoryConfirm)
 
     asyncio.run(run_test())
 
 
 def test_memory_delete_confirm_performs_deletion(monkeypatch):
-    deleted = make_delete_fakes(monkeypatch)
+    store = make_memory_fakes(monkeypatch)
 
     async def run_test():
         app = ALFTUI()
@@ -191,7 +223,65 @@ def test_memory_delete_confirm_performs_deletion(monkeypatch):
             await pilot.click("#delete-permanent")
             await pilot.pause()
 
-            assert deleted == [7]
+            assert store["deleted"] == [7]
             assert not isinstance(app.screen, DeleteMemoryConfirm)
+
+    asyncio.run(run_test())
+
+
+def test_initial_navigation_shows_question_workspace(monkeypatch):
+    make_memory_fakes(monkeypatch)
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+
+            navigation = app.query_one("#navigation", ListView)
+
+            assert navigation.index == 0
+            assert app.query_one("#question-workspace").display
+            assert not app.query_one("#calc-workspace").display
+            assert not app.query_one("#remember-workspace").display
+            assert not app.query_one("#memories-workspace").display
+            assert (
+                app.query_one("#footer-guidance").render().plain
+                == commands["question"]["tui"]["guidance"]
+            )
+
+    asyncio.run(run_test())
+
+
+def test_navigation_round_trip_switches_workspaces(monkeypatch):
+    make_memory_fakes(monkeypatch)
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            navigation = app.query_one("#navigation", ListView)
+
+            await pilot.press("down", "down", "down")
+            await pilot.pause()
+
+            assert navigation.index == 3
+            assert app.query_one("#memories-workspace").display
+            assert not app.query_one("#question-workspace").display
+            assert (
+                app.query_one("#footer-guidance").render().plain
+                == commands["memories"]["tui"]["guidance"]
+            )
+
+            await pilot.press("up", "up", "up")
+            await pilot.pause()
+
+            assert navigation.index == 0
+            assert app.query_one("#question-workspace").display
+            assert not app.query_one("#memories-workspace").display
+            assert (
+                app.query_one("#footer-guidance").render().plain
+                == commands["question"]["tui"]["guidance"]
+            )
 
     asyncio.run(run_test())
