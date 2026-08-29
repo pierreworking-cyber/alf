@@ -264,4 +264,23 @@ commands = {
             "alf web",
         ],
     },
+    "news": {
+        "id": "news.manage",
+        "help": "Manage ALF's subscribed news subjects.",
+        "usage": "alf news <command> [arguments]",
+        "notes": [
+            "Commands: init, add, refresh, list, status",
+            "The news service is provided by Miniflux.",
+            "Run `alf news init` before adding a subject.",
+        ],
+        "examples": [
+            'alf news init --url http://127.0.0.1:8765 --key <api-key>',
+            'alf news add "Ukraine" "https://feeds.bbci.co.uk/news/world/rss.xml"',
+            'alf news refresh',
+            'alf news refresh "Ukraine"',
+            'alf news list',
+            'alf news list "Ukraine" --days 7',
+            'alf news status',
+        ],
+    },
 }

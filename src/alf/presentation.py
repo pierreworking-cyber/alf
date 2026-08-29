@@ -744,3 +744,136 @@ def render_health(report, show_details=False):
 
         console.print(table)
         console.print()
+
+
+def render_news_configured():
+    """
+    Render confirmation that the news service has been configured.
+    """
+
+    title("ALF news")
+    success("News service configured.")
+
+    info(
+        "Add a subject with: "
+        "alf news add <subject> <feed-url>"
+    )
+
+
+def render_news_subject_added(result):
+    """
+    Render the result of adding a news subject.
+    """
+
+    title("ALF news")
+    section(f"Subject: {result['subject']}")
+
+    if result["added"]:
+        info("Feeds added:")
+
+        for feed_url in result["added"]:
+            info(f"  {feed_url}")
+
+    if result["existing"]:
+        info("Feeds already subscribed:")
+
+        for feed_url in result["existing"]:
+            info(f"  {feed_url}")
+
+
+def render_news_refreshed(result):
+    """
+    Render a news refresh summary, including any feed failures.
+    """
+
+    title("ALF news")
+
+    info(
+        f"Refreshed {result['refreshed']} feed"
+        f"{'s' if result['refreshed'] != 1 else ''}, "
+        f"imported {result['imported']} new item"
+        f"{'s' if result['imported'] != 1 else ''}, "
+        f"skipped {result['skipped']} known item"
+        f"{'s' if result['skipped'] != 1 else ''}."
+    )
+
+    if result["failures"]:
+        section("Warnings:")
+
+        for failure in result["failures"]:
+            warning(
+                f"{failure['feed']}: {failure['reason']}"
+            )
+
+
+def render_news_item(item):
+    """
+    Render a single stored news item.
+    """
+
+    published = datetime.fromisoformat(
+        item["published_at"].replace("Z", "+00:00")
+    ).strftime("%d-%b-%Y %H:%M:%S")
+
+    info(
+        f"[{item['subject']}] {published} ({item['feed_title']})"
+    )
+    info(f"  {item['title']}")
+    info(f"  {item['url']}")
+    console.print()
+
+
+def render_news_items(items, subject=None):
+    """
+    Render stored news items.
+    """
+
+    title("ALF news")
+
+    if not items:
+        info("No news items stored.")
+        return
+
+    if subject:
+        info(f"Subject: {subject} — {len(items)} item{'s' if len(items) != 1 else ''}")
+    else:
+        info(f"{len(items)} item{'s' if len(items) != 1 else ''}")
+
+    console.print()
+
+    for item in items:
+        render_news_item(item)
+
+
+def render_news_status(status):
+    """
+    Render ALF's news service status.
+    """
+
+    title("ALF news status")
+
+    service = status["service"]
+
+    if not service["configured"]:
+        warning("News is not configured. Run `alf news init`.")
+
+    else:
+        reachable = (
+            "reachable"
+            if service["reachable"]
+            else "not reachable"
+        )
+
+        info(f"News service: {reachable}")
+
+    info(f"Subjects: {len(status['subjects'])}")
+    info(f"Feeds: {status['feeds']}")
+    info(f"Items: {status['items']}")
+
+
+def render_news_error(message):
+    """
+    Render a news error message.
+    """
+
+    error(message)

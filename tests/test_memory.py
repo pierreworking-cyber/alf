@@ -72,7 +72,7 @@ def test_database_migrates_schema_from_version_one(database):
             """
         ).fetchall()
 
-    assert version == 6
+    assert version == 7
     assert results == [(1,)]
     assert mindmap_tables == [
         ("mindmap_documents",),
@@ -276,7 +276,7 @@ def test_database_migrates_mindmaps_from_version_four(database):
             """
         ).fetchall()
 
-    assert version == 6
+    assert version == 7
     assert category is not None
     assert mindmap[0] == category[0]
     assert mindmap[1] == "Garden"

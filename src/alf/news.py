@@ -1,0 +1,738 @@
+"""
+ALF's news data layer.
+
+This module manages ALF's subscribed news subjects. Subscriptions are
+stored durably in the shared SQLite database while Miniflux retains the
+feed retrieval and long-lived item store; ALF owns the news domain and
+treats Miniflux as infrastructure.
+
+Items are identified by an entry hash derived from their URL and
+publication time rather than by Miniflux's numeric entry id, so ALF
+keeps a stable view of the items it has imported even when Miniflux
+purges archived entries and reuses their identifiers.
+
+Presentation and command-handling concerns remain outside this module;
+its responsibility is to provide the news data and news-system
+information to the rest of ALF.
+"""
+
+import hashlib
+import os
+import sqlite3
+import tomllib
+from datetime import UTC, datetime, timedelta
+
+from .miniflux import Miniflux, MinifluxError
+from .paths import get_data_directory
+
+CONFIG = get_data_directory() / "news.toml"
+
+
+class NewsError(Exception):
+    """
+    Raised when a news operation cannot be completed.
+    """
+
+
+def create_tables(connection):
+    """
+    Create the news schema in an open SQLite connection.
+
+    The news tables were added in schema version 7. They are created in
+    place and the caller owns the surrounding transaction and version
+    bookkeeping, mirroring the memory and mind map tables.
+
+    Args:
+        connection: An open SQLite database connection.
+    """
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS news_subjects (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            name    TEXT NOT NULL UNIQUE,
+            created TEXT NOT NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS news_feeds (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            subject_id       INTEGER NOT NULL,
+            miniflux_feed_id INTEGER NOT NULL,
+            feed_url         TEXT NOT NULL,
+            title            TEXT NOT NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS news_items (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            subject_id    INTEGER NOT NULL,
+            feed_id       INTEGER NOT NULL,
+            entry_hash    TEXT NOT NULL,
+            title         TEXT NOT NULL,
+            url           TEXT NOT NULL,
+            summary       TEXT,
+            published_at  TEXT NOT NULL,
+            first_seen_at TEXT NOT NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS news_items_entry_idx
+        ON news_items (subject_id, entry_hash)
+        """
+    )
+
+
+def get_news_config():
+    """
+    Return the Miniflux service configuration, or ``None`` when the news
+    service has not been configured.
+    """
+
+    if not CONFIG.exists():
+        return None
+
+    with open(CONFIG, "rb") as config_file:
+        return tomllib.load(config_file)
+
+
+def save_news_config(base_url, api_key):
+    """
+    Write the Miniflux service configuration.
+
+    The configuration file is private to the current user.
+
+    Args:
+        base_url: The Miniflux service base URL.
+        api_key: The Miniflux API key.
+    """
+
+    CONFIG.parent.mkdir(parents=True, exist_ok=True)
+
+    CONFIG.write_text(
+        f'base_url = "{base_url}"\n'
+        f'api_key = "{api_key}"\n'
+    )
+
+    os.chmod(CONFIG, 0o600)
+
+    return True
+
+
+def initialise(base_url, api_key, client=None):
+    """
+    Configure the Miniflux service after verifying it is reachable.
+
+    Args:
+        base_url: The Miniflux service base URL.
+        api_key: The Miniflux API key.
+        client: An optional Miniflux client to use for the connection
+            check.
+
+    Returns:
+        ``True`` when the configuration was saved.
+    """
+
+    client = client or Miniflux(base_url, api_key)
+
+    client.me()
+
+    return save_news_config(base_url, api_key)
+
+
+def get_client():
+    """
+    Build a Miniflux client from the news configuration.
+
+    Returns:
+        A configured Miniflux client.
+
+    Raises:
+        NewsError: When the news service has not been configured.
+    """
+
+    config = get_news_config()
+
+    if config is None:
+        raise NewsError("News is not configured. Run `alf news init`.")
+
+    return Miniflux(
+        config["base_url"],
+        config["api_key"],
+    )
+
+
+def add_subject(name, feed_urls, client=None):
+    """
+    Register a news subject and its feed subscriptions.
+
+    The subject is mirrored as a Miniflux category so its entries can be
+    retrieved as one set. Feeds that are already subscribed are reported
+    without being duplicated.
+
+    Args:
+        name: The subject name.
+        feed_urls: Feed URLs to subscribe for the subject.
+        client: An optional Miniflux client.
+
+    Returns:
+        A dictionary summarising the subject and its feeds.
+    """
+
+    name = name.strip()
+
+    if not name:
+        raise NewsError("A news subject name is required.")
+
+    feed_urls = [
+        feed_url.strip()
+        for feed_url in feed_urls
+        if feed_url.strip()
+    ]
+
+    if not feed_urls:
+        raise NewsError("At least one feed URL is required.")
+
+    client = client or get_client()
+
+    with _get_connection() as connection:
+        subject = _ensure_subject(connection, name)
+        category = _ensure_subject_category(client, name)
+
+        result = {
+            "subject": subject["name"],
+            "added": [],
+            "existing": [],
+        }
+
+        for feed_url in feed_urls:
+            feed = _ensure_feed(client, category["id"], feed_url)
+
+            if _register_feed(connection, subject["id"], feed):
+                result["added"].append(feed_url)
+            else:
+                result["existing"].append(feed_url)
+
+        return result
+
+
+def refresh(subject=None, client=None):
+    """
+    Refresh stored news feeds and import their entries.
+
+    Entries are deduplicated by entry hash, so refreshing repeatedly is
+    safe and imports only items not already stored. Feeds that fail to
+    refresh are reported without aborting the whole refresh.
+
+    Args:
+        subject: Optional subject name to restrict the refresh to.
+        client: An optional Miniflux client.
+
+    Returns:
+        A dictionary summarising the refresh.
+
+    Raises:
+        NewsError: When no feeds are stored to refresh.
+    """
+
+    client = client or get_client()
+
+    with _get_connection() as connection:
+        subjects = _subjects_with_feeds(connection, subject)
+
+        if not subjects:
+            if subject:
+                raise NewsError(
+                    f"No feeds are stored for subject '{subject}'."
+                )
+
+            raise NewsError(
+                "No news feeds are stored. "
+                "Add a subject with `alf news add`."
+            )
+
+        categories = {
+            category["title"]: category
+            for category in client.get_categories()
+        }
+
+        refreshed = 0
+        imported = 0
+        skipped = 0
+        failures = []
+
+        for subject_entries in subjects:
+            feeds = subject_entries["feeds"]
+
+            for feed in feeds:
+                try:
+                    client.refresh_feed(feed["miniflux_feed_id"])
+                except MinifluxError as exc:
+                    failures.append(
+                        {
+                            "feed": feed["title"],
+                            "reason": str(exc),
+                        }
+                    )
+                    continue
+
+                refreshed += 1
+
+            category = categories.get(subject_entries["name"])
+
+            if category is None:
+                failures.append(
+                    {
+                        "feed": subject_entries["name"],
+                        "reason": "Subject category is missing",
+                    }
+                )
+                continue
+
+            try:
+                entries = client.get_entries(
+                    category_id=category["id"],
+                )
+            except MinifluxError as exc:
+                failures.append(
+                    {
+                        "feed": subject_entries["name"],
+                        "reason": str(exc),
+                    }
+                )
+                continue
+
+            count, deduplicated = _import_entries(
+                connection,
+                subject_entries["id"],
+                entries,
+            )
+
+            imported += count
+            skipped += deduplicated
+
+        return {
+            "subject": subject,
+            "refreshed": refreshed,
+            "imported": imported,
+            "skipped": skipped,
+            "failures": failures,
+        }
+
+
+def list_items(subject=None, days=None):
+    """
+    Return stored news items, newest first.
+
+    Args:
+        subject: Optional subject name to restrict the results to.
+        days: Optional number of days back to include.
+
+    Returns:
+        A list of news item dictionaries.
+    """
+
+    cutoff = None
+
+    if days is not None:
+        cutoff = datetime.now(UTC) - timedelta(days=days)
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        conditions = []
+        parameters = []
+
+        if subject:
+            conditions.append("s.name = ?")
+            parameters.append(subject)
+
+        query = """
+            SELECT
+                i.id,
+                s.name,
+                f.title,
+                i.title,
+                i.url,
+                i.summary,
+                i.published_at,
+                i.first_seen_at
+            FROM news_items i
+            JOIN news_feeds f ON f.id = i.feed_id
+            JOIN news_subjects s ON s.id = i.subject_id
+        """
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        cursor.execute(query, parameters)
+
+        items = []
+        rows = cursor.fetchall()
+
+        for row in rows:
+            published_at = row[6]
+            published = _parse_timestamp(published_at)
+
+            if cutoff is not None and published < cutoff:
+                continue
+
+            items.append(
+                {
+                    "id": row[0],
+                    "subject": row[1],
+                    "feed_title": row[2],
+                    "title": row[3],
+                    "url": row[4],
+                    "summary": row[5],
+                    "published_at": published_at,
+                    "first_seen_at": row[7],
+                }
+            )
+
+    items.sort(
+        key=lambda item: _parse_timestamp(item["published_at"]),
+        reverse=True,
+    )
+
+    return items
+
+
+def get_news_information():
+    """
+    Return information about ALF's stored news data.
+
+    This never contacts the news service, so it is safe to call from
+    ALF's capability discovery.
+    """
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "SELECT id, name FROM news_subjects ORDER BY name"
+        )
+
+        subjects = [
+            {"id": row[0], "name": row[1]}
+            for row in cursor.fetchall()
+        ]
+
+        cursor.execute("SELECT COUNT(*) FROM news_feeds")
+        feeds = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM news_items")
+        items = cursor.fetchone()[0]
+
+    return {
+        "subjects": subjects,
+        "feeds": feeds,
+        "items": items,
+    }
+
+
+def get_news_status(client=None):
+    """
+    Return ALF's news state and the reachability of its news service.
+    """
+
+    service = {
+        "configured": False,
+        "reachable": None,
+    }
+
+    if get_news_config() is not None:
+        service["configured"] = True
+
+        try:
+            (client or get_client()).me()
+            service["reachable"] = True
+        except (MinifluxError, NewsError):
+            service["reachable"] = False
+
+    information = get_news_information()
+
+    return {
+        **information,
+        "service": service,
+    }
+
+
+def get_capability():
+    """
+    Return news capability information.
+    """
+
+    return {
+        "id": "news",
+        "name": "News",
+        "description": "Subscribed news items via Miniflux",
+        "details": get_news_information(),
+    }
+
+
+def _get_connection():
+    """
+    Open a connection to ALF's shared SQLite database.
+    """
+
+    from .memory import get_connection
+
+    return get_connection()
+
+
+def _ensure_subject(connection, name):
+    """
+    Return the subject row for ``name``, creating it when missing.
+    """
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "SELECT id, name, created FROM news_subjects WHERE name = ?",
+        (name,),
+    )
+
+    row = cursor.fetchone()
+
+    if row:
+        return {
+            "id": row[0],
+            "name": row[1],
+            "created": row[2],
+        }
+
+    created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    cursor.execute(
+        "INSERT INTO news_subjects (name, created) VALUES (?, ?)",
+        (name, created),
+    )
+
+    return {
+        "id": cursor.lastrowid,
+        "name": name,
+        "created": created,
+    }
+
+
+def _ensure_subject_category(client, name):
+    """
+    Return the Miniflux category mirroring a subject, creating it when
+    missing.
+    """
+
+    for category in client.get_categories():
+        if category["title"] == name:
+            return category
+
+    return client.create_category(name)
+
+
+def _ensure_feed(client, category_id, feed_url):
+    """
+    Return the Miniflux feed for ``feed_url``, creating it when missing.
+    """
+
+    for feed in client.get_feeds(category_id=category_id):
+        if feed["feed_url"] == feed_url:
+            return feed
+
+    return client.create_feed(feed_url, category_id)
+
+
+def _register_feed(connection, subject_id, feed):
+    """
+    Record a feed subscription for a subject.
+
+    Returns:
+        ``True`` when the subscription was newly recorded; ``False`` when
+        the subject already subscribed to the feed.
+    """
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id FROM news_feeds
+        WHERE subject_id = ? AND feed_url = ?
+        """,
+        (subject_id, feed["feed_url"]),
+    )
+
+    if cursor.fetchone():
+        return False
+
+    cursor.execute(
+        """
+        INSERT INTO news_feeds
+            (subject_id, miniflux_feed_id, feed_url, title)
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            subject_id,
+            feed["id"],
+            feed["feed_url"],
+            feed["title"],
+        ),
+    )
+
+    return True
+
+
+def _subjects_with_feeds(connection, subject=None):
+    """
+    Return stored subjects with their feed subscriptions.
+    """
+
+    cursor = connection.cursor()
+
+    conditions = []
+    parameters = []
+
+    if subject:
+        conditions.append("s.name = ?")
+        parameters.append(subject)
+
+    query = """
+        SELECT s.id, s.name, f.id, f.miniflux_feed_id, f.title
+        FROM news_subjects s
+        JOIN news_feeds f ON f.subject_id = s.id
+    """
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += " ORDER BY s.name, f.id"
+
+    cursor.execute(query, parameters)
+
+    subjects = {}
+
+    for (
+        subject_id,
+        name,
+        feed_id,
+        miniflux_feed_id,
+        feed_title,
+    ) in cursor.fetchall():
+        if subject_id not in subjects:
+            subjects[subject_id] = {
+                "id": subject_id,
+                "name": name,
+                "feeds": [],
+            }
+
+        subjects[subject_id]["feeds"].append(
+            {
+                "id": feed_id,
+                "miniflux_feed_id": miniflux_feed_id,
+                "title": feed_title,
+            }
+        )
+
+    return list(subjects.values())
+
+
+def _import_entries(connection, subject_id, entries):
+    """
+    Store entries that are not already stored for the subject.
+
+    Entries are matched to the subject's registered feeds by their
+    Miniflux feed id, and deduplicated by entry hash. Items whose feed is
+    not registered for the subject are ignored.
+
+    Returns:
+        A ``(imported, skipped)`` tuple with the number of newly stored
+        items and the number of known items skipped.
+    """
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT miniflux_feed_id, id FROM news_feeds
+        WHERE subject_id = ?
+        """,
+        (subject_id,),
+    )
+
+    feed_ids = dict(cursor.fetchall())
+
+    first_seen_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    imported = 0
+    skipped = 0
+
+    for entry in entries:
+        feed_id = feed_ids.get(entry.get("feed_id"))
+
+        if feed_id is None:
+            continue
+
+        try:
+            cursor.execute(
+                """
+                INSERT INTO news_items (
+                    subject_id,
+                    feed_id,
+                    entry_hash,
+                    title,
+                    url,
+                    summary,
+                    published_at,
+                    first_seen_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    subject_id,
+                    feed_id,
+                    _entry_hash(
+                        entry["url"],
+                        entry["published_at"],
+                    ),
+                    entry["title"],
+                    entry["url"],
+                    entry.get("summary"),
+                    entry["published_at"],
+                    first_seen_at,
+                ),
+            )
+        except sqlite3.IntegrityError:
+            skipped += 1
+        else:
+            imported += 1
+
+    return imported, skipped
+
+
+def _entry_hash(url, published_at):
+    """
+    Return the durable identity hash for an item.
+    """
+
+    return hashlib.sha1(
+        f"{url}|{published_at}".encode()
+    ).hexdigest()
+
+
+def _parse_timestamp(timestamp):
+    """
+    Parse an RFC 3339 timestamp used by Miniflux into a datetime.
+    """
+
+    return datetime.fromisoformat(
+        timestamp.replace("Z", "+00:00")
+    )

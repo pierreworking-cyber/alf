@@ -27,6 +27,15 @@ from .memory import (
     remember,
     search_memories,
 )
+from .miniflux import MinifluxError
+from .news import (
+    NewsError,
+    add_subject,
+    get_news_status,
+    initialise,
+    list_items,
+    refresh,
+)
 from .presentation import (
     error,
     render_about,
@@ -52,6 +61,12 @@ from .presentation import (
     render_memory_related,
     render_memory_saved,
     render_memory_usage,
+    render_news_configured,
+    render_news_error,
+    render_news_items,
+    render_news_refreshed,
+    render_news_status,
+    render_news_subject_added,
     render_question,
     render_status,
     render_version,
@@ -645,6 +660,216 @@ def question_command(*arguments):
     )
 
 
+def news_command(*arguments):
+    """
+    Handle the ``news`` command.
+
+    Routes the first argument to the requested news subcommand and
+    validates the subcommand's arguments before invoking ALF's news
+    data layer.
+
+    Args:
+        *arguments: Command-line arguments supplied after ``news``.
+    """
+
+    if not arguments:
+        render_command_help("news", commands["news"])
+        return
+
+    subcommand = arguments[0]
+
+    handlers = {
+        "init": news_init_command,
+        "add": news_add_command,
+        "refresh": news_refresh_command,
+        "list": news_list_command,
+        "status": news_status_command,
+    }
+
+    handler = handlers.get(subcommand)
+
+    if handler is None:
+        render_command_structure_error("news")
+        return
+
+    handler(*arguments[1:])
+
+
+def news_init_command(*arguments):
+    """
+    Handle the ``news init`` subcommand.
+
+    Verifies the Miniflux service connection and stores the
+    configuration so later news commands can reach the service.
+    """
+
+    base_url = None
+    api_key = None
+    index = 0
+
+    while index < len(arguments):
+        argument = arguments[index]
+
+        if argument in ("--url", "--key"):
+            if index + 1 >= len(arguments):
+                render_command_structure_error("news")
+                return
+
+            value = arguments[index + 1]
+
+            if argument == "--url":
+                if base_url is not None:
+                    render_command_structure_error("news")
+                    return
+
+                base_url = value
+
+            else:
+                if api_key is not None:
+                    render_command_structure_error("news")
+                    return
+
+                api_key = value
+
+            index += 2
+            continue
+
+        render_command_structure_error("news")
+        return
+
+    if not base_url or not api_key:
+        render_command_structure_error("news")
+        return
+
+    try:
+        initialise(base_url, api_key)
+    except (MinifluxError, NewsError) as exc:
+        render_news_error(str(exc))
+        return
+
+    render_news_configured()
+
+
+def news_add_command(*arguments):
+    """
+    Handle the ``news add`` subcommand.
+
+    Registers a news subject and its feed subscriptions.
+    """
+
+    if len(arguments) < 2:
+        render_command_structure_error("news")
+        return
+
+    for argument in arguments:
+        if argument.startswith("-"):
+            render_command_structure_error("news")
+            return
+
+    subject = arguments[0]
+    feed_urls = arguments[1:]
+
+    try:
+        result = add_subject(subject, feed_urls)
+    except (MinifluxError, NewsError) as exc:
+        render_news_error(str(exc))
+        return
+
+    render_news_subject_added(result)
+
+
+def news_refresh_command(*arguments):
+    """
+    Handle the ``news refresh`` subcommand.
+
+    Refreshes the stored feeds, optionally restricted to a subject.
+    """
+
+    if len(arguments) > 1:
+        render_command_structure_error("news")
+        return
+
+    subject = arguments[0] if arguments else None
+
+    try:
+        result = refresh(subject)
+    except (MinifluxError, NewsError) as exc:
+        render_news_error(str(exc))
+        return
+
+    render_news_refreshed(result)
+
+
+def news_list_command(*arguments):
+    """
+    Handle the ``news list`` subcommand.
+
+    Shows stored news items, optionally restricted to a subject or to
+    the last number of days.
+    """
+
+    days = None
+    positional_arguments = []
+    index = 0
+
+    while index < len(arguments):
+        argument = arguments[index]
+
+        if argument in ("-d", "--days"):
+            if days is not None or index + 1 >= len(arguments):
+                render_command_structure_error("news")
+                return
+
+            try:
+                days = int(arguments[index + 1])
+            except ValueError:
+                render_command_structure_error("news")
+                return
+
+            if days <= 0:
+                render_command_structure_error("news")
+                return
+
+            index += 2
+            continue
+
+        if argument.startswith("-"):
+            render_command_structure_error("news")
+            return
+
+        positional_arguments.append(argument)
+        index += 1
+
+    if len(positional_arguments) > 1:
+        render_command_structure_error("news")
+        return
+
+    subject = (
+        positional_arguments[0]
+        if positional_arguments
+        else None
+    )
+
+    items = list_items(subject, days=days)
+
+    render_news_items(items, subject)
+
+
+def news_status_command(*arguments):
+    """
+    Handle the ``news status`` subcommand.
+
+    Reports the reachability of the news service and the amount of
+    stored news data.
+    """
+
+    if arguments:
+        render_command_structure_error("news")
+        return
+
+    render_news_status(get_news_status())
+
+
 def tui_command():
     from .tui import main
 
@@ -688,6 +913,7 @@ command_handlers = {
     "calc": calc_command,
     "search": search_command,
     "question": question_command,
+    "news": news_command,
     "tui": tui_command,
     "web": web_command,
 }

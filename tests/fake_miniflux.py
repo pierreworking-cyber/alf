@@ -59,6 +59,7 @@ def _build_entry(entry_id, feed_id, feed_data, source):
         "author": source.get("author", ""),
         "language": source.get("language", ""),
         "content": source.get("content", ""),
+        "summary": source.get("summary", ""),
         "hash": source.get(
             "hash",
             hashlib.sha256(

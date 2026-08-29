@@ -15,12 +15,16 @@ data and memory-system information to the rest of ALF.
 Mind map storage and category management live in ``alf.mind_maps``,
 which shares this module's memory database through ``get_connection``.
 The mind map API is re-exported here for compatibility.
+
+News subject storage lives in ``alf.news``, which shares the same
+database and schema ladder. Its API is also re-exported here for
+compatibility.
 """
 
 import sqlite3
 from datetime import datetime
 
-from . import mind_maps
+from . import mind_maps, news
 from .mind_maps import (  # noqa: F401
     create_mindmap,
     create_mindmap_category,
@@ -34,12 +38,23 @@ from .mind_maps import (  # noqa: F401
     update_mindmap,
     update_mindmap_category,
 )
+from .news import (  # noqa: F401
+    NewsError,
+    add_subject,
+    get_client,
+    get_news_config,
+    get_news_information,
+    get_news_status,
+    initialise,
+    list_items,
+    refresh,
+)
 from .paths import get_data_directory
 
 DATABASE = get_data_directory() / "alf.db"
 
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 VALID_MEMORY_CATEGORIES = [
     "note",
@@ -101,6 +116,7 @@ def initialise_database(connection):
         )
 
     mind_maps.create_tables(connection)
+    news.create_tables(connection)
 
     if version == 4:
         mind_maps.migrate_from_v4(connection)
