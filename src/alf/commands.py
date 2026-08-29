@@ -31,6 +31,7 @@ from .miniflux import MinifluxError
 from .news import (
     NewsError,
     add_subject,
+    get_news_config,
     get_news_status,
     initialise,
     list_items,
@@ -849,6 +850,10 @@ def news_list_command(*arguments):
         if positional_arguments
         else None
     )
+
+    if get_news_config() is None:
+        render_news_error("News is not configured. Run `alf news init`.")
+        return
 
     items = list_items(subject, days=days)
 

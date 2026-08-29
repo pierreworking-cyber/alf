@@ -208,12 +208,9 @@ class FakeMiniflux:
             return 200, {"id": 1, "username": "alf"}
 
         if method == "GET" and path == "/v1/categories":
-            categories = [dict(category) for category in self._categories]
-
-            return 200, {
-                "total": len(categories),
-                "categories": categories,
-            }
+            return 200, [
+                dict(category) for category in self._categories
+            ]
 
         if method == "POST" and path == "/v1/categories":
             title = payload.get("title")
@@ -224,12 +221,7 @@ class FakeMiniflux:
             return 201, self.add_category(title)
 
         if method == "GET" and path == "/v1/feeds":
-            feeds = [dict(feed) for feed in self._feeds]
-
-            return 200, {
-                "total": len(feeds),
-                "feeds": feeds,
-            }
+            return 200, [dict(feed) for feed in self._feeds]
 
         match = re.fullmatch(r"/v1/categories/(\d+)/feeds", path)
 
@@ -241,10 +233,7 @@ class FakeMiniflux:
                 if feed["category_id"] == category_id
             ]
 
-            return 200, {
-                "total": len(feeds),
-                "feeds": feeds,
-            }
+            return 200, feeds
 
         if method == "POST" and path == "/v1/feeds":
             feed_url = payload.get("feed_url")
@@ -269,11 +258,13 @@ class FakeMiniflux:
 
             title = payload.get("title") or feed_url
 
-            return 201, self._register_feed(
+            feed = self._register_feed(
                 title,
                 feed_url,
                 category_id,
             )
+
+            return 201, {"feed_id": feed["id"]}
 
         match = re.fullmatch(r"/v1/feeds/(\d+)/refresh", path)
 

@@ -875,6 +875,11 @@ def test_news_refresh_command_refreshes_subject(monkeypatch):
 def test_news_list_command_lists_items(monkeypatch):
     captured = {}
 
+    monkeypatch.setattr(commands, "get_news_config", lambda: {
+        "base_url": "http://fake:8765",
+        "api_key": "secret",
+    })
+
     monkeypatch.setattr(
         commands,
         "list_items",
@@ -895,6 +900,32 @@ def test_news_list_command_lists_items(monkeypatch):
         "subject": "Ukraine",
         "days": 7,
     }
+
+
+def test_news_list_command_hints_when_unconfigured(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(commands, "get_news_config", lambda: None)
+
+    monkeypatch.setattr(
+        commands,
+        "render_news_error",
+        lambda message: captured.append(message),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "list_items",
+        lambda *arguments, **kwargs: pytest.fail(
+            "list_items should not be called when unconfigured"
+        ),
+    )
+
+    commands.news_command("list")
+
+    assert captured == [
+        "News is not configured. Run `alf news init`."
+    ]
 
 
 def test_news_list_command_rejects_invalid_days(monkeypatch):

@@ -53,11 +53,14 @@ def test_me_confirms_authenticated_user(fake, client):
     assert client.me() == {"id": 1, "username": "alf"}
 
 
-def test_get_categories_returns_list(fake, client):
+def test_get_categories_returns_bare_list(fake, client):
     fake.add_category("Politics")
     fake.add_category("World")
 
-    assert [c["title"] for c in client.get_categories()] == [
+    categories = client.get_categories()
+
+    assert isinstance(categories, list)
+    assert [c["title"] for c in categories] == [
         "Politics",
         "World",
     ]
@@ -94,10 +97,100 @@ def test_create_feed_returns_feed_with_category(fake, client):
     assert feed["feed_url"] == "https://www.bbc.co.uk/feeds/world.xml"
     assert feed["category_id"] == category["id"]
 
-    assert fake.requests[-1]["payload"] == {
+    creation = next(
+        request
+        for request in fake.requests
+        if request["method"] == "POST"
+        and request["path"] == "/v1/feeds"
+    )
+
+    assert creation["payload"] == {
         "feed_url": "https://www.bbc.co.uk/feeds/world.xml",
         "category_id": 1,
     }
+
+
+def test_create_feed_returns_complete_record_despite_id_only_post(
+    fake,
+    client,
+):
+    category = client.create_category("World")
+    feed_url = "https://www.bbc.co.uk/feeds/world.xml"
+
+    feed = client.create_feed(feed_url, category["id"])
+
+    assert feed == {
+        "id": 1,
+        "user_id": 1,
+        "title": feed_url,
+        "feed_url": feed_url,
+        "site_url": "",
+        "category_id": 1,
+        "checked_at": None,
+        "entries_count": 0,
+    }
+
+    # The creation POST returns only the feed id, so the complete record
+    # is fetched back from the category afterwards.
+    assert [request["path"] for request in fake.requests] == [
+        "/v1/categories",
+        "/v1/feeds",
+        f"/v1/categories/{category['id']}/feeds",
+    ]
+
+
+def test_feed_creation_post_returns_feed_id_only(fake):
+    category = fake.add_category("Politics")
+
+    status, body = fake.handle(
+        "POST",
+        "/v1/feeds",
+        headers={"X-Auth-Token": fake.api_key},
+        payload={
+            "feed_url": "https://example.com/world",
+            "category_id": category["id"],
+        },
+    )
+
+    assert status == 201
+    assert body == {"feed_id": 1}
+
+
+def test_fake_serves_bare_category_and_feed_arrays(fake):
+    category = fake.add_category("Politics")
+    fake.add_feed(
+        "BBC",
+        "https://example.com/world",
+        category_id=category["id"],
+    )
+
+    headers = {"X-Auth-Token": fake.api_key}
+
+    status, categories = fake.handle(
+        "GET",
+        "/v1/categories",
+        headers=headers,
+        payload=None,
+    )
+    feeds_status, feeds = fake.handle(
+        "GET",
+        "/v1/feeds",
+        headers=headers,
+        payload=None,
+    )
+    category_status, category_feeds = fake.handle(
+        "GET",
+        f"/v1/categories/{category['id']}/feeds",
+        headers=headers,
+        payload=None,
+    )
+
+    assert status == 200
+    assert isinstance(categories, list)
+    assert isinstance(feeds, list)
+    assert isinstance(category_feeds, list)
+    assert feeds[0]["id"] == 1
+    assert category_feeds[0]["feed_url"] == "https://example.com/world"
 
 
 def test_create_feed_rejects_duplicates(fake, client):
@@ -330,6 +423,29 @@ def test_default_transport_maps_connection_errors(monkeypatch):
             None,
             DEFAULT_TIMEOUT,
         )
+
+
+def test_connection_error_hides_endpoint_path_and_errno(monkeypatch):
+    def raise_connection_error(*args, **kwargs):
+        raise URLError(ConnectionError(111, "Connection refused"))
+
+    monkeypatch.setattr(miniflux, "urlopen", raise_connection_error)
+
+    with pytest.raises(MinifluxError) as excinfo:
+        miniflux._default_transport(
+            "GET",
+            "http://127.0.0.1:9/v1/me",
+            {},
+            None,
+            DEFAULT_TIMEOUT,
+        )
+
+    message = str(excinfo.value)
+
+    assert "/v1/me" not in message
+    assert "Errno" not in message
+    assert "http://127.0.0.1:9" in message
+    assert "Connection refused" in message
 
 
 def test_purged_entries_reuse_miniflux_ids(fake, client):

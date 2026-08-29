@@ -17,7 +17,7 @@ or URLs.
 import json
 from http.client import responses
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 USER_AGENT = "alf-news/0.3.0"
@@ -78,10 +78,10 @@ class Miniflux:
     def get_categories(self):
         """
         Return all Miniflux categories.
-        """
-        data = self._request("GET", "/v1/categories")
 
-        return data.get("categories", [])
+        Miniflux returns the categories as a bare JSON array.
+        """
+        return self._request("GET", "/v1/categories")
 
     def create_category(self, title):
         """
@@ -96,28 +96,42 @@ class Miniflux:
     def get_feeds(self, category_id=None):
         """
         Return feeds, optionally restricted to a category.
+
+        Miniflux returns the feeds as a bare JSON array.
         """
         if category_id is None:
-            data = self._request("GET", "/v1/feeds")
-        else:
-            data = self._request(
-                "GET",
-                f"/v1/categories/{category_id}/feeds",
-            )
+            return self._request("GET", "/v1/feeds")
 
-        return data.get("feeds", [])
+        return self._request(
+            "GET",
+            f"/v1/categories/{category_id}/feeds",
+        )
 
     def create_feed(self, feed_url, category_id):
         """
         Add a feed to a category and return the created feed.
+
+        Miniflux confirms feed creation with only the new feed's id, so
+        the complete feed record is retrieved from the category
+        afterwards.
         """
-        return self._request(
+        created = self._request(
             "POST",
             "/v1/feeds",
             payload={
                 "feed_url": feed_url,
                 "category_id": category_id,
             },
+        )
+
+        feed_id = created["feed_id"]
+
+        for feed in self.get_feeds(category_id=category_id):
+            if feed["id"] == feed_id:
+                return feed
+
+        raise MinifluxError(
+            f"The created feed could not be retrieved: {feed_url}"
         )
 
     def refresh_feed(self, feed_id):
@@ -250,5 +264,31 @@ def _default_transport(method, url, headers, payload, timeout):
         return error.code, error.read()
     except URLError as error:
         raise MinifluxError(
-            f"Could not connect to Miniflux at {url}: {error.reason}"
+            f"Could not connect to Miniflux at {_service_url(url)}: "
+            f"{_connection_reason(error.reason)}"
         ) from error
+
+
+def _service_url(url):
+    """
+    Return the scheme and host portion of a service request URL.
+
+    User-facing connection errors mention the configured service, not
+    the internal API endpoint being requested.
+    """
+    parts = urlsplit(url)
+
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _connection_reason(reason):
+    """
+    Return a readable reason for an underlying connection failure.
+    """
+    if isinstance(reason, OSError) and reason.strerror:
+        return reason.strerror
+
+    if reason:
+        return str(reason)
+
+    return "connection failed"
