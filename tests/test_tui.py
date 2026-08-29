@@ -1,8 +1,9 @@
 import asyncio
 
-from textual.widgets import ListView, RadioSet
+from textual.widgets import Button, ListView, RadioSet
 
 from alf.command_catalogue import commands
+from alf.question import QuestionResult
 from alf.tui import ALFTUI, DeleteMemoryConfirm
 
 
@@ -594,6 +595,101 @@ def test_memories_restore_makes_memory_active_again(
             assert any(
                 child.id == "memory-7"
                 for child in app.query_one("#memories").children
+            )
+
+    asyncio.run(run_test())
+
+
+def test_question_success_shows_answer_and_re_arms(monkeypatch):
+    captured = {}
+
+    def fake_answer_question(question, verbose=False, progress=None):
+        captured["arguments"] = (question, verbose)
+        return QuestionResult(
+            answer="The capital is Paris.",
+            source="wikipedia",
+            research_question="capital of France",
+        )
+
+    monkeypatch.setattr("alf.tui.answer_question", fake_answer_question)
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.query_one("#question-input").value = (
+                "What is the capital of France?"
+            )
+
+            app.ask_question()
+
+            worker = next(
+                w for w in app.workers if w.name == "ask_question_worker"
+            )
+            await worker.wait()
+            await pilot.pause()
+
+            assert captured["arguments"] == (
+                "What is the capital of France?",
+                False,
+            )
+            assert (
+                app.query_one("#question-status").render().plain
+                == "Complete"
+            )
+            assert (
+                app.query_one("#answer-text").render().plain
+                == "The capital is Paris."
+            )
+            assert (
+                app.query_one("#answer-source").render().plain
+                == "Source: wikipedia"
+            )
+            assert not app.query_one("#ask", Button).disabled
+            assert app.query_one("#answer-ok").display
+
+    asyncio.run(run_test())
+
+
+def test_question_failure_shows_error_and_re_arms(monkeypatch):
+    def fake_answer_question(question, verbose=False, progress=None):
+        raise Exception("connection refused")
+
+    monkeypatch.setattr("alf.tui.answer_question", fake_answer_question)
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.query_one("#question-input").value = (
+                "What is the capital of France?"
+            )
+
+            app.ask_question()
+
+            worker = next(
+                w for w in app.workers if w.name == "ask_question_worker"
+            )
+            await worker.wait()
+            await pilot.pause()
+
+            assert (
+                app.query_one("#question-status").render().plain
+                == "Failed"
+            )
+            assert (
+                app.query_one("#answer-text").render().plain
+                == "I couldn't get an answer to the question."
+            )
+            assert (
+                app.query_one("#answer-source").render().plain
+                == "Error: connection refused"
+            )
+            assert not app.query_one("#ask", Button).disabled
+            assert app.query_one("#answer-ok").display
+            assert (
+                app.query_one("#question-input").value
+                == "What is the capital of France?"
             )
 
     asyncio.run(run_test())
