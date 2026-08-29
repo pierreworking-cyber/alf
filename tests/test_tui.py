@@ -37,6 +37,9 @@ def make_memory_fakes(
         "memories": memories,
         "deleted": [],
         "remembered": [],
+        "updated": [],
+        "archived": [],
+        "restored": [],
     }
 
     async def fake_sleep(_seconds):
@@ -79,10 +82,40 @@ def make_memory_fakes(
         )
         return remember_result
 
+    def fake_update_memory(memory_id, content):
+        store["updated"].append((memory_id, content))
+
+        for memory in store["memories"]:
+            if memory["id"] == memory_id:
+                memory["content"] = content
+
+        return True
+
+    def fake_archive_memory(memory_id):
+        store["archived"].append(memory_id)
+
+        for memory in store["memories"]:
+            if memory["id"] == memory_id:
+                memory["status"] = "archived"
+
+        return True
+
+    def fake_restore_memory(memory_id):
+        store["restored"].append(memory_id)
+
+        for memory in store["memories"]:
+            if memory["id"] == memory_id:
+                memory["status"] = "active"
+
+        return True
+
     monkeypatch.setattr("alf.tui.get_memories", fake_get_memories)
     monkeypatch.setattr("alf.tui.get_memory", fake_get_memory)
     monkeypatch.setattr("alf.tui.delete_memory", fake_delete_memory)
     monkeypatch.setattr("alf.tui.remember", fake_remember)
+    monkeypatch.setattr("alf.tui.update_memory", fake_update_memory)
+    monkeypatch.setattr("alf.tui.archive_memory", fake_archive_memory)
+    monkeypatch.setattr("alf.tui.restore_memory", fake_restore_memory)
     monkeypatch.setattr(
         "alf.tui.find_related_memory_candidates",
         fake_find_related_memory_candidates,
@@ -381,6 +414,186 @@ def test_remember_empty_content_is_rejected(monkeypatch):
             assert (
                 app.query_one("#remember-status").render().plain
                 == "Memory saved."
+            )
+
+    asyncio.run(run_test())
+
+
+def test_memories_select_shows_selected_details(monkeypatch):
+    make_memory_fakes(
+        monkeypatch,
+        memories=[
+            make_sample_memory(7, content="First memory."),
+            make_sample_memory(12, content="Second memory."),
+        ],
+    )
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.show_memories()
+            await pilot.pause()
+
+            await pilot.click("#memory-12")
+            await pilot.pause()
+
+            details = app.query_one("#details").render().plain
+
+            assert "Memory 12" in details
+            assert "Second memory." in details
+            assert "First memory." not in details
+            assert (
+                app.query_one("#memory-archive").label.plain
+                == "Archive"
+            )
+
+    asyncio.run(run_test())
+
+
+def test_memories_edit_save_updates_memory(monkeypatch):
+    store = make_memory_fakes(
+        monkeypatch,
+        memories=[make_sample_memory(7, content="Original content.")],
+    )
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.show_memories()
+            await pilot.pause()
+
+            await pilot.click("#memory-7")
+            await pilot.pause()
+            await pilot.click("#memory-edit")
+            await pilot.pause()
+
+            editor = app.query_one("#memory-editor")
+
+            assert editor.text == "Original content."
+            assert editor.display
+
+            editor.text = "Updated content."
+
+            await pilot.click("#memory-save")
+            await pilot.pause()
+
+            assert store["updated"] == [(7, "Updated content.")]
+            assert "Updated content." in (
+                app.query_one("#details").render().plain
+            )
+            assert not editor.display
+            assert app.query_one("#details").display
+
+    asyncio.run(run_test())
+
+
+def test_memories_edit_cancel_does_not_update(monkeypatch):
+    store = make_memory_fakes(
+        monkeypatch,
+        memories=[make_sample_memory(7, content="Original content.")],
+    )
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.show_memories()
+            await pilot.pause()
+
+            await pilot.click("#memory-7")
+            await pilot.pause()
+            await pilot.click("#memory-edit")
+            await pilot.pause()
+
+            editor = app.query_one("#memory-editor")
+            editor.text = "Should not be saved."
+
+            await pilot.click("#memory-cancel")
+            await pilot.pause()
+
+            assert store["updated"] == []
+            assert "Original content." in (
+                app.query_one("#details").render().plain
+            )
+            assert not editor.display
+            assert app.query_one("#details").display
+
+    asyncio.run(run_test())
+
+
+def test_memories_archive_calls_archive_and_removes_from_active_list(
+    monkeypatch,
+):
+    store = make_memory_fakes(
+        monkeypatch,
+        memories=[make_sample_memory(7, content="To be archived.")],
+    )
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.show_memories()
+            await pilot.pause()
+
+            await pilot.click("#memory-7")
+            await pilot.pause()
+            await pilot.click("#memory-archive")
+            await pilot.pause()
+
+            assert store["archived"] == [7]
+            assert store["memories"][0]["status"] == "archived"
+            assert not any(
+                child.id == "memory-7"
+                for child in app.query_one("#memories").children
+            )
+
+    asyncio.run(run_test())
+
+
+def test_memories_restore_makes_memory_active_again(
+    monkeypatch,
+):
+    store = make_memory_fakes(
+        monkeypatch,
+        memories=[
+            make_sample_memory(7, content="Archived memory.", status="archived")
+        ],
+    )
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.show_memories()
+            await pilot.pause()
+
+            await pilot.click("#memories-all")
+            await pilot.pause()
+
+            assert any(
+                child.id == "memory-7"
+                for child in app.query_one("#memories").children
+            )
+
+            await pilot.click("#memory-7")
+            await pilot.pause()
+
+            assert (
+                app.query_one("#memory-archive").label.plain
+                == "Restore"
+            )
+
+            await pilot.click("#memory-archive")
+            await pilot.pause()
+
+            assert store["restored"] == [7]
+            assert store["memories"][0]["status"] == "active"
+            assert any(
+                child.id == "memory-7"
+                for child in app.query_one("#memories").children
             )
 
     asyncio.run(run_test())
