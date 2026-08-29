@@ -1,6 +1,7 @@
 import asyncio
+import threading
 
-from textual.widgets import Button, ListView, RadioSet
+from textual.widgets import Button, Input, ListView, RadioSet
 
 from alf.command_catalogue import commands
 from alf.question import QuestionResult
@@ -691,5 +692,68 @@ def test_question_failure_shows_error_and_re_arms(monkeypatch):
                 app.query_one("#question-input").value
                 == "What is the capital of France?"
             )
+
+    asyncio.run(run_test())
+
+
+def test_question_second_submission_is_rejected_while_in_flight(monkeypatch):
+    started = threading.Event()
+    release = threading.Event()
+    invocations = []
+
+    def fake_answer_question(question, verbose=False, progress=None):
+        invocations.append(question)
+        started.set()
+        release.wait(timeout=10)
+        return QuestionResult(
+            answer="The capital is Paris.",
+            source="wikipedia",
+            research_question="capital of France",
+        )
+
+    monkeypatch.setattr("alf.tui.answer_question", fake_answer_question)
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            input_widget = app.query_one("#question-input", Input)
+            input_widget.value = "What is the capital of France?"
+
+            app.ask_question()
+
+            worker = next(
+                w for w in app.workers if w.name == "ask_question_worker"
+            )
+
+            for _ in range(5000):
+                if started.is_set():
+                    break
+                await asyncio.sleep(0.01)
+            assert started.is_set()
+
+            await app.on_input_submitted(
+                type("Event", (), {"input": input_widget})()
+            )
+
+            assert len(invocations) == 1
+            assert len(
+                [w for w in app.workers if w.name == "ask_question_worker"]
+            ) == 1
+
+            release.set()
+            await worker.wait()
+            await pilot.pause()
+
+            assert len(invocations) == 1
+            assert (
+                app.query_one("#question-status").render().plain
+                == "Complete"
+            )
+            assert (
+                app.query_one("#answer-text").render().plain
+                == "The capital is Paris."
+            )
+            assert not app.query_one("#ask", Button).disabled
 
     asyncio.run(run_test())

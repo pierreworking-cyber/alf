@@ -760,6 +760,9 @@ class ALFTUI(App):
 
 
     def ask_question(self) -> None:
+        if self.query_one("#ask", Button).disabled:
+            return
+
         question = self.query_one("#question-input", Input).value
 
         if not question.strip():
