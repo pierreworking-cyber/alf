@@ -681,6 +681,15 @@ def test_news_command_requires_subcommand(monkeypatch):
     assert captured["catalogue"]["id"] == "news.manage"
 
 
+def test_news_help_names_init_connection_flags():
+    notes = commands.commands["news"]["notes"]
+
+    assert any(
+        "alf news init --url" in note and "--key" in note
+        for note in notes
+    )
+
+
 def test_news_command_rejects_unknown_subcommand(monkeypatch):
     captured = []
 

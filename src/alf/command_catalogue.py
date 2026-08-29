@@ -271,7 +271,8 @@ commands = {
         "notes": [
             "Commands: init, add, refresh, list, query, status",
             "The news service is provided by Miniflux.",
-            "Run `alf news init` before adding a subject.",
+            "Configure the news service with `alf news init "
+            "--url <base> --key <api-key>` before adding a subject.",
         ],
         "examples": [
             'alf news init --url http://127.0.0.1:8765 --key <api-key>',
