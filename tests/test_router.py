@@ -37,6 +37,25 @@ def test_route_news_question_without_classifier(monkeypatch):
     assert route("What news on the ALF project recently?") == Route.NEWS
 
 
+def test_route_any_news_question_without_classifier(monkeypatch):
+    monkeypatch.setattr(
+        "alf.router.classify",
+        lambda question: pytest.fail("classifier should not be consulted"),
+    )
+
+    assert route("Any news about Trump recently?") == Route.NEWS
+    assert route("Any news on Trump?") == Route.NEWS
+
+
+def test_route_person_activity_question_not_news(monkeypatch):
+    monkeypatch.setattr("alf.router.classify", lambda question: Route.RESEARCH)
+
+    assert route(
+        "What has Boris Johnson said recently about the economy?"
+    ) == Route.RESEARCH
+    assert route("What did Boris Johnson do yesterday?") == Route.RESEARCH
+
+
 def test_route_non_news_question_falls_back_to_classifier(monkeypatch):
     monkeypatch.setattr("alf.router.classify", lambda question: Route.RESEARCH)
 

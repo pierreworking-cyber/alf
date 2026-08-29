@@ -33,16 +33,34 @@ _UNIT_DAYS = {
     "months": 30,
 }
 
+_SPELLED_NUMBERS = {
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+}
+
+_SPELLED_NUMBER_WORDS = "|".join(_SPELLED_NUMBERS)
+
+_NUMBER_COUNTS = rf"\d+|{_SPELLED_NUMBER_WORDS}"
+
 _RELATIVE_WINDOW = re.compile(
     r"\b("
     r"in the last|over the last|during the last|for the last|"
     r"within the last|last|past|previous"
-    r")\s+(\d+)\s+(hour|hours|day|days|week|weeks|month|months)\b",
+    r")\s+("
+    rf"{_NUMBER_COUNTS}"
+    r")\s+(hour|hours|day|days|week|weeks|month|months)\b",
     re.IGNORECASE,
 )
 
 _AGO_WINDOW = re.compile(
-    r"\b(\d+)\s+(hour|hours|day|days|week|weeks|month|months)\s+ago\b",
+    r"\b("
+    rf"{_NUMBER_COUNTS}"
+    r")\s+(hour|hours|day|days|week|weeks|month|months)\s+ago\b",
     re.IGNORECASE,
 )
 
@@ -55,13 +73,13 @@ _THIS_WEEK = re.compile(r"\bthis week\b", re.IGNORECASE)
 _RECENTLY = re.compile(r"\b(recently|lately|of late)\b", re.IGNORECASE)
 
 _QUESTION_LEAD = re.compile(
-    r"^\s*(?:what|when|which|who|where|why|how|is|are|was|were|"
+    r"^\s*(?:any|what|when|which|who|where|why|how|is|are|was|were|"
     r"does|did|has|have)\b",
     re.IGNORECASE,
 )
 
 _NEWS_MARKERS = re.compile(
-    r"\b(?:news|headline|headlines|happened|happening|been up to|"
+    r"\b(?:news|headline|headlines|happened|happening|"
     r"going on|developments?)\b",
     re.IGNORECASE,
 )
@@ -240,18 +258,39 @@ def _has_past_date(text):
     )
 
 
+def _window_days(count, unit):
+    """
+    Resolve a window count and unit to a number of days.
+
+    Counts may be given in digits or in the supported spelled-out forms.
+    """
+
+    if count.isdigit():
+        value = float(count)
+    else:
+        value = _SPELLED_NUMBERS[count.lower()]
+
+    return value * _UNIT_DAYS[unit]
+
+
 def _interpret_window(text, now):
     """
-    Resolve an explicit recency window, or default for news vocabulary.
+    Resolve the recency window for a News question, gating News intent.
 
-    Returns a ``(NewsWindow, remaining text)`` pair when the question's
-    window is known, otherwise ``None``.
+    An explicit relative or ago window establishes a News intent on its
+    own. Otherwise the question must carry current-events vocabulary;
+    calendar words such as "today", "yesterday", "this week", or
+    "recently" then select the window, with a default applied when no
+    window is named.
+
+    Returns a ``(NewsWindow, remaining text)`` pair when the question is
+    a News question, otherwise ``None``.
     """
 
     match = _RELATIVE_WINDOW.search(text)
 
     if match:
-        days = int(match.group(2)) * _UNIT_DAYS[match.group(3)]
+        days = _window_days(match.group(2), match.group(3))
 
         if 0 < days <= MAX_WINDOW_DAYS:
             return (
@@ -262,13 +301,16 @@ def _interpret_window(text, now):
     match = _AGO_WINDOW.search(text)
 
     if match:
-        days = int(match.group(1)) * _UNIT_DAYS[match.group(2)]
+        days = _window_days(match.group(1), match.group(2))
 
         if 0 < days <= MAX_WINDOW_DAYS:
             return (
                 _window(now - timedelta(days=days), now, days),
                 _trim(text, match),
             )
+
+    if not _NEWS_MARKERS.search(text):
+        return None
 
     match = _TODAY.search(text)
 
@@ -300,11 +342,8 @@ def _interpret_window(text, now):
             _trim(text, match),
         )
 
-    if _NEWS_MARKERS.search(text):
-        start = now - timedelta(days=NEWS_DEFAULT_WINDOW_DAYS)
-        return NewsWindow(start, now, NEWS_DEFAULT_WINDOW_DAYS), text
-
-    return None
+    start = now - timedelta(days=NEWS_DEFAULT_WINDOW_DAYS)
+    return NewsWindow(start, now, NEWS_DEFAULT_WINDOW_DAYS), text
 
 
 def _window(start, end, days):
