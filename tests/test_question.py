@@ -1,6 +1,7 @@
 import pytest
 
 from alf import commands, question
+from alf.news_intent import NewsIntent, NewsWindow
 from alf.routes import Route
 
 
@@ -477,5 +478,165 @@ def test_answer_question_declines_unsupported_question(monkeypatch):
     )
 
     assert result.answer == "I can't help with that."
+    assert result.source is None
+    assert result.research_question is None
+
+
+def make_news_items():
+    base = {
+        "id": 1,
+        "subject": "Ukraine",
+        "feed_title": "https://feeds.example/ukraine.rss",
+        "title": "Ukraine economy shows strong growth",
+        "url": "https://feeds.example/n/1",
+        "summary": "",
+        "published_at": "2026-08-27T10:00:00Z",
+        "first_seen_at": "2026-08-27T10:01:00",
+        "matched_terms": ["economy"],
+        "content": None,
+    }
+
+    return [
+        base,
+        {
+            **base,
+            "id": 2,
+            "title": "Ukraine plans a redesign",
+            "url": "https://feeds.example/n/2",
+            "matched_terms": ["economy", "redesign"],
+        },
+    ]
+
+
+def make_news_intent():
+    return NewsIntent(
+        topics=("economy", "redesign"),
+        window=NewsWindow(None, None, None),
+        original="What has happened in Ukraine recently?",
+    )
+
+
+def test_answer_question_uses_news_when_relevant(monkeypatch):
+    items = make_news_items()
+
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.NEWS,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "interpret_news_question",
+        lambda question: make_news_intent(),
+    )
+
+    captured = {}
+
+    def fake_query_items(query):
+        captured["query"] = query
+        return items
+
+    monkeypatch.setattr(question, "query_items", fake_query_items)
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        lambda *arguments, **kwargs: pytest.fail(
+            "News answers must not be passed to the LLM"
+        ),
+    )
+
+    result = question.answer_question(
+        "What has happened in Ukraine recently?"
+    )
+
+    assert isinstance(captured["query"], question.NewsQuery)
+    assert captured["query"].topics == ("economy", "redesign")
+
+    assert result.answer == (
+        "Found 2 stored news items matching economy, redesign."
+    )
+    assert result.source == "news"
+    assert result.research_question is None
+    assert result.news_items == items
+
+
+def test_answer_question_admits_when_no_news_matches(monkeypatch):
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.NEWS,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "interpret_news_question",
+        lambda question: make_news_intent(),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "query_items",
+        lambda query: [],
+    )
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        lambda *arguments, **kwargs: pytest.fail(
+            "ALF must not answer without news evidence"
+        ),
+    )
+
+    result = question.answer_question(
+        "What has happened in Ukraine recently?"
+    )
+
+    assert result.answer == (
+        "I couldn't find any stored news items about that. "
+        "I don't want to guess."
+    )
+    assert result.source is None
+    assert result.research_question is None
+    assert result.news_items == []
+
+
+def test_answer_question_admits_when_news_topic_unclear(monkeypatch):
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.NEWS,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "interpret_news_question",
+        lambda question: None,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "query_items",
+        lambda query: pytest.fail(
+            "Stored news must not be queried without a topic"
+        ),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        lambda *arguments, **kwargs: pytest.fail(
+            "ALF must not answer without news evidence"
+        ),
+    )
+
+    result = question.answer_question(
+        "What has happened recently?"
+    )
+
+    assert result.answer == (
+        "I couldn't tell which news topic you're asking about."
+    )
     assert result.source is None
     assert result.research_question is None

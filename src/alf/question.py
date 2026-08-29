@@ -18,6 +18,8 @@ from .answer import prepare_answer
 from .interpretation import interpret_question
 from .llm import evaluate_research
 from .memory import find_relevant_memories
+from .news import NewsQuery, query_items
+from .news_intent import interpret_news_question
 from .research import research_web, research_wikipedia_candidates
 from .router import route
 from .routes import Route
@@ -31,14 +33,17 @@ class QuestionResult:
     Attributes:
         answer: The final answer presented to the user.
         source: The source used to support the answer, or ``None`` when
-            no reliable research was found.
+            no reliable evidence was found.
         research_question: The interpreted question used for research,
             or ``None`` when research was not required.
+        news_items: The stored news items supporting a news answer, or
+            ``None`` when the answer is not news-backed.
     """
 
     answer: str
     source: str | None
     research_question: str | None
+    news_items: list | None = None
 
 
 def answer_question(
@@ -140,6 +145,40 @@ def answer_question(
             research_question=None,
         )
 
+    if selected_route == Route.NEWS:
+        report("Searching stored news…")
+
+        intent = interpret_news_question(original_question)
+
+        if intent is None:
+            return QuestionResult(
+                answer=(
+                    "I couldn't tell which news topic you're asking about."
+                ),
+                source=None,
+                research_question=None,
+            )
+
+        items = query_items(NewsQuery.from_intent(intent))
+
+        if not items:
+            return QuestionResult(
+                answer=(
+                    "I couldn't find any stored news items about that. "
+                    "I don't want to guess."
+                ),
+                source=None,
+                research_question=None,
+                news_items=[],
+            )
+
+        return QuestionResult(
+            answer=_news_result_summary(items),
+            source="news",
+            research_question=None,
+            news_items=items,
+        )
+
     if selected_route == Route.DECLINE:
         return QuestionResult(
             answer="I can't help with that.",
@@ -218,4 +257,31 @@ def answer_question(
         ),
         source=None,
         research_question=research_question,
+    )
+
+
+def _news_result_summary(items):
+    """
+    Produce a deterministic summary of matching stored news items.
+
+    Args:
+        items: The news item dictionaries returned by ``query_items``.
+
+    Returns:
+        The answer text describing how many stored news items matched
+        the question's topics.
+    """
+
+    terms = []
+
+    for item in items:
+        for term in item["matched_terms"]:
+            if term not in terms:
+                terms.append(term)
+
+    topic = ", ".join(terms) if terms else "your topic"
+
+    return (
+        f"Found {len(items)} stored news item"
+        f"{'s' if len(items) != 1 else ''} matching {topic}."
     )
