@@ -140,6 +140,90 @@ def test_render_question_without_source(capsys):
     assert "Source:" not in output
 
 
+def test_render_question_includes_news_sources(capsys):
+    news_items = [
+        {
+            "id": 1,
+            "subject": "Ukraine",
+            "feed_title": "https://feeds.example/ukraine.rss",
+            "title": "Ukraine economy shows strong growth",
+            "url": "https://feeds.example/n/1",
+            "summary": "",
+            "published_at": "2026-08-27T10:00:00Z",
+            "first_seen_at": "2026-08-27T10:01:00",
+            "matched_terms": ["economy"],
+            "content": None,
+        },
+        {
+            "id": 2,
+            "subject": "Ukraine",
+            "feed_title": "https://feeds.example/ukraine.rss",
+            "title": "Ukraine plans a redesign",
+            "url": "https://feeds.example/n/2",
+            "summary": "",
+            "published_at": "2026-08-27T10:00:00Z",
+            "first_seen_at": "2026-08-27T10:01:00",
+            "matched_terms": ["economy", "redesign"],
+            "content": None,
+        },
+    ]
+
+    presentation.render_question(
+        "Ukraine's economy grew strongly last week [1]. "
+        "A redesign is planned [2].",
+        "news",
+        news_items=news_items,
+    )
+
+    output = capsys.readouterr().out
+
+    assert "Ukraine's economy grew strongly last week [1]." in output
+    assert "Source: News" in output
+    assert "Sources" in output
+    assert "[1] Ukraine · 27-Aug-2026 10:00 (Example)" in output
+    assert "Ukraine economy shows strong growth" in output
+    assert "https://feeds.example/n/1" in output
+    assert "[2] Ukraine · 27-Aug-2026 10:00 (Example)" in output
+    assert "Ukraine plans a redesign" in output
+    assert "https://feeds.example/n/2" in output
+
+
+def test_render_question_omits_news_sources_when_absent(capsys):
+    presentation.render_question(
+        "Ukraine's economy grew strongly last week.",
+        "news",
+    )
+
+    output = capsys.readouterr().out
+
+    assert "Ukraine's economy grew strongly last week." in output
+    assert "Sources" not in output
+
+
+def test_render_news_source_without_date_or_label(capsys):
+    presentation.render_news_source(
+        {
+            "id": 1,
+            "subject": "Ukraine",
+            "feed_title": "",
+            "title": "Ukraine economy shows strong growth",
+            "url": "https://feeds.example/n/1",
+            "summary": "",
+            "published_at": None,
+            "first_seen_at": "2026-08-27T10:01:00",
+            "matched_terms": ["economy"],
+            "content": None,
+        },
+        1,
+    )
+
+    output = capsys.readouterr().out
+
+    assert "[1] Ukraine" in output
+    assert "Ukraine economy shows strong growth" in output
+    assert "https://feeds.example/n/1" in output
+
+
 def test_render_ambiguous_command(capsys):
     presentation.render_ambiguous_command(
         "memor",

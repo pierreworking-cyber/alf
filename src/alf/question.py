@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 from .answer import prepare_answer
 from .interpretation import interpret_question
-from .llm import evaluate_research
+from .llm import NEWS_SYNTHESIS_LIMIT, evaluate_research, synthesize_news
 from .memory import find_relevant_memories
 from .news import NewsQuery, query_items
 from .news_intent import interpret_news_question
@@ -172,11 +172,27 @@ def answer_question(
                 news_items=[],
             )
 
+        evidence_items = items[:NEWS_SYNTHESIS_LIMIT]
+
+        report("Asking local language model…")
+
+        try:
+            answer = synthesize_news(
+                original_question,
+                evidence_items,
+                verbose=verbose,
+            )
+        except Exception:
+            answer = ""
+
+        if not answer or not answer.strip():
+            answer = _news_result_summary(evidence_items)
+
         return QuestionResult(
-            answer=_news_result_summary(items),
+            answer=answer,
             source="news",
             research_question=None,
-            news_items=items,
+            news_items=evidence_items,
         )
 
     if selected_route == Route.DECLINE:

@@ -30,8 +30,8 @@ def test_question_command_passes_question_to_question_engine(monkeypatch):
     monkeypatch.setattr(
         commands,
         "render_question",
-        lambda answer, source, research_question: output.append(
-            (answer, source, research_question)
+        lambda answer, source, research_question, news_items=None: output.append(
+            (answer, source, research_question, news_items)
         ),
     )
 
@@ -54,6 +54,75 @@ def test_question_command_passes_question_to_question_engine(monkeypatch):
             "Python's len() function returns the number of items.",
             "llm",
             "What does Python's len() function return?",
+            None,
+        )
+    ]
+
+
+def test_question_command_passes_news_items_to_question_engine(monkeypatch):
+    captured = {}
+
+    news_items = [
+        {
+            "id": 1,
+            "subject": "Ukraine",
+            "feed_title": "https://feeds.example/ukraine.rss",
+            "title": "Ukraine economy shows strong growth",
+            "url": "https://feeds.example/n/1",
+            "summary": "",
+            "published_at": "2026-08-27T10:00:00Z",
+            "first_seen_at": "2026-08-27T10:01:00",
+            "matched_terms": ["economy"],
+            "content": None,
+        }
+    ]
+
+    result = question.QuestionResult(
+        answer="Ukraine's economy grew strongly last week [1].",
+        source="news",
+        research_question=None,
+        news_items=news_items,
+    )
+
+    def fake_answer_question(original_question, verbose=False):
+        captured["original_question"] = original_question
+        return result
+
+    monkeypatch.setattr(
+        commands,
+        "answer_question",
+        fake_answer_question,
+    )
+
+    output = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_question",
+        lambda answer, source, research_question, news_items=None: output.append(
+            (answer, source, research_question, news_items)
+        ),
+    )
+
+    commands.question_command(
+        "What",
+        "has",
+        "happened",
+        "in",
+        "Ukraine",
+        "recently?",
+    )
+
+    assert captured["original_question"] == (
+        "What has happened in Ukraine recently?"
+    )
+
+    assert output == [
+        (
+            "Ukraine's economy grew strongly last week [1].",
+            "news",
+            None,
+            news_items,
         )
     ]
 
@@ -539,6 +608,14 @@ def test_answer_question_uses_news_when_relevant(monkeypatch):
 
     monkeypatch.setattr(question, "query_items", fake_query_items)
 
+    def fake_synthesize_news(question, items, verbose=False):
+        captured["synthesize_question"] = question
+        captured["synthesize_items"] = items
+        captured["synthesize_verbose"] = verbose
+        return "Ukraine's economy grew strongly last week [1]."
+
+    monkeypatch.setattr(question, "synthesize_news", fake_synthesize_news)
+
     monkeypatch.setattr(
         question,
         "prepare_answer",
@@ -553,6 +630,184 @@ def test_answer_question_uses_news_when_relevant(monkeypatch):
 
     assert isinstance(captured["query"], question.NewsQuery)
     assert captured["query"].topics == ("economy", "redesign")
+
+    assert captured["synthesize_question"] == (
+        "What has happened in Ukraine recently?"
+    )
+    assert captured["synthesize_items"] == items
+    assert captured["synthesize_verbose"] is False
+
+    assert result.answer == (
+        "Ukraine's economy grew strongly last week [1]."
+    )
+    assert result.source == "news"
+    assert result.research_question is None
+    assert result.news_items == items
+
+
+def test_answer_question_forwards_verbose_to_news_synthesis(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.NEWS,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "interpret_news_question",
+        lambda question: make_news_intent(),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "query_items",
+        lambda query: make_news_items(),
+    )
+
+    def fake_synthesize_news(question, items, verbose=False):
+        captured["verbose"] = verbose
+        return "Ukraine's economy grew strongly last week [1]."
+
+    monkeypatch.setattr(question, "synthesize_news", fake_synthesize_news)
+
+    result = question.answer_question(
+        "What has happened in Ukraine recently?",
+        verbose=True,
+    )
+
+    assert captured["verbose"] is True
+    assert result.source == "news"
+
+
+def test_answer_question_limits_news_evidence(monkeypatch):
+    items = make_news_items()
+
+    many_items = [
+        {**items[0], "id": index, "title": f"Story {index}"}
+        for index in range(1, 21)
+    ]
+
+    captured = {}
+
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.NEWS,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "interpret_news_question",
+        lambda question: make_news_intent(),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "query_items",
+        lambda query: many_items,
+    )
+
+    def fake_synthesize_news(question, items, verbose=False):
+        captured["items"] = items
+        return "A news update [1]."
+
+    monkeypatch.setattr(question, "synthesize_news", fake_synthesize_news)
+
+    result = question.answer_question(
+        "What has happened in Ukraine recently?"
+    )
+
+    assert len(captured["items"]) == 15
+    assert result.news_items == captured["items"]
+    assert len(result.news_items) == 15
+
+
+def test_answer_question_falls_back_when_synthesis_fails(monkeypatch):
+    items = make_news_items()
+
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.NEWS,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "interpret_news_question",
+        lambda question: make_news_intent(),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "query_items",
+        lambda query: items,
+    )
+
+    def raise_runtime_error(*arguments, **kwargs):
+        raise RuntimeError("local language model unavailable")
+
+    monkeypatch.setattr(question, "synthesize_news", raise_runtime_error)
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        lambda *arguments, **kwargs: pytest.fail(
+            "News answers must not be passed to the LLM"
+        ),
+    )
+
+    result = question.answer_question(
+        "What has happened in Ukraine recently?"
+    )
+
+    assert result.answer == (
+        "Found 2 stored news items matching economy, redesign."
+    )
+    assert result.source == "news"
+    assert result.research_question is None
+    assert result.news_items == items
+
+
+def test_answer_question_falls_back_when_synthesis_output_is_blank(monkeypatch):
+    items = make_news_items()
+
+    monkeypatch.setattr(
+        question,
+        "route",
+        lambda question: Route.NEWS,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "interpret_news_question",
+        lambda question: make_news_intent(),
+    )
+
+    monkeypatch.setattr(
+        question,
+        "query_items",
+        lambda query: items,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "synthesize_news",
+        lambda *arguments, **kwargs: "\n \t",
+    )
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        lambda *arguments, **kwargs: pytest.fail(
+            "News answers must not be passed to the LLM"
+        ),
+    )
+
+    result = question.answer_question(
+        "What has happened in Ukraine recently?"
+    )
 
     assert result.answer == (
         "Found 2 stored news items matching economy, redesign."

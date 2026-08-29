@@ -669,6 +669,7 @@ def question_command(*arguments):
         result.answer,
         result.source,
         result.research_question,
+        news_items=result.news_items,
     )
 
 

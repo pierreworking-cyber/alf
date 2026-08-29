@@ -17,6 +17,7 @@ that does not naturally fit one of the semantic helpers.
 """
 
 from datetime import datetime
+from urllib.parse import urlparse
 
 from rich.console import Console
 from rich.table import Table
@@ -303,9 +304,21 @@ def render_question(
     answer,
     source=None,
     interpretation=None,
+    news_items=None,
 ):
     """
     Render ALF's answer to a question.
+
+    When a news answer is rendered, its evidence items are listed as
+    numbered sources after the answer.
+
+    Args:
+        answer: The answer text to display.
+        source: The source supporting the answer, or ``None``.
+        interpretation: The interpreted question, when it differs from
+            the answer text.
+        news_items: The news item dictionaries supporting a news answer,
+            or ``None``.
     """
 
     console.print()
@@ -322,7 +335,75 @@ def render_question(
     if source:
         console.print(f"Source: {source.title()}")
 
+    if news_items:
+        console.print()
+        section("Sources")
+
+        for index, item in enumerate(news_items, start=1):
+            render_news_source(item, index)
+
     console.print()
+
+
+def render_news_source(item, index):
+    """
+    Render a single news source supporting a synthesized news answer.
+    """
+
+    subject = item.get("subject", "News")
+    published = _news_item_date(item.get("published_at"))
+    label = _news_source_label(item.get("feed_title"))
+
+    detail = f"{subject} · {published}" if published else subject
+
+    if label:
+        detail = f"{detail} ({label})"
+
+    console.print(f"[{index}] {detail}", markup=False)
+
+    if item.get("title"):
+        console.print(f"    {item['title']}", markup=False)
+
+    if item.get("url"):
+        console.print(f"    {item['url']}", markup=False)
+
+
+def _news_item_date(published_at):
+    """
+    Format a news item's publication time for display.
+    """
+
+    if not published_at:
+        return ""
+
+    try:
+        return datetime.fromisoformat(
+            published_at.replace("Z", "+00:00")
+        ).strftime("%d-%b-%Y %H:%M")
+    except ValueError:
+        return ""
+
+
+def _news_source_label(feed_title):
+    """
+    Derive a readable outlet label from a feed URL.
+
+    The URL remains the authoritative source identifier; the label is a
+    presentation convenience and never invents a publisher identity.
+    """
+
+    if not feed_title:
+        return None
+
+    try:
+        host = urlparse(feed_title).hostname or ""
+    except ValueError:
+        return None
+
+    host = host.removeprefix("www.").removeprefix("feeds.")
+    label = host.split(".", 1)[0]
+
+    return label.capitalize() or None
 
 def render_calculation(result):
     """
