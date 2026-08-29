@@ -18,7 +18,12 @@ def make_sample_memory(memory_id=7, content=None, status="active"):
     }
 
 
-def make_memory_fakes(monkeypatch, memories=None):
+def make_memory_fakes(
+    monkeypatch,
+    memories=None,
+    remember_result=True,
+    related_candidates=(),
+):
     """Install fake memory functions so TUI tests avoid the real database.
 
     Mutation calls are recorded on the returned store so tests can assert
@@ -31,7 +36,14 @@ def make_memory_fakes(monkeypatch, memories=None):
     store = {
         "memories": memories,
         "deleted": [],
+        "remembered": [],
     }
+
+    async def fake_sleep(_seconds):
+        return None
+
+    def fake_find_related_memory_candidates(content, limit=5):
+        return list(related_candidates)
 
     def fake_get_memories(options=None):
         if options is not None and options.get("include_archived"):
@@ -56,9 +68,26 @@ def make_memory_fakes(monkeypatch, memories=None):
         ]
         return True
 
+    def fake_remember(
+        category,
+        content,
+        previous_memory_id=None,
+        related_memory_ids=None,
+    ):
+        store["remembered"].append(
+            (category, content, previous_memory_id, related_memory_ids)
+        )
+        return remember_result
+
     monkeypatch.setattr("alf.tui.get_memories", fake_get_memories)
     monkeypatch.setattr("alf.tui.get_memory", fake_get_memory)
     monkeypatch.setattr("alf.tui.delete_memory", fake_delete_memory)
+    monkeypatch.setattr("alf.tui.remember", fake_remember)
+    monkeypatch.setattr(
+        "alf.tui.find_related_memory_candidates",
+        fake_find_related_memory_candidates,
+    )
+    monkeypatch.setattr("alf.tui.asyncio.sleep", fake_sleep)
 
     return store
 
@@ -282,6 +311,76 @@ def test_navigation_round_trip_switches_workspaces(monkeypatch):
             assert (
                 app.query_one("#footer-guidance").render().plain
                 == commands["question"]["tui"]["guidance"]
+            )
+
+    asyncio.run(run_test())
+
+
+def test_remember_save_calls_application_and_clears_input(monkeypatch):
+    store = make_memory_fakes(monkeypatch)
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.show_remember()
+            await pilot.pause()
+
+            app.query_one("#remember-category").value = "preference"
+            app.query_one("#remember-input").text = "User prefers terse answers."
+
+            await pilot.click("#remember-save")
+            await pilot.pause()
+
+            assert store["remembered"] == [
+                (
+                    "preference",
+                    "User prefers terse answers.",
+                    None,
+                    None,
+                )
+            ]
+            assert (
+                app.query_one("#remember-status").render().plain
+                == "Memory saved."
+            )
+            assert app.query_one("#remember-input").text == ""
+            assert len(app.query_one("#remember-related").children) == 0
+
+    asyncio.run(run_test())
+
+
+def test_remember_empty_content_is_rejected(monkeypatch):
+    store = make_memory_fakes(monkeypatch)
+
+    async def run_test():
+        app = ALFTUI()
+
+        async with app.run_test() as pilot:
+            app.show_remember()
+            await pilot.pause()
+
+            app.query_one("#remember-input").text = "   "
+
+            await pilot.click("#remember-save")
+            await pilot.pause()
+
+            assert store["remembered"] == []
+            assert (
+                app.query_one("#remember-status").render().plain
+                == "Please enter something to remember."
+            )
+
+            app.query_one("#remember-input").text = "A new memory."
+            await app.save_remembered_memory()
+            await pilot.pause()
+
+            assert store["remembered"] == [
+                ("note", "A new memory.", None, None)
+            ]
+            assert (
+                app.query_one("#remember-status").render().plain
+                == "Memory saved."
             )
 
     asyncio.run(run_test())
