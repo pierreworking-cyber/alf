@@ -20,6 +20,33 @@ def test_classify_memory_question(monkeypatch):
     assert classify("What did we decide about SearXNG?") == Route.MEMORY
 
 
+def test_classify_news_question(monkeypatch):
+    monkeypatch.setattr(
+        "alf.classifier.llm.generate",
+        lambda prompt: "news",
+    )
+
+    assert classify("What has happened with SearXNG this week?") == Route.NEWS
+
+
+def test_classification_prompt_lists_news_category(monkeypatch):
+    captured = {}
+
+    def fake_generate(prompt):
+        captured["prompt"] = prompt
+        return "news"
+
+    monkeypatch.setattr(
+        "alf.classifier.llm.generate",
+        fake_generate,
+    )
+
+    classify("What has happened with SearXNG this week?")
+
+    assert "news" in captured["prompt"]
+    assert "What has happened with SearXNG this week?" in captured["prompt"]
+
+
 def test_classify_research_question(monkeypatch):
     monkeypatch.setattr(
         "alf.classifier.llm.generate",
