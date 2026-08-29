@@ -269,7 +269,7 @@ commands = {
         "help": "Manage ALF's subscribed news subjects.",
         "usage": "alf news <command> [arguments]",
         "notes": [
-            "Commands: init, add, refresh, list, status",
+            "Commands: init, add, refresh, list, query, status",
             "The news service is provided by Miniflux.",
             "Run `alf news init` before adding a subject.",
         ],
@@ -280,6 +280,7 @@ commands = {
             'alf news refresh "Ukraine"',
             'alf news list',
             'alf news list "Ukraine" --days 7',
+            'alf news query "Ukraine" --days 7 --limit 10',
             'alf news status',
         ],
     },

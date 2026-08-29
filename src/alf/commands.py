@@ -9,6 +9,8 @@ Command routing is deterministic: command names and unambiguous prefixes
 are resolved explicitly rather than interpreted as natural-language intent.
 """
 
+from datetime import UTC, datetime, timedelta
+
 from .calc import CalculationError, calculate
 from .command_catalogue import commands
 from .command_resolution import resolve_category, resolve_command, resolve_option
@@ -29,13 +31,21 @@ from .memory import (
 )
 from .miniflux import MinifluxError
 from .news import (
+    NEWS_QUERY_LIMIT,
     NewsError,
+    NewsQuery,
     add_subject,
     get_news_config,
     get_news_status,
     initialise,
     list_items,
+    query_items,
     refresh,
+)
+from .news_intent import (
+    MAX_WINDOW_DAYS,
+    NEWS_DEFAULT_WINDOW_DAYS,
+    topic_terms,
 )
 from .presentation import (
     error,
@@ -65,6 +75,7 @@ from .presentation import (
     render_news_configured,
     render_news_error,
     render_news_items,
+    render_news_query,
     render_news_refreshed,
     render_news_status,
     render_news_subject_added,
@@ -684,6 +695,7 @@ def news_command(*arguments):
         "add": news_add_command,
         "refresh": news_refresh_command,
         "list": news_list_command,
+        "query": news_query_command,
         "status": news_status_command,
     }
 
@@ -858,6 +870,98 @@ def news_list_command(*arguments):
     items = list_items(subject, days=days)
 
     render_news_items(items, subject)
+
+
+def news_query_command(*arguments):
+    """
+    Handle the ``news query`` subcommand.
+
+    Retrieves stored news items matching the query text, optionally
+    restricted to a number of days back and a result limit.
+    """
+
+    days = None
+    limit = None
+    positional_arguments = []
+    index = 0
+
+    while index < len(arguments):
+        argument = arguments[index]
+
+        if argument in ("-d", "--days"):
+            if days is not None or index + 1 >= len(arguments):
+                render_command_structure_error("news")
+                return
+
+            try:
+                days = int(arguments[index + 1])
+            except ValueError:
+                render_command_structure_error("news")
+                return
+
+            if days <= 0 or days > MAX_WINDOW_DAYS:
+                render_command_structure_error("news")
+                return
+
+            index += 2
+            continue
+
+        if argument == "--limit":
+            if limit is not None or index + 1 >= len(arguments):
+                render_command_structure_error("news")
+                return
+
+            try:
+                limit = int(arguments[index + 1])
+            except ValueError:
+                render_command_structure_error("news")
+                return
+
+            if not 1 <= limit <= 100:
+                render_command_structure_error("news")
+                return
+
+            index += 2
+            continue
+
+        if argument.startswith("-"):
+            render_command_structure_error("news")
+            return
+
+        positional_arguments.append(argument)
+        index += 1
+
+    if not positional_arguments:
+        render_command_structure_error("news")
+        return
+
+    topics = topic_terms(" ".join(positional_arguments))
+
+    if not topics:
+        render_command_structure_error("news")
+        return
+
+    if get_news_config() is None:
+        render_news_error("News is not configured. Run `alf news init`.")
+        return
+
+    now = datetime.now(UTC)
+    start = now - timedelta(days=days or NEWS_DEFAULT_WINDOW_DAYS)
+
+    query = NewsQuery(
+        topics=topics,
+        start=start,
+        end=now,
+        limit=limit or NEWS_QUERY_LIMIT,
+    )
+
+    try:
+        items = query_items(query)
+    except NewsError as exc:
+        render_news_error(str(exc))
+        return
+
+    render_news_query(items, query)
 
 
 def news_status_command(*arguments):

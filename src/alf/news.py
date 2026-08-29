@@ -18,20 +18,68 @@ information to the rest of ALF.
 
 import hashlib
 import os
+import re
 import sqlite3
 import tomllib
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from .miniflux import Miniflux, MinifluxError
+from .news_intent import NewsIntent, normalize_text
 from .paths import get_data_directory
 
 CONFIG = get_data_directory() / "news.toml"
+
+NEWS_QUERY_LIMIT = 25
 
 
 class NewsError(Exception):
     """
     Raised when a news operation cannot be completed.
     """
+
+
+@dataclass(frozen=True)
+class NewsQuery:
+    """
+    A News retrieval query over ALF's stored news items.
+
+    Items are matched by topic terms against their title and summary, by
+    subject alignment against ALF's stored news subjects, and by an
+    inclusive publication window. Results are returned newest first.
+
+    Attributes:
+        topics: Significant topic terms to match against item text.
+        subject: A subject name to restrict results to, or ``None``.
+        start: Inclusive window start, or ``None`` for no lower bound.
+        end: Inclusive window end, or ``None`` for no upper bound.
+        limit: Maximum number of items to return, between 1 and 100.
+    """
+
+    topics: tuple[str, ...] = ()
+    subject: str | None = None
+    start: datetime | None = None
+    end: datetime | None = None
+    limit: int = 25
+
+    @classmethod
+    def from_intent(cls, intent: NewsIntent):
+        """
+        Build a query from a deterministically interpreted News question.
+
+        Args:
+            intent: A ``NewsIntent`` describing the question's topics
+                and window.
+
+        Returns:
+            A ``NewsQuery`` for the intent's topics and window.
+        """
+
+        return cls(
+            topics=intent.topics,
+            start=intent.window.start,
+            end=intent.window.end,
+        )
 
 
 def create_tables(connection):
@@ -409,6 +457,117 @@ def list_items(subject=None, days=None):
     return items
 
 
+def query_items(query):
+    """
+    Retrieve stored news items matching a news query.
+
+    Matching is confined to items whose stored subject aligns with the
+    query's subject, when one is given, and whose title or summary
+    contains at least one of the query's topic terms. Items are matched
+    against the inclusive publication window and returned newest first,
+    up to the query limit.
+
+    Args:
+        query: The ``NewsQuery`` describing the retrieval.
+
+    Returns:
+        A list of matching news item dictionaries, newest first. Each
+        item includes the terms it matched and an empty content slot for
+        the presentation layer.
+
+    Raises:
+        NewsError: When the query has no topic terms or subject, or its
+            limit is outside 1-100.
+    """
+
+    if not query.topics and query.subject is None:
+        raise NewsError("A news query needs at least one topic or a subject.")
+
+    if not 1 <= query.limit <= 100:
+        raise NewsError("A news query limit must be between 1 and 100.")
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "SELECT id, name FROM news_subjects ORDER BY name"
+        )
+
+        stored_subjects = [
+            {"id": row[0], "name": row[1]}
+            for row in cursor.fetchall()
+        ]
+
+        cursor.execute(
+            """
+            SELECT
+                i.subject_id,
+                i.id,
+                s.name,
+                f.title,
+                i.title,
+                i.url,
+                i.summary,
+                i.published_at,
+                i.first_seen_at
+            FROM news_items i
+            JOIN news_feeds f ON f.id = i.feed_id
+            JOIN news_subjects s ON s.id = i.subject_id
+            """
+        )
+
+        candidates = cursor.fetchall()
+
+    subject_ids = _align_subjects(query.subject, stored_subjects)
+
+    items = []
+
+    for row in candidates:
+        subject_id = row[0]
+
+        if subject_ids is not None and subject_id not in subject_ids:
+            continue
+
+        published_at = _parse_timestamp(row[7])
+
+        if query.start is not None and published_at < query.start:
+            continue
+
+        if query.end is not None and published_at > query.end:
+            continue
+
+        item = {
+            "id": row[1],
+            "subject": row[2],
+            "feed_title": row[3],
+            "title": row[4],
+            "url": row[5],
+            "summary": row[6],
+            "published_at": row[7],
+            "first_seen_at": row[8],
+            "matched_terms": [],
+            "content": None,
+        }
+
+        if query.topics:
+            item["matched_terms"] = _match_terms(
+                query.topics,
+                f"{row[4]} {row[6]}" if row[6] else row[4],
+            )
+
+            if not item["matched_terms"]:
+                continue
+
+        items.append(item)
+
+    items.sort(
+        key=lambda item: _parse_timestamp(item["published_at"]),
+        reverse=True,
+    )
+
+    return items[: query.limit]
+
+
 def get_news_information():
     """
     Return information about ALF's stored news data.
@@ -726,6 +885,66 @@ def _entry_hash(url, published_at):
     return hashlib.sha1(
         f"{url}|{published_at}".encode()
     ).hexdigest()
+
+
+def _align_subjects(subject_name, subjects):
+    """
+    Resolve a query subject against ALF's stored news subjects.
+
+    A subject aligns with a stored subject by normalised equality, by
+    substring match in either direction, or when any of its words
+    appears in the stored subject name.
+
+    Args:
+        subject_name: The query's subject name, or ``None`` when the
+            query is not restricted to a subject.
+        subjects: The stored news subjects as ``id``/``name`` dicts.
+
+    Returns:
+        The set of aligned subject ids, or ``None`` when the query is
+        not subject-restricted.
+    """
+
+    if subject_name is None:
+        return None
+
+    normalized = normalize_text(subject_name)
+    tokens = normalized.split()
+
+    matches = set()
+
+    for subject in subjects:
+        name = normalize_text(subject["name"])
+
+        if (
+            normalized == name
+            or normalized in name
+            or name in normalized
+            or any(token in name for token in tokens)
+        ):
+            matches.add(subject["id"])
+
+    return matches
+
+
+def _match_terms(topics, text):
+    """
+    Return the topic terms matching an item's text.
+
+    Matching uses whole-word, case-insensitive searches over the
+    normalised item text.
+
+    Returns:
+        The terms from ``topics`` that appear in ``text``.
+    """
+
+    normalized = normalize_text(text)
+
+    return [
+        term
+        for term in topics
+        if re.search(rf"\b{re.escape(term)}\b", normalized)
+    ]
 
 
 def _parse_timestamp(timestamp):

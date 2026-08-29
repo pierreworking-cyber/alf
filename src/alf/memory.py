@@ -47,6 +47,7 @@ from .news import (  # noqa: F401
     get_news_status,
     initialise,
     list_items,
+    query_items,
     refresh,
 )
 from .paths import get_data_directory

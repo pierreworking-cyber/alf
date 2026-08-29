@@ -845,6 +845,61 @@ def render_news_items(items, subject=None):
         render_news_item(item)
 
 
+def render_news_query(items, query):
+    """
+    Render stored news items matching a news query.
+
+    Args:
+        items: The news item dictionaries returned by ``query_items``.
+        query: The ``NewsQuery`` the items were retrieved with.
+    """
+
+    title("ALF news")
+
+    if not items:
+        info("No news items matched the query.")
+        return
+
+    topic = (
+        " ".join(query.topics)
+        if query.topics
+        else query.subject
+        or "the news"
+    )
+
+    info(
+        f"Found {len(items)} news item"
+        f"{'s' if len(items) != 1 else ''} about {topic} "
+        f"{_news_query_window_label(query)}."
+    )
+
+    console.print()
+
+    for item in items:
+        render_news_item(item)
+
+
+def _news_query_window_label(query):
+    """
+    Return a human-readable label for a news query's time window.
+    """
+
+    if query.start is None or query.end is None:
+        return "recently"
+
+    days = (query.end - query.start).total_seconds() / 86400
+
+    if days.is_integer() and days >= 1:
+        return f"in the last {int(days)} days"
+
+    if query.start.date() == query.end.date():
+        return "today"
+
+    return (
+        f"between {query.start:%d-%b-%Y} and {query.end:%d-%b-%Y}"
+    )
+
+
 def render_news_status(status):
     """
     Render ALF's news service status.

@@ -53,6 +53,7 @@ def test_news_api_is_reexported_by_memory():
     assert memory.add_subject is news.add_subject
     assert memory.refresh is news.refresh
     assert memory.list_items is news.list_items
+    assert memory.query_items is news.query_items
     assert memory.initialise is news.initialise
 
 
@@ -988,3 +989,187 @@ def test_run_resolves_news_command(monkeypatch):
     assert commands.run("news", ["refresh"]) is True
 
     assert captured["arguments"] == ("refresh",)
+
+
+def test_news_query_command_queries_items(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(commands, "get_news_config", lambda: {
+        "base_url": "http://fake:8765",
+        "api_key": "secret",
+    })
+
+    def fake_query_items(query):
+        captured["query"] = query
+        return []
+
+    monkeypatch.setattr(commands, "query_items", fake_query_items)
+
+    monkeypatch.setattr(
+        commands,
+        "render_news_query",
+        lambda items, query: captured.update(
+            {"rendered": (items, query)}
+        ),
+    )
+
+    commands.news_command("query", "Ukraine", "--days", "7", "--limit", "5")
+
+    query = captured["query"]
+
+    assert query.topics == ("ukraine",)
+    assert query.limit == 5
+    assert query.subject is None
+    assert query.start is not None
+    assert query.end is not None
+    assert (query.end - query.start).days == 7
+    assert captured["rendered"] == ([], query)
+
+
+def test_news_query_command_defaults_to_seven_days(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(commands, "get_news_config", lambda: {
+        "base_url": "http://fake:8765",
+        "api_key": "secret",
+    })
+
+    def fake_query_items(query):
+        captured["query"] = query
+        return []
+
+    monkeypatch.setattr(commands, "query_items", fake_query_items)
+
+    monkeypatch.setattr(
+        commands,
+        "render_news_query",
+        lambda items, query: None,
+    )
+
+    commands.news_command("query", "Ukraine")
+
+    assert (captured["query"].end - captured["query"].start).days == 7
+
+
+def test_news_query_command_requires_topic(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: captured.append(command),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "get_news_config",
+        lambda: pytest.fail("news config should not be consulted"),
+    )
+
+    commands.news_command("query")
+    commands.news_command("query", "what", "the")
+
+    assert captured == ["news", "news"]
+
+
+def test_news_query_command_rejects_unknown_option(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: captured.append(command),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "query_items",
+        lambda *arguments, **kwargs: pytest.fail(
+            "query_items should not be called"
+        ),
+    )
+
+    commands.news_command("query", "Ukraine", "--bogus")
+
+    assert captured == ["news"]
+
+
+def test_news_query_command_rejects_invalid_days_and_limit(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(
+        commands,
+        "render_command_structure_error",
+        lambda command: captured.append(command),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "query_items",
+        lambda *arguments, **kwargs: pytest.fail(
+            "query_items should not be called"
+        ),
+    )
+
+    commands.news_command("query", "Ukraine", "--days", "abc")
+    commands.news_command("query", "Ukraine", "--days", "0")
+    commands.news_command("query", "Ukraine", "--days", "400")
+    commands.news_command("query", "Ukraine", "--limit", "0")
+    commands.news_command("query", "Ukraine", "--limit", "101")
+    commands.news_command("query", "Ukraine", "--limit", "abc")
+
+    assert captured == ["news"] * 6
+
+
+def test_news_query_command_hints_when_unconfigured(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(commands, "get_news_config", lambda: None)
+
+    monkeypatch.setattr(
+        commands,
+        "render_news_error",
+        lambda message: captured.append(message),
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "query_items",
+        lambda *arguments, **kwargs: pytest.fail(
+            "query_items should not be called when unconfigured"
+        ),
+    )
+
+    commands.news_command("query", "Ukraine")
+
+    assert captured == [
+        "News is not configured. Run `alf news init`."
+    ]
+
+
+def test_news_query_command_reports_query_failure(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(commands, "get_news_config", lambda: {
+        "base_url": "http://fake:8765",
+        "api_key": "secret",
+    })
+
+    def failing_query_items(query):
+        raise news.NewsError(
+            "A news query limit must be between 1 and 100."
+        )
+
+    monkeypatch.setattr(commands, "query_items", failing_query_items)
+
+    monkeypatch.setattr(
+        commands,
+        "render_news_error",
+        lambda message: captured.append(message),
+    )
+
+    commands.news_command("query", "Ukraine")
+
+    assert captured == [
+        "A news query limit must be between 1 and 100."
+    ]
