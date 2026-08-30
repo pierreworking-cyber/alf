@@ -153,6 +153,16 @@ class Miniflux:
             f"/v1/feeds/{feed_id}",
         )
 
+    def update_feed(self, feed_id, category_id):
+        """
+        Move an existing feed to another category.
+        """
+        return self._request(
+            "PUT",
+            f"/v1/feeds/{feed_id}",
+            payload={"category_id": category_id},
+        )
+
     def refresh_feed(self, feed_id):
         """
         Ask Miniflux to refresh a feed now.

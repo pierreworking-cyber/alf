@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -1182,3 +1183,211 @@ def test_news_query_command_reports_query_failure(monkeypatch):
     assert captured == [
         "A news query limit must be between 1 and 100."
     ]
+
+
+def _move_source_feed(fake, client, name, first, second):
+    """Seed two subjects and return the ALF feed id and Miniflux feed for a move."""
+    news.add_subject(name, [first], client=client)
+    news.add_subject("Climate", [second], client=client)
+
+    source_category = next(
+        category for category in client.get_categories()
+        if category["title"] == name
+    )
+    source_feed = client.get_feeds(category_id=source_category["id"])[0]
+
+    with memory.get_connection() as connection:
+        row = connection.execute(
+            "SELECT id FROM news_feeds WHERE miniflux_feed_id = ?",
+            (source_feed["id"],),
+        ).fetchone()
+
+    return row[0], source_feed
+
+
+def _feed_subject(feed_id):
+    return next(
+        feed["subject"]
+        for feed in news.get_news_feeds()
+        if feed["id"] == feed_id
+    )
+
+
+def test_move_feed_changes_subject_and_miniflux_category(fake, database):
+    client = make_client(fake)
+
+    first = "https://feeds.example/ukraine.rss"
+    second = "https://feeds.example/climate.rss"
+
+    alf_feed_id, source_feed = _move_source_feed(
+        fake,
+        client,
+        "Ukraine",
+        first,
+        second,
+    )
+
+    destination = next(
+        category for category in client.get_categories()
+        if category["title"] == "Climate"
+    )
+    source_category = next(
+        category for category in client.get_categories()
+        if category["title"] == "Ukraine"
+    )
+
+    result = news.move_feed(alf_feed_id, 2, client=client)
+
+    assert result["subject_id"] == 2
+    assert result["subject"] == "Climate"
+    assert _feed_subject(alf_feed_id) == "Climate"
+
+    feeds_in_destination = client.get_feeds(category_id=destination["id"])
+    feeds_in_source = client.get_feeds(category_id=source_category["id"])
+
+    assert source_feed["id"] in {
+        feed["id"] for feed in feeds_in_destination
+    }
+    assert source_feed["id"] not in {
+        feed["id"] for feed in feeds_in_source
+    }
+
+
+def test_moved_feed_is_imported_by_destination_refresh(fake, database):
+    client = make_client(fake)
+
+    alf_feed_id, source_feed = _move_source_feed(
+        fake,
+        client,
+        "Ukraine",
+        "https://feeds.example/ukraine.rss",
+        "https://feeds.example/climate.rss",
+    )
+
+    news.move_feed(alf_feed_id, 2, client=client)
+
+    fake.schedule_entries(
+        source_feed["id"],
+        [
+            {
+                "title": "Moved story",
+                "url": "https://feeds.example/moved/1",
+                "published_at": ENTRY_ONE,
+            }
+        ],
+    )
+
+    result = news.refresh("Climate", client=client)
+
+    assert result["imported"] == 1
+    assert [item["title"] for item in news.list_items("Climate")] == [
+        "Moved story"
+    ]
+    assert news.list_items("Ukraine") == []
+
+
+def test_move_feed_rolls_back_on_miniflux_failure(fake, database):
+    client = make_client(fake)
+
+    alf_feed_id, source_feed = _move_source_feed(
+        fake,
+        client,
+        "Ukraine",
+        "https://feeds.example/ukraine.rss",
+        "https://feeds.example/climate.rss",
+    )
+
+    def failing_transport(method, url, headers, payload, timeout):
+        if method == "PUT" and re.search(r"/v1/feeds/\d+$", url):
+            return 500, json.dumps(
+                {"error_message": "Move failed"}
+            ).encode("utf-8")
+
+        return fake.transport()(
+            method,
+            url,
+            headers,
+            payload,
+            timeout,
+        )
+
+    failing_client = Miniflux(
+        "http://fake:8765",
+        fake.api_key,
+        transport=failing_transport,
+    )
+
+    with pytest.raises(MinifluxError):
+        news.move_feed(alf_feed_id, 2, client=failing_client)
+
+    assert _feed_subject(alf_feed_id) == "Ukraine"
+
+    source_category = next(
+        category for category in client.get_categories()
+        if category["title"] == "Ukraine"
+    )
+    feeds_in_source = client.get_feeds(category_id=source_category["id"])
+
+    assert source_feed["id"] in {
+        feed["id"] for feed in feeds_in_source
+    }
+
+
+def test_move_feed_to_same_subject_is_noop(fake, database):
+    client = make_client(fake)
+
+    alf_feed_id, _ = _move_source_feed(
+        fake,
+        client,
+        "Ukraine",
+        "https://feeds.example/ukraine.rss",
+        "https://feeds.example/climate.rss",
+    )
+
+    result = news.move_feed(alf_feed_id, 1, client=client)
+
+    assert result["subject_id"] == 1
+    assert result["subject"] == "Ukraine"
+
+    assert not any(
+        request["method"] == "PUT"
+        and re.search(r"/v1/feeds/\d+$", request["path"])
+        for request in fake.requests
+    )
+
+
+def test_move_feed_recreates_missing_destination_category(fake, database):
+    client = make_client(fake)
+
+    alf_feed_id, source_feed = _move_source_feed(
+        fake,
+        client,
+        "Ukraine",
+        "https://feeds.example/ukraine.rss",
+        "https://feeds.example/climate.rss",
+    )
+
+    climate = next(
+        category for category in client.get_categories()
+        if category["title"] == "Climate"
+    )
+    fake._categories = [
+        category
+        for category in fake._categories
+        if category["id"] != climate["id"]
+    ]
+
+    result = news.move_feed(alf_feed_id, 2, client=client)
+
+    assert result["subject"] == "Climate"
+    assert _feed_subject(alf_feed_id) == "Climate"
+
+    recreated = next(
+        category for category in client.get_categories()
+        if category["title"] == "Climate"
+    )
+    assert recreated["id"] != climate["id"]
+    assert source_feed["id"] in {
+        feed["id"]
+        for feed in client.get_feeds(category_id=recreated["id"])
+    }

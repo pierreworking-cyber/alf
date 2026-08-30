@@ -328,13 +328,18 @@ def add_feed_to_subject(subject_id, feed_url, client=None):
         }
 
 
-def move_feed(feed_id, subject_id):
+def move_feed(feed_id, subject_id, client=None):
     """
     Move a news feed subscription to another subject.
+
+    The feed is moved in Miniflux to the destination subject's category
+    before ALF's subscription is updated, so a Miniflux failure leaves
+    both sides in the original subject.
 
     Args:
         feed_id: The ALF news feed id.
         subject_id: The destination ALF subject id.
+        client: An optional Miniflux client.
 
     Returns:
         A dictionary describing the moved feed.
@@ -344,11 +349,17 @@ def move_feed(feed_id, subject_id):
             the feed is already subscribed to the destination subject.
     """
 
+    client = client or get_client()
+
     with _get_connection() as connection:
         cursor = connection.cursor()
 
         cursor.execute(
-            "SELECT id, title, subject_id FROM news_feeds WHERE id = ?",
+            """
+            SELECT id, title, subject_id, miniflux_feed_id
+            FROM news_feeds
+            WHERE id = ?
+            """,
             (feed_id,),
         )
         feed = cursor.fetchone()
@@ -387,6 +398,10 @@ def move_feed(feed_id, subject_id):
             raise NewsError(
                 f"The feed is already subscribed to '{subject[1]}'."
             )
+
+        category = _ensure_subject_category(client, subject[1])
+
+        client.update_feed(feed[3], category["id"])
 
         cursor.execute(
             "UPDATE news_feeds SET subject_id = ? WHERE id = ?",

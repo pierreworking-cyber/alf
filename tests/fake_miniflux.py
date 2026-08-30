@@ -266,6 +266,25 @@ class FakeMiniflux:
 
             return 201, {"feed_id": feed["id"]}
 
+        match = re.fullmatch(r"/v1/feeds/(\d+)", path)
+
+        if method == "PUT" and match:
+            feed_id = int(match.group(1))
+
+            feed = next(
+                (feed for feed in self._feeds if feed["id"] == feed_id),
+                None,
+            )
+
+            if feed is None:
+                return 404, {"error_message": "Feed not found"}
+
+            category_id = payload.get("category_id")
+
+            feed["category_id"] = category_id
+
+            return 200, dict(feed)
+
         match = re.fullmatch(r"/v1/feeds/(\d+)/refresh", path)
 
         if method == "PUT" and match:
