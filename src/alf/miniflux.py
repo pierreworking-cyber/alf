@@ -93,6 +93,16 @@ class Miniflux:
             payload={"title": title},
         )
 
+    def update_category(self, category_id, title):
+        """
+        Rename a Miniflux category.
+        """
+        return self._request(
+            "PUT",
+            f"/v1/categories/{category_id}",
+            payload={"title": title},
+        )
+
     def get_feeds(self, category_id=None):
         """
         Return feeds, optionally restricted to a category.
@@ -132,6 +142,15 @@ class Miniflux:
 
         raise MinifluxError(
             f"The created feed could not be retrieved: {feed_url}"
+        )
+
+    def delete_feed(self, feed_id):
+        """
+        Delete a feed from Miniflux.
+        """
+        return self._request(
+            "DELETE",
+            f"/v1/feeds/{feed_id}",
         )
 
     def refresh_feed(self, feed_id):

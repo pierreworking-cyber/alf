@@ -167,6 +167,95 @@ document
     });
 
 document
+    .querySelector("#news-delete-target")
+    .addEventListener("dragover", function (event) {
+        if (event.dataTransfer.types.includes("text/plain")) {
+            event.preventDefault();
+            this.classList.add("drag-over");
+        }
+    });
+
+document
+    .querySelector("#news-delete-target")
+    .addEventListener("dragleave", function () {
+        this.classList.remove("drag-over");
+    });
+
+document
+    .querySelector("#news-delete-target")
+    .addEventListener("drop", async function (event) {
+        event.preventDefault();
+        this.classList.remove("drag-over");
+
+        const feedId = event.dataTransfer.getData("text/plain");
+
+        if (!feedId) {
+            return;
+        }
+
+        const feedItem = document.querySelector(
+            `.news-item[data-feed-id="${feedId}"]`
+        );
+
+        if (!feedItem) {
+            return;
+        }
+
+        const feedTitle = feedItem.textContent.trim();
+
+        if (
+            !window.confirm(
+                `Delete feed "${feedTitle}"?`
+            )
+        ) {
+            return;
+        }
+
+        let response;
+
+        try {
+            response = await fetch(
+                `/news/feed/${feedId}`,
+                {
+                    method: "DELETE",
+                }
+            );
+        } catch (error) {
+            window.alert("Delete failed: network error.");
+            return;
+        }
+
+        let result;
+
+        try {
+            result = await response.json();
+        } catch (error) {
+            window.alert("Delete failed: invalid server response.");
+            return;
+        }
+
+        if (!response.ok) {
+            window.alert(
+                result.error || "The feed could not be deleted."
+            );
+            return;
+        }
+
+        if (currentFeedId === Number(feedId)) {
+            currentFeedId = null;
+
+            const reader = document.querySelector(".news-reader");
+
+            if (reader) {
+                reader.innerHTML =
+                    '<div class="news-empty">Choose a feed to read its news.</div>';
+            }
+        }
+
+        feedItem.remove();
+    });
+
+document
     .querySelector("#refresh-news")
     .addEventListener("click", async function () {
         const button = this;
@@ -203,7 +292,6 @@ document
             button.textContent = "Refresh news";
         }, 2500);
     });
-
 
 document
     .querySelector("#new-news-subject")

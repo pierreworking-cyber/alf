@@ -32,6 +32,7 @@ from ..memory import (
 )
 from ..news import (
     add_subject,
+    delete_feed,
     delete_subject,
     get_news_feeds,
     get_news_information,
@@ -131,6 +132,16 @@ def news_feed_move(feed_id):
 
     try:
         result = move_feed(feed_id, subject_id)
+    except Exception as error:
+        return jsonify({"error": str(error)}), 400
+
+    return jsonify(result)
+
+@app.delete("/news/feed/<int:feed_id>")
+def news_feed_delete(feed_id):
+    """Delete a news feed subscription from ALF."""
+    try:
+        result = delete_feed(feed_id)
     except Exception as error:
         return jsonify({"error": str(error)}), 400
 

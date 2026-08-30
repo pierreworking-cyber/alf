@@ -347,6 +347,69 @@ def move_feed(feed_id, subject_id):
             "subject": subject[1],
         }
 
+def delete_feed(feed_id, client=None):
+    """
+    Delete an ALF news feed subscription.
+
+    The corresponding Miniflux feed is also deleted when no other ALF
+    subject is subscribed to it.
+
+    Args:
+        feed_id: The ALF news feed id.
+        client: An optional Miniflux client.
+
+    Returns:
+        A dictionary describing the deleted feed.
+
+    Raises:
+        NewsError: If the feed does not exist.
+    """
+    client = client or get_client()
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, title, miniflux_feed_id
+            FROM news_feeds
+            WHERE id = ?
+            """,
+            (feed_id,),
+        )
+        feed = cursor.fetchone()
+
+        if feed is None:
+            raise NewsError("News feed not found.")
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM news_feeds
+            WHERE miniflux_feed_id = ?
+              AND id != ?
+            """,
+            (feed[2], feed_id),
+        )
+        remaining = cursor.fetchone()[0]
+
+        cursor.execute(
+            "DELETE FROM news_items WHERE feed_id = ?",
+            (feed_id,),
+        )
+
+        cursor.execute(
+            "DELETE FROM news_feeds WHERE id = ?",
+            (feed_id,),
+        )
+
+        if remaining == 0:
+            client.delete_feed(feed[2])
+
+        return {
+            "id": feed[0],
+            "title": feed[1],
+        }
 
 def refresh(subject=None, client=None):
     """
