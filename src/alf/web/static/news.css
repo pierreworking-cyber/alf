@@ -247,6 +247,36 @@ h1 {
     margin-top: 8px;
 }
 
+.news-library-actions label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding: 5px 2px;
+    color: #aebdca;
+    font-size: 0.85rem;
+}
+
+.news-library-actions select {
+    padding: 5px 8px;
+    border: 1px solid #46596b;
+    border-radius: 7px;
+    background: #25313e;
+    color: #edf1f3;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.news-library-actions select:hover {
+    border-color: #88a8ba;
+}
+
+.news-library-actions select:focus {
+    outline: 1px solid #88a8ba;
+    outline-offset: 1px;
+}
+
 .news-reader {
     position: relative;
     flex: 1;

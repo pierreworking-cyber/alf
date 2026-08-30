@@ -1,4 +1,5 @@
 let currentFeedId = null;
+const articleLimit = document.querySelector("#news-article-limit");
 
 async function loadFeed(feedId) {
     const reader = document.querySelector(".news-reader");
@@ -16,7 +17,7 @@ async function loadFeed(feedId) {
 
     try {
         response = await fetch(
-            `/news/feed/${feedId}`
+            `/news/feed/${feedId}?limit=${articleLimit.value}`
         );
     } catch (error) {
         reader.innerHTML =
@@ -96,6 +97,14 @@ document
             loadFeed(item.dataset.feedId);
         });
     });
+
+if (articleLimit) {
+    articleLimit.addEventListener("change", function () {
+        if (currentFeedId) {
+            loadFeed(currentFeedId);
+        }
+    });
+}
 
 document
     .querySelectorAll(".news-subject")

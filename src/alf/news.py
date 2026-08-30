@@ -515,7 +515,7 @@ def refresh(subject=None, client=None):
         }
 
 
-def list_items(subject=None, feed_id=None, days=None):
+def list_items(subject=None, feed_id=None, days=None, limit=None):
     """
     Return stored news items, newest first.
 
@@ -594,6 +594,12 @@ def list_items(subject=None, feed_id=None, days=None):
         key=lambda item: _parse_timestamp(item["published_at"]),
         reverse=True,
     )
+
+    if limit is not None:
+        if not 1 <= limit <= 100:
+            raise NewsError("A news item limit must be between 1 and 100.")
+
+        items = items[:limit]
 
     return items
 

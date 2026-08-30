@@ -31,6 +31,7 @@ from ..memory import (
     update_mindmap_category,
 )
 from ..news import (
+    NewsError,
     add_subject,
     delete_feed,
     delete_subject,
@@ -112,7 +113,15 @@ def news():
 def news_feed(feed_id):
     """Return recent stored news items for a feed."""
 
-    items = list_items(feed_id=feed_id, days=30)
+    try:
+        limit = int(request.args.get("limit", 25))
+        items = list_items(
+            feed_id=feed_id,
+            days=30,
+            limit=limit,
+        )
+    except (ValueError, NewsError) as error:
+        return jsonify({"error": str(error)}), 400
 
     return jsonify(items)
 
