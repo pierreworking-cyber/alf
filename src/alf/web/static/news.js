@@ -148,14 +148,14 @@ document
                     }
                 );
             } catch (error) {
-                window.alert("Move failed: network error.");
+                alfAlert("Move failed: network error.");
                 return;
             }
 
             const result = await response.json();
 
             if (!response.ok) {
-                window.alert(
+                alfAlert(
                     result.error || "The feed could not be moved."
                 );
                 return;
@@ -212,11 +212,11 @@ document
 
         const feedTitle = feedItem.textContent.trim();
 
-        if (
-            !window.confirm(
-                `Delete feed "${feedTitle}"?`
-            )
-        ) {
+        const confirmed = await alfConfirm(
+            `Delete feed "${feedTitle}"?`
+        );
+
+        if (!confirmed) {
             return;
         }
 
@@ -230,7 +230,7 @@ document
                 }
             );
         } catch (error) {
-            window.alert("Delete failed: network error.");
+            alfAlert("Delete failed: network error.");
             return;
         }
 
@@ -239,12 +239,12 @@ document
         try {
             result = await response.json();
         } catch (error) {
-            window.alert("Delete failed: invalid server response.");
+            alfAlert("Delete failed: invalid server response.");
             return;
         }
 
         if (!response.ok) {
-            window.alert(
+            alfAlert(
                 result.error || "The feed could not be deleted."
             );
             return;
@@ -305,13 +305,13 @@ document
 document
     .querySelector("#new-news-subject")
     .addEventListener("click", async function () {
-        const name = window.prompt("Subject name:");
+        const name = await alfPrompt("Subject name:");
 
         if (!name || !name.trim()) {
             return;
         }
 
-        const feedText = window.prompt(
+        const feedText = await alfPrompt(
             "Feed URL(s), separated by commas:"
         );
 
@@ -354,7 +354,7 @@ document
             window.location.reload();
 
         } catch (error) {
-            window.alert(error.message);
+            alfAlert(error.message);
         }
     });
 
@@ -387,7 +387,7 @@ document
             rename.textContent = "Rename";
 
             rename.addEventListener("click", async function () {
-                const name = window.prompt(
+                const name = await alfPrompt(
                     "New subject name:",
                     subjectName
                 );
@@ -421,7 +421,7 @@ document
 
                     window.location.reload();
                 } catch (error) {
-                    window.alert(error.message);
+                    alfAlert(error.message);
                 }
             });
 
@@ -430,11 +430,11 @@ document
             remove.textContent = "Delete";
 
             remove.addEventListener("click", async function () {
-                if (
-                    !window.confirm(
-                        `Delete subject "${subjectName}"?`
-                    )
-                ) {
+                const confirmed = await alfConfirm(
+                    `Delete subject "${subjectName}"?`
+                );
+
+                if (!confirmed) {
                     actions.remove();
                     return;
                 }
@@ -457,7 +457,7 @@ document
 
                     window.location.reload();
                 } catch (error) {
-                    window.alert(error.message);
+                    alfAlert(error.message);
                 }
             });
 

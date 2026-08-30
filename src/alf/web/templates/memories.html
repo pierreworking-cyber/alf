@@ -8,6 +8,10 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='dialog.css') }}"
+    >
     <style>
         main {
             padding: 55px 0 70px;
@@ -247,7 +251,6 @@
         }
     </style>
 </head>
-
 <body>
     <main>
         <div class="top">
@@ -393,7 +396,7 @@
                             <form
                                 method="post"
                                 action="{{ url_for('delete_memory_web') }}"
-                                onsubmit="return confirm('Delete this memory permanently?');"
+                                class="delete-memory-form"
                             >
                                 <input
                                     type="hidden"
@@ -421,5 +424,26 @@
             </div>
         </section>
     </main>
+    </main>
+
+    <script
+        src="{{ url_for('static', filename='dialog.js') }}"
+    ></script>
+
+    <script>
+        document
+            .querySelector(".delete-memory-form")
+            ?.addEventListener("submit", async function (event) {
+                event.preventDefault();
+
+                const confirmed = await alfConfirm(
+                    "Delete this memory permanently?"
+                );
+
+                if (confirmed) {
+                    this.submit();
+                }
+            });
+    </script>
 </body>
 </html>

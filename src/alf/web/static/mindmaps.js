@@ -205,7 +205,7 @@ document
 document
     .querySelector("#new-mindmap-category")
     .addEventListener("click", async function () {
-        const name = window.prompt("New category:");
+        const name = await alfPrompt("New category:");
 
         if (name === null) {
             return;
@@ -702,7 +702,7 @@ document
                     const heading = category.querySelector("h3");
                     const currentName = heading.textContent.trim();
 
-                    const name = window.prompt(
+                    const name = await alfPrompt(
                         "Rename category:",
                         currentName
                     );

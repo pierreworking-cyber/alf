@@ -16,8 +16,11 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='mindmaps.css') }}"
     >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='dialog.css') }}"
+    >
 </head>
-
 <body>
     <main>
         <div class="top">
@@ -125,6 +128,7 @@
 
         <script src="{{ url_for('static', filename='jsmind/jsmind.js') }}"></script>
         <script src="{{ url_for('static', filename='jsmind/jsmind.draggable-node.js') }}"></script>
+        <script src="{{ url_for('static', filename='dialog.js') }}"></script>
         <script src="{{ url_for('static', filename='mindmaps.js') }}"></script>
     </main>
 </body>
