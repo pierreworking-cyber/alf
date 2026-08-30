@@ -94,6 +94,14 @@ document
         });
 
         item.addEventListener("click", function () {
+            document
+                .querySelectorAll(".news-item.active")
+                .forEach(function (activeItem) {
+                    activeItem.classList.remove("active");
+                });
+
+            item.classList.add("active");
+
             loadFeed(item.dataset.feedId);
         });
     });
