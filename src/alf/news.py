@@ -275,6 +275,59 @@ def add_subject(name, feed_urls, client=None):
         return result
 
 
+def add_feed_to_subject(subject_id, feed_url, client=None):
+    """
+    Add a feed subscription to an existing news subject.
+
+    Args:
+        subject_id: The ALF news subject id.
+        feed_url: The feed URL to subscribe.
+        client: An optional Miniflux client.
+
+    Returns:
+        A dictionary describing the added feed.
+
+    Raises:
+        NewsError: If the subject does not exist or the feed URL is empty.
+    """
+
+    feed_url = feed_url.strip()
+
+    if not feed_url:
+        raise NewsError("A feed URL is required.")
+
+    client = client or get_client()
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "SELECT id, name FROM news_subjects WHERE id = ?",
+            (subject_id,),
+        )
+
+        subject = cursor.fetchone()
+
+        if subject is None:
+            raise NewsError("News subject not found.")
+
+        category = _ensure_subject_category(client, subject[1])
+        feed = _ensure_feed(client, category["id"], feed_url)
+
+        if not _register_feed(connection, subject[0], feed):
+            raise NewsError(
+                f"The feed is already subscribed to '{subject[1]}'."
+            )
+
+        return {
+            "id": feed["id"],
+            "title": feed["title"],
+            "feed_url": feed["feed_url"],
+            "subject_id": subject[0],
+            "subject": subject[1],
+        }
+
+
 def move_feed(feed_id, subject_id):
     """
     Move a news feed subscription to another subject.
@@ -347,6 +400,7 @@ def move_feed(feed_id, subject_id):
             "subject": subject[1],
         }
 
+
 def delete_feed(feed_id, client=None):
     """
     Delete an ALF news feed subscription.
@@ -410,6 +464,7 @@ def delete_feed(feed_id, client=None):
             "id": feed[0],
             "title": feed[1],
         }
+
 
 def refresh(subject=None, client=None):
     """

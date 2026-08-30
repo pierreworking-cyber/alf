@@ -381,7 +381,47 @@ document
 
             const actions = document.createElement("div");
             actions.className = "news-subject-actions";
+            const addFeed = document.createElement("button");
+            addFeed.type = "button";
+            addFeed.textContent = "Add feed";
 
+            addFeed.addEventListener("click", async function () {
+                const feedUrl = await alfPrompt(
+                    "Feed URL:"
+                );
+
+                if (!feedUrl || !feedUrl.trim()) {
+                    actions.remove();
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        `/news/subject/${subjectId}/feed`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                feed_url: feedUrl.trim(),
+                            }),
+                        }
+                    );
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.error || "Could not add feed."
+                        );
+                    }
+
+                    window.location.reload();
+                } catch (error) {
+                    alfAlert(error.message);
+                }
+            });
             const rename = document.createElement("button");
             rename.type = "button";
             rename.textContent = "Rename";
@@ -461,7 +501,7 @@ document
                 }
             });
 
-            actions.append(rename, remove);
+            actions.append(addFeed, rename, remove);
             subject
                 .querySelector(".news-subject-header")
                 .after(actions);

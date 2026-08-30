@@ -25,6 +25,7 @@ function showAlfDialog(message, options = {}) {
         input.className = "alf-dialog-input";
         input.type = "text";
         input.value = options.value || "";
+        input.setAttribute("aria-label", message);
         dialog.append(input);
     }
 

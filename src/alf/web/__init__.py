@@ -32,6 +32,7 @@ from ..memory import (
 )
 from ..news import (
     NewsError,
+    add_feed_to_subject,
     add_subject,
     delete_feed,
     delete_subject,
@@ -151,6 +152,25 @@ def news_feed_delete(feed_id):
     """Delete a news feed subscription from ALF."""
     try:
         result = delete_feed(feed_id)
+    except Exception as error:
+        return jsonify({"error": str(error)}), 400
+
+    return jsonify(result)
+
+@app.post("/news/subject/<int:subject_id>/feed")
+def news_subject_feed_add(subject_id):
+    """Add a news feed subscription to a subject."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No feed data supplied."}), 400
+
+    try:
+        result = add_feed_to_subject(
+            subject_id,
+            data.get("feed_url", ""),
+        )
     except Exception as error:
         return jsonify({"error": str(error)}), 400
 

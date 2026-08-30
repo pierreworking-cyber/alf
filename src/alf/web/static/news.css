@@ -162,6 +162,29 @@ h1 {
     color: #edf1f3;
 }
 
+.news-subject-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.news-subject-actions button {
+    padding: 6px 10px;
+    border: 1px solid #46596b;
+    border-radius: 8px;
+    background: #34495a;
+    color: #edf1f3;
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.news-subject-actions button:hover {
+    background: #88a8ba;
+    border-color: #b9cdd1;
+    color: #202b38;
+}
+
 .news-list {
     display: flex;
     flex-direction: column;
