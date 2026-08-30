@@ -30,6 +30,16 @@ from ..memory import (
     update_mindmap,
     update_mindmap_category,
 )
+from ..news import (
+    add_subject,
+    delete_subject,
+    get_news_feeds,
+    get_news_information,
+    list_items,
+    move_feed,
+    refresh,
+    rename_subject,
+)
 from ..question import answer_question
 from waitress import serve
 
@@ -40,6 +50,7 @@ app = Flask(__name__)
 def home():
     """Display the ALF web interface landing page."""
     return render_template("home.html")
+
 @app.route("/question", methods=["GET", "POST"])
 def question():
     """Display the ALF Question workspace and process questions."""
@@ -80,6 +91,107 @@ def question():
         answer=answer,
         source=source,
     )
+
+@app.get("/news")
+def news():
+    """Display the ALF News workspace."""
+
+    information = get_news_information()
+
+    subjects = information["subjects"]
+    feeds = get_news_feeds()
+
+    return render_template(
+        "news.html",
+        subjects=subjects,
+        feeds=feeds,
+    )
+
+@app.get("/news/feed/<int:feed_id>")
+def news_feed(feed_id):
+    """Return recent stored news items for a feed."""
+
+    items = list_items(feed_id=feed_id, days=30)
+
+    return jsonify(items)
+
+@app.post("/news/feed/<int:feed_id>/move")
+def news_feed_move(feed_id):
+    """Move a news feed subscription to another subject."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No subject supplied."}), 400
+
+    try:
+        subject_id = int(data.get("subject_id"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid subject id."}), 400
+
+    try:
+        result = move_feed(feed_id, subject_id)
+    except Exception as error:
+        return jsonify({"error": str(error)}), 400
+
+    return jsonify(result)
+
+@app.post("/news/subject/<int:subject_id>/rename")
+def news_subject_rename(subject_id):
+    """Rename a news subject."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No subject data supplied."}), 400
+
+    try:
+        result = rename_subject(
+            subject_id,
+            data.get("name", ""),
+        )
+    except Exception as error:
+        return jsonify({"error": str(error)}), 400
+
+    return jsonify(result)
+
+@app.delete("/news/subject/<int:subject_id>")
+def news_subject_delete(subject_id):
+    """Delete a news subject from ALF."""
+
+    try:
+        result = delete_subject(subject_id)
+    except Exception as error:
+        return jsonify({"error": str(error)}), 400
+
+    return jsonify(result)
+
+@app.post("/news/refresh")
+def news_refresh():
+    """Refresh stored news feeds and return the refresh result."""
+
+    result = refresh()
+
+    return jsonify(result)
+
+@app.post("/news/subject")
+def news_subject():
+    """Create a news subject and its feed subscriptions."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No subject data supplied."}), 400
+
+    name = data.get("name", "")
+    feed_urls = data.get("feed_urls", [])
+
+    try:
+        result = add_subject(name, feed_urls)
+    except Exception as error:
+        return jsonify({"error": str(error)}), 400
+
+    return jsonify(result)
 
 @app.route("/remember", methods=["GET", "POST"])
 def remember_memory():
@@ -197,6 +309,7 @@ def memories():
         selected_memory=selected_memory,
         edit_id=edit_id,
     )
+
 @app.post("/memories/archive")
 def archive_memory_web():
     """Archive a memory from the web interface."""

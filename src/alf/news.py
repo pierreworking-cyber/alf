@@ -275,6 +275,79 @@ def add_subject(name, feed_urls, client=None):
         return result
 
 
+def move_feed(feed_id, subject_id):
+    """
+    Move a news feed subscription to another subject.
+
+    Args:
+        feed_id: The ALF news feed id.
+        subject_id: The destination ALF subject id.
+
+    Returns:
+        A dictionary describing the moved feed.
+
+    Raises:
+        NewsError: If the feed or destination subject does not exist, or
+            the feed is already subscribed to the destination subject.
+    """
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "SELECT id, title, subject_id FROM news_feeds WHERE id = ?",
+            (feed_id,),
+        )
+        feed = cursor.fetchone()
+
+        if feed is None:
+            raise NewsError("News feed not found.")
+
+        cursor.execute(
+            "SELECT id, name FROM news_subjects WHERE id = ?",
+            (subject_id,),
+        )
+        subject = cursor.fetchone()
+
+        if subject is None:
+            raise NewsError("News subject not found.")
+
+        if feed[2] == subject_id:
+            return {
+                "id": feed[0],
+                "title": feed[1],
+                "subject_id": subject[0],
+                "subject": subject[1],
+            }
+
+        cursor.execute(
+            """
+            SELECT id FROM news_feeds
+            WHERE subject_id = ? AND feed_url = (
+                SELECT feed_url FROM news_feeds WHERE id = ?
+            )
+            """,
+            (subject_id, feed_id),
+        )
+
+        if cursor.fetchone():
+            raise NewsError(
+                f"The feed is already subscribed to '{subject[1]}'."
+            )
+
+        cursor.execute(
+            "UPDATE news_feeds SET subject_id = ? WHERE id = ?",
+            (subject_id, feed_id),
+        )
+
+        return {
+            "id": feed[0],
+            "title": feed[1],
+            "subject_id": subject[0],
+            "subject": subject[1],
+        }
+
+
 def refresh(subject=None, client=None):
     """
     Refresh stored news feeds and import their entries.
@@ -379,12 +452,13 @@ def refresh(subject=None, client=None):
         }
 
 
-def list_items(subject=None, days=None):
+def list_items(subject=None, feed_id=None, days=None):
     """
     Return stored news items, newest first.
 
     Args:
         subject: Optional subject name to restrict the results to.
+        feed_id: Optional stored feed id to restrict the results to.
         days: Optional number of days back to include.
 
     Returns:
@@ -405,6 +479,10 @@ def list_items(subject=None, days=None):
         if subject:
             conditions.append("s.name = ?")
             parameters.append(subject)
+
+        if feed_id is not None:
+            conditions.append("f.id = ?")
+            parameters.append(feed_id)
 
         query = """
             SELECT
@@ -568,6 +646,32 @@ def query_items(query):
     return items[: query.limit]
 
 
+def get_news_feeds():
+    """
+    Return stored news feeds grouped by subject.
+
+    Returns:
+        A list of feed dictionaries, each including its subject name.
+    """
+
+    with _get_connection() as connection:
+        subjects = _subjects_with_feeds(connection)
+
+    feeds = []
+
+    for subject in subjects:
+        for feed in subject["feeds"]:
+            feeds.append(
+                {
+                    "id": feed["id"],
+                    "subject": subject["name"],
+                    "title": feed["title"],
+                }
+            )
+
+    return feeds
+
+
 def get_news_information():
     """
     Return information about ALF's stored news data.
@@ -649,6 +753,130 @@ def _get_connection():
     from .memory import get_connection
 
     return get_connection()
+
+
+def rename_subject(subject_id, name, client=None):
+    """
+    Rename a stored news subject and its corresponding Miniflux category.
+
+    Args:
+        subject_id: The ALF subject id.
+        name: The new subject name.
+        client: An optional Miniflux client.
+
+    Returns:
+        A dictionary describing the renamed subject.
+
+    Raises:
+        NewsError: If the subject does not exist or the name is invalid.
+    """
+
+    name = name.strip()
+
+    if not name:
+        raise NewsError("A news subject name is required.")
+
+    client = client or get_client()
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "SELECT id, name FROM news_subjects WHERE id = ?",
+            (subject_id,),
+        )
+        row = cursor.fetchone()
+
+        if row is None:
+            raise NewsError("News subject not found.")
+
+        old_name = row[1]
+
+        cursor.execute(
+            "SELECT id FROM news_subjects WHERE name = ? AND id != ?",
+            (name, subject_id),
+        )
+
+        if cursor.fetchone():
+            raise NewsError(
+                f"A news subject named '{name}' already exists."
+            )
+
+        category = None
+
+        for candidate in client.get_categories():
+            if candidate["title"] == old_name:
+                category = candidate
+                break
+
+        if category is None:
+            raise NewsError(
+                f"Miniflux category '{old_name}' could not be found."
+            )
+
+        client.update_category(category["id"], name)
+
+        cursor.execute(
+            "UPDATE news_subjects SET name = ? WHERE id = ?",
+            (name, subject_id),
+        )
+
+        return {
+            "id": subject_id,
+            "name": name,
+        }
+
+
+def delete_subject(subject_id):
+    """
+    Delete a stored news subject and its ALF-side data.
+
+    The corresponding Miniflux category and feeds are deliberately left
+    untouched because feeds may be shared with other subjects.
+
+    Args:
+        subject_id: The ALF subject id.
+
+    Returns:
+        A dictionary describing the deleted subject.
+
+    Raises:
+        NewsError: If the subject does not exist.
+    """
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "SELECT id, name FROM news_subjects WHERE id = ?",
+            (subject_id,),
+        )
+        row = cursor.fetchone()
+
+        if row is None:
+            raise NewsError("News subject not found.")
+
+        subject_name = row[1]
+
+        cursor.execute(
+            "DELETE FROM news_items WHERE subject_id = ?",
+            (subject_id,),
+        )
+
+        cursor.execute(
+            "DELETE FROM news_feeds WHERE subject_id = ?",
+            (subject_id,),
+        )
+
+        cursor.execute(
+            "DELETE FROM news_subjects WHERE id = ?",
+            (subject_id,),
+        )
+
+        return {
+            "id": subject_id,
+            "name": subject_name,
+        }
 
 
 def _ensure_subject(connection, name):
