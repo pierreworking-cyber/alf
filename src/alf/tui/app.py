@@ -27,7 +27,6 @@ from textual.widgets import (
     TextArea,
 )
 
-from alf.calc import CalculationError, calculate
 from alf.command_catalogue import commands
 from alf.memory import (
     archive_memory,
@@ -39,7 +38,9 @@ from alf.memory import (
     restore_memory,
     update_memory,
 )
-from alf.question import answer_question
+from alf.tui.question_tui import QuestionTUI
+from alf.tui.calc_tui import CalcTUI
+from alf.tui.remember_tui import RememberTUI
 
 
 class DeleteMemoryConfirm(ModalScreen):
@@ -117,9 +118,6 @@ class ALFTUI(App):
         layout: vertical;
         scrollbar-size: 1 1;
     }
-
-
-
 
     #main {
         height: 1fr;
@@ -342,44 +340,6 @@ class ALFTUI(App):
         border-bottom: solid $border-blurred;
     }
 
-    #question-input {
-        height: 3;
-        border: solid blue;
-    }
-
-    #question-controls {
-        height: 3;
-        margin-top: 0;
-        border: solid blue;
-        align: left top;
-    }
-
-    #detailed-answer-control {
-        width: auto;
-        height: 1;
-    }
-
-    #ask {
-        margin-left: 2;
-    }
-
-    #question-status {
-        width: 1fr;
-        height: 3;
-        padding: 0 2;
-        content-align: left top;
-    }
-
-    #answer {
-        height: 1fr;
-        border: solid blue;
-        padding: 1 2;
-    }
-
-    #answer-ok {
-        display: none;
-    }
-
     #details {
         width: 1fr;
         border: solid blue;
@@ -430,217 +390,9 @@ class ALFTUI(App):
             )
 
             with Vertical(id="workspace"):
-
-                with Vertical(id="question-workspace"):
-                    question_tui = commands["question"]["tui"]
-
-                    yield Static(
-                        question_tui["title"],
-                        classes="workspace-title",
-                    )
-
-                    yield Input(
-                        id="question-input",
-                        placeholder=question_tui["description"],
-                    )
-
-                    with Horizontal(id="question-controls"):
-                        with Horizontal(id="detailed-answer-control"):
-                            yield Checkbox(
-                                "Detailed answer",
-                                id="detailed-answer",
-                                compact=True,
-                        )
-                        yield Button("Ask", id="ask")
-                        yield Static(
-                            "Ready",
-                            id="question-status",
-                        )
-
-                    with VerticalScroll(id="answer"):
-                        yield Static(
-                            "Your answer will appear here.",
-                            id="answer-text",
-                        )
-
-                    yield Static(
-                        "Source: —",
-                        id="answer-source",
-                    )
-
-                    yield Button("OK", id="answer-ok")
-
-                with Horizontal(id="calc-workspace"):
-                    calc_tui = commands["calc"]["tui"]
-  
-                    with Vertical(id="calc-left"):
-                        yield Static(
-                            calc_tui["title"],
-                            classes="workspace-title",
-                        )
-  
-                        yield Input(
-                            id="calc-input",
-                            placeholder=calc_tui["description"],
-                        )
-  
-                        with Horizontal(id="calc-options"):
-                            with RadioSet(
-                                id="calc-mode",
-                                compact=True,
-                                ):
-                                yield RadioButton(
-                                    "Numeric",
-                                    value=True,
-                                )
-                                yield RadioButton(
-                                    "Symbolic",
-                                    id="calc-symbolic",
-                                )
-  
-                            with Horizontal(id="calc-precision"):
-                                yield Label("Dec:")
-                                yield Select(
-                                    [
-                                        ("1", 1),
-                                        ("2", 2),
-                                        ("3", 3),
-                                        ("4", 4),
-                                        ("5", 5),
-                                        ("6", 6),
-                                        ("7", 7),
-                                        ("8", 8),
-                                        ("9", 9),
-                                        ("10", 10),
-                                    ],
-                                    value=3,
-                                    id="calc-places",
-                                    compact=True,
-                                )
-  
-                        with Horizontal(id="calc-controls"):
-                            yield Button(
-                                "Calculate",
-                                id="calc-button",
-                            )
-                            yield Button(
-                                "Clear",
-                                id="calc-clear",
-                            )
-  
-                        with VerticalScroll(id="calc-result"):
-                            yield Static(
-                                "The result will appear here.",
-                                id="calc-history",
-                            )
-  
-                    with Vertical(id="calc-right"):
-
-                        yield Static(
-                            "Try some numerical calculations",
-                            classes="calc-example-heading",
-                        )
-
-                        example_index = 0
-
-                        numerical_items = []
-
-                        for group, examples in commands["calc"]["examples"].items():
-                            if group == "Symbolic mathematics":
-                                continue
-
-                            numerical_items.append(
-                                ListItem(
-                                    Label(group),
-                                    classes="calc-example-heading",
-                                )
-                            )
-
-                            for example in examples:
-                                numerical_items.append(
-                                    ListItem(
-                                        Label(
-                                            example.removeprefix('alf calc "')
-                                            .removesuffix('"')
-                                        ),
-                                        id=f"calc-example-{example_index}",
-                                    )
-                                )
-                                example_index += 1
-
-                        yield ListView(
-                            *numerical_items,
-                            id="calc-examples",
-                        )
-
-                        yield Static(
-                            "Explore symbolic mathematics",
-                            classes="calc-example-heading",
-                        )
-
-                        symbolic_items = []
-
-                        for index, example in enumerate(
-                            commands["calc"]["examples"]["Symbolic mathematics"]
-                        ):
-                            symbolic_items.append(
-                                ListItem(
-                                    Label(
-                                        example.removeprefix('alf calc "')
-                                        .removesuffix('"')
-                                    ),
-                                    id=f"calc-example-symbolic-{index}",
-                                )
-                            )
-
-                        yield ListView(
-                            *symbolic_items,
-                            id="calc-symbolic-examples",
-                        )
-  
-                with Vertical(id="remember-workspace"):
-                    remember_tui = commands["remember"]["tui"]
-
-                    yield Static(
-                        remember_tui["title"],
-                        classes="workspace-title",
-                    )
-
-                    yield TextArea(
-                        id="remember-input",
-                        placeholder=remember_tui["description"],
-                    )
-
-                    with Horizontal(id="remember-controls"):
-                        yield Button(
-                            "Save",
-                            id="remember-save",
-                        )
-                        yield Select(
-                            [
-                                ("Note", "note"),
-                                ("Preference", "preference"),
-                                ("Decision", "decision"),
-                                ("Fact", "fact"),
-                            ],
-                            value="note",
-                            id="remember-category",
-                            compact=True,
-                        )
-
-                    yield Static(
-                        "Ready",
-                        id="remember-status",
-                    )
-
-                    yield Static(
-                        "Related memories",
-                        id="remember-related-title",
-                    )
-
-                    yield ListView(
-                        id="remember-related",
-                    )
+                yield QuestionTUI(id="question-workspace")
+                yield CalcTUI(id="calc-workspace")
+                yield RememberTUI(id="remember-workspace")
 
                 with Horizontal(id="memories-workspace"):
                     with Vertical(id="memories-list"):
@@ -693,7 +445,6 @@ class ALFTUI(App):
 
 
     def on_mount(self) -> None:
-        self.calc_history = []
         navigation = self.query_one("#navigation", ListView)
         navigation.index = 0
         navigation.focus()
@@ -759,226 +510,12 @@ class ALFTUI(App):
         self.show_workspace("remember")
 
 
-    def ask_question(self) -> None:
-        if self.query_one("#ask", Button).disabled:
-            return
-
-        question = self.query_one("#question-input", Input).value
-
-        if not question.strip():
-            return
-
-        detailed = self.query_one("#detailed-answer", Checkbox).value
-
-        status = self.query_one("#question-status", Static)
-        answer = self.query_one("#answer-text", Static)
-        source = self.query_one("#answer-source", Static)
-        ok_button = self.query_one("#answer-ok", Button)
-
-        status.update("Asking local language model…")
-        answer.update("Waiting for answer…")
-        source.update("Source: Local language model")
-        ok_button.display = False
-        self.query_one("#ask", Button).disabled = True
-
-        self.ask_question_worker(
-            question,
-            detailed,
-        )
-
-    @work(thread=True)
-    def ask_question_worker(
-        self,
-        question: str,
-        detailed: bool,
-    ) -> None:
-
-        def report_progress(message: str) -> None:
-            self.call_from_thread(
-                self.update_question_status,
-                message,
-            )
-
-        try:
-            result = answer_question(
-                question,
-                verbose=detailed,
-                progress=report_progress,
-            )
-        except Exception as error:
-            self.call_from_thread(
-                self.show_question_error,
-                str(error),
-            )
-            return
-
-        self.call_from_thread(
-            self.show_question_answer,
-            result,
-        )
-
-    def update_question_status(self, message: str) -> None:
-        self.query_one("#question-status", Static).update(message)
-
-    def show_question_answer(self, result) -> None:
-        self.query_one("#question-status", Static).update("Complete")
-        self.query_one("#answer-text", Static).update(result.answer)
-
-        source = result.source or "No reliable source"
-        self.query_one("#answer-source", Static).update(
-            f"Source: {source}"
-        )
-
-        self.query_one("#answer-ok", Button).display = True
-        self.query_one("#ask", Button).disabled = False
-
-    def show_question_error(self, error: str) -> None:
-        self.query_one("#question-status", Static).update("Failed")
-        self.query_one("#answer-text", Static).update(
-            "I couldn't get an answer to the question."
-        )
-        self.query_one("#answer-source", Static).update(
-            f"Error: {error}"
-        )
-        self.query_one("#answer-ok", Button).display = True
-        self.query_one("#ask", Button).disabled = False
-
-
-
-    def clear_question(self) -> None:
-        self.query_one("#question-input", Input).value = ""
-        self.query_one("#answer-text", Static).update(
-            "Your answer will appear here."
-        )
-        self.query_one("#answer-source", Static).update("Source: —")
-        self.query_one("#answer-ok", Button).display = False
-
-
-    async def on_input_submitted(
-        self,
-        event: Input.Submitted,
-    ) -> None:
-        if event.input.id == "question-input":
-            self.ask_question()
-
-        elif event.input.id == "calc-input":
-            self.calculate_expression()
-
-
-    def calculate_expression(self) -> None:
-        expression = self.query_one("#calc-input", Input).value.strip()
-
-        if not expression:
-            return
-
-        mode = self.query_one("#calc-mode", RadioSet)
-        symbolic = mode.pressed_button.label.plain == "Symbolic"
-
-        places = self.query_one("#calc-places", Select).value
-
-        try:
-            calculation = calculate(
-                expression,
-                symbolic=symbolic,
-                places=places,
-            )
-        except CalculationError as error:
-            self.calc_history.append(
-                f"{expression}\n{error}"
-            )
-        else:
-            self.calc_history.append(
-                f"{expression}\n{calculation}"
-            )
-
-        self.query_one("#calc-history", Static).update(
-            "\n\n".join(self.calc_history)
-        )
-        self.query_one("#calc-input", Input).value = ""
-        self.query_one("#calc-input", Input).focus()
-
-
-    def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
-        if event.radio_set.id != "calc-mode":
-            return
-
-        symbolic = event.pressed.label.plain == "Symbolic"
-
-        self.query_one("#calc-places", Select).disabled = symbolic
-
-
-    def clear_calculation(self) -> None:
-        self.calc_history.clear()
-        self.query_one("#calc-input", Input).value = ""
-        self.query_one("#calc-history", Static).update(
-            "The result will appear here."
-        )
-        self.query_one("#calc-input", Input).focus()
-
-
-    def on_text_area_changed(self, event: TextArea.Changed) -> None:
-        if event.text_area.id != "remember-input":
-            return
-
-        content = event.text_area.text.strip()
-
-        if not content:
-            self.clear_related_memories()
-            return
-
-        self.update_related_memories(content)
-
-    def clear_related_memories(self) -> None:
-        related = self.query_one("#remember-related", ListView)
-        related.clear()
-
-
-    @work(exclusive="related-memory-search")
-    async def update_related_memories(self, content: str) -> None:
-        await asyncio.sleep(0.75)
-
-        candidates = find_related_memory_candidates(content)
-
-        related = self.query_one("#remember-related", ListView)
-        await related.clear()
-
-        for memory in candidates:
-            await related.append(
-                ListItem(
-                    Horizontal(
-                        Checkbox(
-                            id=f"related-memory-{memory['id']}",
-                            compact=True,
-                        ),
-                Label(
-                    f"{memory['id']}  "
-                    f"{memory['category']:<9} "
-                    f"{'* ' if memory['status'] != 'active' else ''}"
-                    f"{memory['content']}"
-                ),
-                    ),
-                    id=f"related-memory-item-{memory['id']}",
-                )
-            )
-
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "quit":
             self.exit()
             return
 
-        if event.button.id == "ask":
-            self.ask_question()
-
-        elif event.button.id == "calc-button":
-            self.calculate_expression()
-
-        elif event.button.id == "calc-clear":
-            self.clear_calculation()
-
-        elif event.button.id == "answer-ok":
-            self.clear_question()
-
-        elif event.button.id == "remember-save":
+        if event.button.id == "remember-save":
             await self.save_remembered_memory()
 
         elif event.button.id == "memory-edit":
@@ -1096,27 +633,6 @@ class ALFTUI(App):
             elif command == "memories":
                 self.show_memories()
 
-            return
-
-        if event.list_view.id in {
-            "calc-examples",
-            "calc-symbolic-examples",
-        }:
-            label = event.item.query_one(Label)
-            expression = str(label.content)
-
-            symbolic = event.list_view.id == "calc-symbolic-examples"
-
-            mode = self.query_one("#calc-mode", RadioSet)
-
-            if symbolic and mode.pressed_index == 0:
-                mode.query_one("#calc-symbolic", RadioButton).value = True
-            elif not symbolic and mode.pressed_index == 1:
-                mode.query_one(RadioButton).value = True
-
-            input_widget = self.query_one("#calc-input", Input)
-            input_widget.value = expression
-            input_widget.focus()
             return
 
         if event.list_view.id != "memories":
