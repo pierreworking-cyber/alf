@@ -35,38 +35,59 @@ class RememberTUI(Vertical):
     }
 
     #remember-input {
-        height: 8;
+        height: 1fr;
         border: solid blue;
     }
 
     #remember-controls {
         height: 3;
+        margin-top: 0;
         border: solid blue;
         align: left middle;
     }
 
-    #remember-controls Button {
-        width: auto;
-    }
-
     #remember-category {
-        width: 16;
-        margin-left: 2;
+        width: 14;
+        height: 3;
     }
 
-    #remember-status {
-        height: 3;
-        padding: 0 2;
+    #remember-save {
+        width: auto;
+        height: 1;
+        margin-left: 2;
     }
 
     #remember-related-title {
         height: 2;
-        padding: 0 2;
+        margin-top: 1;
+        border-bottom: solid $border-blurred;
     }
 
     #remember-related {
-        height: 1fr;
+        height: 8;
         border: solid blue;
+        padding: 1 2;
+    }
+
+    #remember-related Horizontal {
+        width: 100%;
+        height: auto;
+    }
+
+    #remember-related Checkbox {
+        width: auto;
+        height: auto;
+    }
+
+    #remember-related Label {
+        width: 1fr;
+        height: auto;
+        text-wrap: nowrap;
+    }
+
+    #remember-related ListItem {
+        border-bottom: solid grey;
+        padding-bottom: 1;
     }
     """
 
@@ -179,10 +200,6 @@ class RememberTUI(Vertical):
                     id=f"related-memory-item-{memory['id']}",
                 )
             )
-
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "remember-save":
-            await self.save_remembered_memory()
 
     async def save_remembered_memory(self) -> None:
         category = self.query_one("#remember-category", Select).value

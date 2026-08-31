@@ -6,23 +6,17 @@ The TUI delegates application logic to the underlying ALF modules and
 is responsible for presentation, user interaction, and workspace state.
 """
 
-import asyncio
-
 from textual import work
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import (
     Button,
     Checkbox,
     Header,
-    Input,
     Label,
     ListItem,
     ListView,
-    RadioButton,
-    RadioSet,
-    Select,
     Static,
     TextArea,
 )
@@ -31,15 +25,13 @@ from alf.command_catalogue import commands
 from alf.memory import (
     archive_memory,
     delete_memory,
-    find_related_memory_candidates,
     get_memories,
     get_memory,
-    remember,
     restore_memory,
     update_memory,
 )
-from alf.tui.question_tui import QuestionTUI
 from alf.tui.calc_tui import CalcTUI
+from alf.tui.question_tui import QuestionTUI
 from alf.tui.remember_tui import RememberTUI
 
 
@@ -142,66 +134,6 @@ class ALFTUI(App):
         content-align: left middle;
     }
 
-    #remember-workspace {
-        height: 1fr;
-    }
-
-    #remember-input {
-        height: 1fr;
-        border: solid blue;
-    }
-
-    #remember-controls {
-        height: 3;
-        margin-top: 0;
-        border: solid blue;
-        align: left middle;
-    }
-
-    #remember-category {
-        width: 14;
-        height: 3;
-    }
-
-    #remember-save {
-        width: auto;
-        height: 1;
-        margin-left: 2;
-    }
-
-    #remember-related-title {
-        height: 2;
-        margin-top: 1;
-        border-bottom: solid $border-blurred;
-    }
-
-    #remember-related {
-        height: 8;
-        border: solid blue;
-        padding: 1 2;
-    }
-
-    #remember-related Horizontal {
-        width: 100%;
-        height: auto;
-    }
-
-    #remember-related Checkbox {
-        width: auto;
-        height: auto;
-    }
-
-    #remember-related Label {
-        width: 1fr;
-        height: auto;
-        text-wrap: nowrap;
-    }
-
-    #remember-related ListItem {
-        border-bottom: solid grey;
-        padding-bottom: 1;
-    }
-
     #memories-list {
         width: 55%;
     }
@@ -250,94 +182,9 @@ class ALFTUI(App):
     }
     #question-workspace,
     #remember-workspace,
-    #memories-workspace,
-    #calc-workspace {
+    #memories-workspace
+    {
         height: 1fr;
-    }
-
-    #calc-workspace {
-        layout: horizontal;
-    }
-
-    #calc-left {
-        width: 55%;
-        border: solid green;
-        padding: 0 2;
-    }
-
-    #calc-right {
-        width: 45%;
-        border: solid blue;
-        padding: 1 2;
-    }
-
-    #calc-left .workspace-title {
-        height: 1;
-    }
-
-    #calc-input {
-        height: 3;
-    }
-
-    #calc-options {
-        height: 1;
-        align: left middle;
-    }
-
-    #calc-mode {
-        width: auto;
-        height: auto;
-        layout: horizontal;
-    }
-
-    #calc-precision {
-        width: 1fr;
-        height: 3;
-        align: right middle;
-    }
-
-    #calc-mode RadioButton {
-        width: auto;
-    }
-
-
-    #calc-options Label {
-        width: auto;
-        margin-left: 1;
-        margin-right: 1;
-    }
-
-    #calc-places {
-        width: 10;
-        height: 3;
-    }
-
-    #calc-controls {
-        height: 3;
-        border: solid blue;
-        align: left middle;
-    }
-
-    #calc-controls Button {
-        width: 1fr;
-    }
-
-    #calc-result {
-        height: 1fr;
-        border: solid blue;
-        padding: 1 2;
-    }
-
-    #calc-examples,
-    #calc-symbolic-examples {
-        height: auto;
-        margin: 0 1;
-    }
-
-    .calc-example-heading {
-        height: 2;
-        margin: 1 1 0 1;
-        border-bottom: solid $border-blurred;
     }
 
     #details {
@@ -515,10 +362,7 @@ class ALFTUI(App):
             self.exit()
             return
 
-        if event.button.id == "remember-save":
-            await self.save_remembered_memory()
-
-        elif event.button.id == "memory-edit":
+        if event.button.id == "memory-edit":
             self.action_edit_memory()
 
         elif event.button.id == "memory-save":
@@ -554,56 +398,8 @@ class ALFTUI(App):
             memory_id = int(selected.id.removeprefix("memory-"))
             self.confirm_and_delete_memory(memory_id)
 
-    async def save_remembered_memory(self) -> None:
-        category = self.query_one("#remember-category", Select).value
-        content = self.query_one("#remember-input", TextArea).text.strip()
 
-        status = self.query_one("#remember-status", Static)
-
-        if category is Select.BLANK:
-            status.update("Please choose a memory category.")
-            return
-
-        if not content:
-            status.update("Please enter something to remember.")
-            return
-
-        related = self.query_one("#remember-related", ListView)
-        related_memory_ids = [
-            item.query_one(Checkbox).id.removeprefix("related-memory-")
-            for item in related.children
-            if item.query_one(Checkbox).value
-        ]
-
-        result = remember(
-            category,
-            content,
-            related_memory_ids=",".join(related_memory_ids) or None,
-        )
-
-        if result is not True:
-            status.update("I couldn't save that memory.")
-            return
-
-        self.query_one("#remember-input", TextArea).text = ""
-        self.clear_related_memories()
-        status.update("Memory saved.")
-
-        await self.refresh_memory_list()
-
-
-    def on_list_view_highlighted(
-        self,
-        event: ListView.Highlighted,
-    ) -> None:
-        if event.list_view.id != "navigation":
-            return
-
-        if event.item is None:
-            return
-
-        command = event.item.id.removeprefix("navigation-")
-
+    def show_navigation_command(self, command: str) -> None:
         if command == "question":
             self.show_question()
 
@@ -617,22 +413,24 @@ class ALFTUI(App):
             self.show_memories()
 
 
+    def on_list_view_highlighted(
+        self,
+        event: ListView.Highlighted,
+    ) -> None:
+        if event.list_view.id != "navigation":
+            return
+
+        if event.item is None:
+            return
+
+        command = event.item.id.removeprefix("navigation-")
+        self.show_navigation_command(command)
+
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if event.list_view.id == "navigation":
             command = event.item.id.removeprefix("navigation-")
-
-            if command == "question":
-                self.show_question()
-
-            elif command == "calc":
-                self.show_calc()
-
-            elif command == "remember":
-                self.show_remember()
-
-            elif command == "memories":
-                self.show_memories()
-
+            self.show_navigation_command(command)
             return
 
         if event.list_view.id != "memories":

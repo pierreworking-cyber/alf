@@ -210,14 +210,5 @@ class QuestionTUI(Vertical):
         elif event.button.id == "answer-ok":
             self.clear_question()
 
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "ask":
-            self.ask_question()
-
         elif event.button.id == "answer-ok":
             self.clear_question()
-
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.input.id == "question-input":
-            self.ask_question()
