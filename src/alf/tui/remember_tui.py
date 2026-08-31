@@ -135,6 +135,10 @@ class RememberTUI(Vertical):
             id="remember-related",
         )
 
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "remember-save":
+            await self.save_remembered_memory()
+
     def on_text_area_changed(self, event: TextArea.Changed) -> None:
         if event.text_area.id != "remember-input":
             return
