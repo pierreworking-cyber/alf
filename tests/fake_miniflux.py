@@ -112,6 +112,32 @@ class FakeMiniflux:
 
         return dict(category)
 
+    def _remove_category(self, category_id):
+        """Remove a category, cascading to its feeds and their entries."""
+        feed_ids = {
+            feed["id"]
+            for feed in self._feeds
+            if feed["category_id"] == category_id
+        }
+
+        self._feeds = [
+            feed
+            for feed in self._feeds
+            if feed["category_id"] != category_id
+        ]
+
+        self._entries = [
+            entry
+            for entry in self._entries
+            if entry["feed_id"] not in feed_ids
+        ]
+
+        self._categories = [
+            category
+            for category in self._categories
+            if category["id"] != category_id
+        ]
+
     def add_feed(self, title, feed_url, category_id=None, entries=None):
         """Add a feed directly, optionally scheduling entries for it."""
         if category_id is None:
@@ -219,6 +245,27 @@ class FakeMiniflux:
                 return 400, {"error_message": "title is required"}
 
             return 201, self.add_category(title)
+
+        match = re.fullmatch(r"/v1/categories/(\d+)", path)
+
+        if method == "DELETE" and match:
+            category_id = int(match.group(1))
+
+            category = next(
+                (
+                    category
+                    for category in self._categories
+                    if category["id"] == category_id
+                ),
+                None,
+            )
+
+            if category is None:
+                return 404, {"error_message": "Category not found"}
+
+            self._remove_category(category_id)
+
+            return 204, None
 
         if method == "GET" and path == "/v1/feeds":
             return 200, [dict(feed) for feed in self._feeds]

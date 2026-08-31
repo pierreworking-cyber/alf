@@ -525,6 +525,7 @@ def refresh(subject=None, client=None):
         imported = 0
         skipped = 0
         failures = []
+        subject_results = []
 
         for subject_entries in subjects:
             feeds = subject_entries["feeds"]
@@ -576,12 +577,20 @@ def refresh(subject=None, client=None):
             imported += count
             skipped += deduplicated
 
+            subject_results.append(
+                {
+                    "name": subject_entries["name"],
+                    "new_items": count,
+                }
+            )
+
         return {
             "subject": subject,
             "refreshed": refreshed,
             "imported": imported,
             "skipped": skipped,
             "failures": failures,
+            "subjects": subject_results,
         }
 
 
@@ -811,6 +820,48 @@ def get_news_feeds():
     return feeds
 
 
+def list_subjects():
+    """
+    Return stored news subjects with their feed and item counts.
+
+    Returns:
+        A list of subject dictionaries, ordered by subject name.
+    """
+
+    with _get_connection() as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                s.id,
+                s.name,
+                (
+                    SELECT COUNT(*)
+                    FROM news_feeds f
+                    WHERE f.subject_id = s.id
+                ),
+                (
+                    SELECT COUNT(*)
+                    FROM news_items i
+                    WHERE i.subject_id = s.id
+                )
+            FROM news_subjects s
+            ORDER BY s.name
+            """
+        )
+
+        return [
+            {
+                "id": row[0],
+                "name": row[1],
+                "feeds": row[2],
+                "items": row[3],
+            }
+            for row in cursor.fetchall()
+        ]
+
+
 def get_news_information():
     """
     Return information about ALF's stored news data.
@@ -966,22 +1017,27 @@ def rename_subject(subject_id, name, client=None):
         }
 
 
-def delete_subject(subject_id):
+def delete_subject(subject_id, client=None):
     """
     Delete a stored news subject and its ALF-side data.
 
-    The corresponding Miniflux category and feeds are deliberately left
-    untouched because feeds may be shared with other subjects.
+    The corresponding Miniflux category is deleted first, removing its
+    feeds and entries through Miniflux's category cascade. A Miniflux
+    failure leaves ALF's records intact.
 
     Args:
         subject_id: The ALF subject id.
+        client: An optional Miniflux client.
 
     Returns:
         A dictionary describing the deleted subject.
 
     Raises:
-        NewsError: If the subject does not exist.
+        NewsError: If the subject does not exist, or if its Miniflux
+            category could not be found or deleted.
     """
+
+    client = client or get_client()
 
     with _get_connection() as connection:
         cursor = connection.cursor()
@@ -996,6 +1052,20 @@ def delete_subject(subject_id):
             raise NewsError("News subject not found.")
 
         subject_name = row[1]
+
+        category = None
+
+        for candidate in client.get_categories():
+            if candidate["title"] == subject_name:
+                category = candidate
+                break
+
+        if category is None:
+            raise NewsError(
+                f"Miniflux category '{subject_name}' could not be found."
+            )
+
+        client.delete_category(category["id"])
 
         cursor.execute(
             "DELETE FROM news_items WHERE subject_id = ?",

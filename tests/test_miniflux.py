@@ -85,6 +85,42 @@ def test_create_category_requires_title(fake, client):
     assert "400" in str(excinfo.value)
 
 
+def test_delete_category_returns_none(fake, client):
+    category = client.create_category("World")
+
+    assert client.delete_category(category["id"]) is None
+
+    request = fake.requests[-1]
+
+    assert request["method"] == "DELETE"
+    assert request["path"] == f"/v1/categories/{category['id']}"
+
+
+def test_delete_category_removes_category_feeds_and_entries(fake, client):
+    category = client.create_category("World")
+    feed = client.create_feed("https://example.com/feed", category["id"])
+
+    fake.schedule_entries(
+        feed["id"],
+        [{"title": "Only story", "url": "https://example.com/only"}],
+    )
+    client.refresh_feed(feed["id"])
+
+    client.delete_category(category["id"])
+
+    assert client.get_categories() == []
+    assert client.get_feeds() == []
+    assert client.get_entries() == []
+
+
+def test_delete_category_missing_raises(fake, client):
+    with pytest.raises(MinifluxError) as excinfo:
+        client.delete_category(999)
+
+    assert "404" in str(excinfo.value)
+    assert "Category not found" in str(excinfo.value)
+
+
 def test_create_feed_returns_feed_with_category(fake, client):
     category = client.create_category("World")
 

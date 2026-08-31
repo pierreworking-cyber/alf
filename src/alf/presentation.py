@@ -692,7 +692,6 @@ def render_ambiguous_command(command, matches):
     console.print()
 
 
-
 def render_health(report, show_details=False):
     """
     Render ALF health information.
@@ -827,20 +826,6 @@ def render_health(report, show_details=False):
         console.print()
 
 
-def render_news_configured():
-    """
-    Render confirmation that the news service has been configured.
-    """
-
-    title("ALF news")
-    success("News service configured.")
-
-    info(
-        "Add a subject with: "
-        "alf news add <subject> <feed-url>"
-    )
-
-
 def render_news_subject_added(result):
     """
     Render the result of adding a news subject.
@@ -902,6 +887,42 @@ def render_news_item(item):
     info(f"  {item['title']}")
     info(f"  {item['url']}")
     console.print()
+
+
+def render_news_subjects(subjects, refresh_result):
+    """
+    Render the stored news subjects with feed, item, and refresh counts.
+    """
+
+    title("ALF news")
+
+    if not subjects:
+        info("No news subjects stored.")
+        return
+
+    new_items = {
+        subject["name"]: subject["new_items"]
+        for subject in refresh_result["subjects"]
+    }
+
+    table = Table()
+
+    table.add_column("Subject")
+    table.add_column("Feeds", justify="right")
+    table.add_column("Items", justify="right")
+    table.add_column("New", justify="right")
+
+    for subject in subjects:
+        new_count = new_items.get(subject["name"], 0)
+
+        table.add_row(
+            subject["name"],
+            str(subject["feeds"]),
+            str(subject["items"]),
+            str(new_count),
+        )
+
+    console.print(table)
 
 
 def render_news_items(items, subject=None):

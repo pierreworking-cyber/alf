@@ -103,6 +103,15 @@ class Miniflux:
             payload={"title": title},
         )
 
+    def delete_category(self, category_id):
+        """
+        Delete a category and the feeds it contains.
+        """
+        return self._request(
+            "DELETE",
+            f"/v1/categories/{category_id}",
+        )
+
     def get_feeds(self, category_id=None):
         """
         Return feeds, optionally restricted to a category.

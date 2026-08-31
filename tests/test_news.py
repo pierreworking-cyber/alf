@@ -246,6 +246,62 @@ def test_add_subject_reports_existing_feeds(fake, database):
     ]
 
 
+def test_list_subjects_returns_subjects_with_feed_and_item_counts(
+    fake,
+    database,
+):
+    client = make_client(fake)
+
+    news.add_subject(
+        "Ukraine",
+        [
+            "https://feeds.example/ukraine.rss",
+            "https://feeds.example/world.rss",
+        ],
+        client=client,
+    )
+    news.add_subject(
+        "Climate",
+        ["https://feeds.example/climate.rss"],
+        client=client,
+    )
+
+    ukraine_feeds = client.get_feeds(category_id=1)
+
+    fake.schedule_entries(
+        ukraine_feeds[0]["id"],
+        [
+            {
+                "title": "Ukraine story",
+                "url": "https://feeds.example/ukraine/1",
+                "published_at": ENTRY_ONE,
+            },
+            {
+                "title": "Another Ukraine story",
+                "url": "https://feeds.example/ukraine/2",
+                "published_at": ENTRY_TWO,
+            },
+        ],
+    )
+
+    news.refresh("Ukraine", client=client)
+
+    assert news.list_subjects() == [
+        {
+            "id": 2,
+            "name": "Climate",
+            "feeds": 1,
+            "items": 0,
+        },
+        {
+            "id": 1,
+            "name": "Ukraine",
+            "feeds": 2,
+            "items": 2,
+        },
+    ]
+
+
 def test_add_subject_requires_name_and_feed_urls(database):
     with pytest.raises(news.NewsError):
         news.add_subject("  ", ["https://feeds.example/x.rss"])
@@ -293,6 +349,12 @@ def test_refresh_imports_entries(fake, database):
         "imported": 2,
         "skipped": 0,
         "failures": [],
+        "subjects": [
+            {
+                "name": "Ukraine",
+                "new_items": 2,
+            }
+        ],
     }
 
     items = news.list_items("Ukraine")
@@ -682,15 +744,6 @@ def test_news_command_requires_subcommand(monkeypatch):
     assert captured["catalogue"]["id"] == "news.manage"
 
 
-def test_news_help_names_init_connection_flags():
-    notes = commands.commands["news"]["notes"]
-
-    assert any(
-        "alf news init --url" in note and "--key" in note
-        for note in notes
-    )
-
-
 def test_news_command_rejects_unknown_subcommand(monkeypatch):
     captured = []
 
@@ -767,89 +820,6 @@ def test_news_add_command_requires_subject_and_feed(monkeypatch):
     assert captured == ["news", "news"]
 
 
-def test_news_init_command_configures_service(monkeypatch):
-    captured = {}
-
-    monkeypatch.setattr(
-        commands,
-        "initialise",
-        lambda base_url, api_key: captured.update(
-            {"base_url": base_url, "api_key": api_key}
-        ),
-    )
-
-    monkeypatch.setattr(
-        commands,
-        "render_news_configured",
-        lambda: captured.update({"rendered": True}),
-    )
-
-    commands.news_command(
-        "init",
-        "--url",
-        "http://fake:8765",
-        "--key",
-        "secret",
-    )
-
-    assert captured == {
-        "base_url": "http://fake:8765",
-        "api_key": "secret",
-        "rendered": True,
-    }
-
-
-def test_news_init_command_requires_url_and_key(monkeypatch):
-    captured = []
-
-    monkeypatch.setattr(
-        commands,
-        "render_command_structure_error",
-        lambda command: captured.append(command),
-    )
-
-    monkeypatch.setattr(
-        commands,
-        "initialise",
-        lambda *arguments: pytest.fail(
-            "initialise should not be called"
-        ),
-    )
-
-    commands.news_command("init", "--url", "http://fake:8765")
-    commands.news_command("init", "--key", "secret")
-    commands.news_command("init")
-
-    assert captured == ["news", "news", "news"]
-
-
-def test_news_init_command_reports_service_failure(monkeypatch):
-    captured = []
-
-    def failing_initialise(base_url, api_key):
-        raise news.NewsError("News is not configured. Run `alf news init`.")
-
-    monkeypatch.setattr(commands, "initialise", failing_initialise)
-
-    monkeypatch.setattr(
-        commands,
-        "render_news_error",
-        lambda message: captured.append(message),
-    )
-
-    commands.news_command(
-        "init",
-        "--url",
-        "http://fake:8765",
-        "--key",
-        "secret",
-    )
-
-    assert captured == [
-        "News is not configured. Run `alf news init`."
-    ]
-
-
 def test_news_refresh_command_refreshes_subject(monkeypatch):
     captured = {}
 
@@ -883,7 +853,7 @@ def test_news_refresh_command_refreshes_subject(monkeypatch):
     }
 
 
-def test_news_list_command_lists_items(monkeypatch):
+def test_news_list_command_refreshes_and_lists_subjects(monkeypatch):
     captured = {}
 
     monkeypatch.setattr(commands, "get_news_config", lambda: {
@@ -891,25 +861,49 @@ def test_news_list_command_lists_items(monkeypatch):
         "api_key": "secret",
     })
 
+    refresh_result = {
+        "subjects": [
+            {"name": "Ukraine", "new_items": 2},
+        ],
+    }
+
     monkeypatch.setattr(
         commands,
-        "list_items",
-        lambda subject=None, days=None: captured.update(
-            {"subject": subject, "days": days}
+        "refresh",
+        lambda: refresh_result,
+    )
+
+    subjects = [
+        {
+            "id": 1,
+            "name": "Ukraine",
+            "feeds": 2,
+            "items": 12,
+        },
+    ]
+
+    monkeypatch.setattr(
+        commands,
+        "list_subjects",
+        lambda: subjects,
+    )
+
+    monkeypatch.setattr(
+        commands,
+        "render_news_subjects",
+        lambda subjects, result: captured.update(
+            {
+                "subjects": subjects,
+                "result": result,
+            }
         ),
     )
 
-    monkeypatch.setattr(
-        commands,
-        "render_news_items",
-        lambda items, subject=None: None,
-    )
-
-    commands.news_command("list", "Ukraine", "--days", "7")
+    commands.news_command("list")
 
     assert captured == {
-        "subject": "Ukraine",
-        "days": 7,
+        "subjects": subjects,
+        "result": refresh_result,
     }
 
 
@@ -926,9 +920,9 @@ def test_news_list_command_hints_when_unconfigured(monkeypatch):
 
     monkeypatch.setattr(
         commands,
-        "list_items",
-        lambda *arguments, **kwargs: pytest.fail(
-            "list_items should not be called when unconfigured"
+        "refresh",
+        lambda: pytest.fail(
+            "refresh should not be called when unconfigured"
         ),
     )
 
@@ -939,7 +933,7 @@ def test_news_list_command_hints_when_unconfigured(monkeypatch):
     ]
 
 
-def test_news_list_command_rejects_invalid_days(monkeypatch):
+def test_news_list_command_rejects_arguments(monkeypatch):
     captured = []
 
     monkeypatch.setattr(
@@ -950,14 +944,14 @@ def test_news_list_command_rejects_invalid_days(monkeypatch):
 
     monkeypatch.setattr(
         commands,
-        "list_items",
-        lambda *arguments, **kwargs: pytest.fail(
-            "list_items should not be called"
+        "refresh",
+        lambda: pytest.fail(
+            "refresh should not be called with arguments"
         ),
     )
 
-    commands.news_command("list", "--days", "abc")
-    commands.news_command("list", "--days", "0")
+    commands.news_command("list", "Ukraine")
+    commands.news_command("list", "--days", "7")
 
     assert captured == ["news", "news"]
 
@@ -1023,7 +1017,14 @@ def test_news_query_command_queries_items(monkeypatch):
         ),
     )
 
-    commands.news_command("query", "Ukraine", "--days", "7", "--limit", "5")
+    commands.news_command(
+        "query",
+        "Ukraine",
+        "--days",
+        "7",
+        "--limit",
+        "5",
+    )
 
     query = captured["query"]
 
@@ -1034,6 +1035,75 @@ def test_news_query_command_queries_items(monkeypatch):
     assert query.end is not None
     assert (query.end - query.start).days == 7
     assert captured["rendered"] == ([], query)
+
+
+def test_news_query_command_queries_subject_topics(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(commands, "get_news_config", lambda: {
+        "base_url": "http://fake:8765",
+        "api_key": "secret",
+    })
+
+    def fake_query_items(query):
+        captured["query"] = query
+        return []
+
+    monkeypatch.setattr(commands, "query_items", fake_query_items)
+
+    monkeypatch.setattr(
+        commands,
+        "render_news_query",
+        lambda items, query: None,
+    )
+
+    commands.news_command(
+        "query",
+        "Tech",
+        "quantum computing",
+        "--days",
+        "7",
+        "--limit",
+        "10",
+    )
+
+    query = captured["query"]
+
+    assert query.subject == "Tech"
+    assert query.topics == ("quantum", "computing")
+    assert query.limit == 10
+    assert query.start is not None
+    assert query.end is not None
+    assert (query.end - query.start).days == 7
+
+
+def test_news_query_command_refreshes_before_query(monkeypatch):
+    events = []
+
+    monkeypatch.setattr(commands, "get_news_config", lambda: {
+        "base_url": "http://fake:8765",
+        "api_key": "secret",
+    })
+
+    def fake_refresh():
+        events.append("refresh")
+        return {}
+
+    def fake_query_items(query):
+        events.append("query")
+        return []
+
+    monkeypatch.setattr(commands, "refresh", fake_refresh)
+    monkeypatch.setattr(commands, "query_items", fake_query_items)
+    monkeypatch.setattr(
+        commands,
+        "render_news_query",
+        lambda items, query: events.append("render"),
+    )
+
+    commands.news_command("query", "quantum computing")
+
+    assert events == ["refresh", "query", "render"]
 
 
 def test_news_query_command_defaults_to_seven_days(monkeypatch):
@@ -1391,3 +1461,209 @@ def test_move_feed_recreates_missing_destination_category(fake, database):
         feed["id"]
         for feed in client.get_feeds(category_id=recreated["id"])
     }
+
+
+def _seed_subject(fake, client, name, feed_url, items=None):
+    """Seed a subject and return its Miniflux category and feed."""
+    news.add_subject(name, [feed_url], client=client)
+
+    category = next(
+        category
+        for category in client.get_categories()
+        if category["title"] == name
+    )
+    feed = client.get_feeds(category_id=category["id"])[0]
+
+    if items is not None:
+        fake.schedule_entries(feed["id"], items)
+        news.refresh(name, client=client)
+
+    return category, feed
+
+
+def _subject_names():
+    return [subject["name"] for subject in news.get_news_information()[
+        "subjects"
+    ]]
+
+
+def test_delete_subject_removes_category_and_its_feeds(fake, database):
+    client = make_client(fake)
+
+    ukraine_category, _ = _seed_subject(
+        fake,
+        client,
+        "Ukraine",
+        "https://feeds.example/ukraine.rss",
+        items=[
+            {
+                "title": "Ukraine story",
+                "url": "https://feeds.example/ukraine/1",
+                "published_at": ENTRY_ONE,
+            }
+        ],
+    )
+
+    result = news.delete_subject(1, client=client)
+
+    assert result == {"id": 1, "name": "Ukraine"}
+
+    assert _subject_names() == []
+
+    assert ukraine_category["id"] not in {
+        category["id"] for category in client.get_categories()
+    }
+    assert client.get_feeds() == []
+    assert client.get_entries() == []
+
+    assert news.get_news_information()["feeds"] == 0
+    assert news.get_news_information()["items"] == 0
+
+
+def test_delete_subject_preserves_other_subject_and_its_feeds(
+    fake,
+    database,
+):
+    client = make_client(fake)
+
+    ukraine_category, _ = _seed_subject(
+        fake,
+        client,
+        "Ukraine",
+        "https://feeds.example/ukraine.rss",
+        items=[
+            {
+                "title": "Ukraine story",
+                "url": "https://feeds.example/ukraine/1",
+                "published_at": ENTRY_ONE,
+            }
+        ],
+    )
+
+    climate_category, climate_feed = _seed_subject(
+        fake,
+        client,
+        "Climate",
+        "https://feeds.example/climate.rss",
+    )
+    climate_category_id = climate_category["id"]
+
+    news.delete_subject(1, client=client)
+
+    assert _subject_names() == ["Climate"]
+
+    surviving = next(
+        category
+        for category in client.get_categories()
+        if category["title"] == "Climate"
+    )
+    assert surviving["id"] == climate_category_id
+
+    assert climate_feed["id"] in {
+        feed["id"]
+        for feed in client.get_feeds(category_id=surviving["id"])
+    }
+    assert ukraine_category["id"] not in {
+        category["id"] for category in client.get_categories()
+    }
+
+    assert news.get_news_information()["feeds"] == 1
+    assert news.get_news_information()["items"] == 0
+
+
+def test_delete_subject_rolls_back_on_miniflux_failure(fake, database):
+    client = make_client(fake)
+
+    ukraine_category, ukraine_feed = _seed_subject(
+        fake,
+        client,
+        "Ukraine",
+        "https://feeds.example/ukraine.rss",
+        items=[
+            {
+                "title": "Ukraine story",
+                "url": "https://feeds.example/ukraine/1",
+                "published_at": ENTRY_ONE,
+            }
+        ],
+    )
+
+    def failing_transport(method, url, headers, payload, timeout):
+        if method == "DELETE" and re.search(r"/v1/categories/\d+$", url):
+            return 500, json.dumps(
+                {"error_message": "Delete failed"}
+            ).encode("utf-8")
+
+        return fake.transport()(
+            method,
+            url,
+            headers,
+            payload,
+            timeout,
+        )
+
+    failing_client = Miniflux(
+        "http://fake:8765",
+        fake.api_key,
+        transport=failing_transport,
+    )
+
+    with pytest.raises(MinifluxError):
+        news.delete_subject(1, client=failing_client)
+
+    assert _subject_names() == ["Ukraine"]
+    assert ukraine_category["id"] in {
+        category["id"] for category in client.get_categories()
+    }
+    assert ukraine_feed["id"] in {
+        feed["id"]
+        for feed in client.get_feeds(category_id=ukraine_category["id"])
+    }
+    assert news.get_news_information()["feeds"] == 1
+    assert news.get_news_information()["items"] == 1
+
+
+def test_delete_subject_missing_makes_no_miniflux_changes(fake, database):
+    client = make_client(fake)
+
+    with pytest.raises(news.NewsError):
+        news.delete_subject(999, client=client)
+
+    assert fake.requests == []
+    assert _subject_names() == []
+
+
+def test_delete_subject_missing_miniflux_category_rolls_back(
+    fake,
+    database,
+):
+    client = make_client(fake)
+
+    ukraine_category, _ = _seed_subject(
+        fake,
+        client,
+        "Ukraine",
+        "https://feeds.example/ukraine.rss",
+        items=[
+            {
+                "title": "Ukraine story",
+                "url": "https://feeds.example/ukraine/1",
+                "published_at": ENTRY_ONE,
+            }
+        ],
+    )
+
+    fake._categories = [
+        category
+        for category in fake._categories
+        if category["id"] != ukraine_category["id"]
+    ]
+
+    with pytest.raises(news.NewsError) as excinfo:
+        news.delete_subject(1, client=client)
+
+    assert "could not be found" in str(excinfo.value)
+
+    assert _subject_names() == ["Ukraine"]
+    assert news.get_news_information()["feeds"] == 1
+    assert news.get_news_information()["items"] == 1

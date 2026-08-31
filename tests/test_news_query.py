@@ -222,6 +222,58 @@ def test_query_items_aligns_subject_by_substring(fake, seeded, database):
     assert items[0]["title"] == "Ukraine headline"
 
 
+def test_query_items_filters_topics_within_subject(
+    fake, seeded, database
+):
+    news.add_subject(
+        "Tech",
+        ["https://feeds.example/tech.rss"],
+        client=seeded,
+    )
+
+    schedule(
+        fake,
+        seeded,
+        "Tech",
+        [
+            {
+                "title": "Quantum computing breakthrough",
+                "url": "https://feeds.example/t/1",
+                "published_at": now_timestamp(),
+            },
+            {
+                "title": "New graphics card announced",
+                "url": "https://feeds.example/t/2",
+                "published_at": now_timestamp(),
+            },
+        ],
+    )
+
+    schedule(
+        fake,
+        seeded,
+        "Climate",
+        [
+            {
+                "title": "Quantum computing used for climate modelling",
+                "url": "https://feeds.example/c/1",
+                "published_at": now_timestamp(),
+            }
+        ],
+    )
+
+    items = news.query_items(
+        news.NewsQuery(
+            subject="Tech",
+            topics=("quantum",),
+        )
+    )
+
+    assert len(items) == 1
+    assert items[0]["title"] == "Quantum computing breakthrough"
+    assert items[0]["matched_terms"] == ["quantum"]
+
+
 def test_query_items_returns_newest_first(fake, seeded, database):
     base = now_timestamp()
 
