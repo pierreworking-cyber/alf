@@ -109,3 +109,17 @@ def test_interpret_question_does_not_answer_question(monkeypatch):
 
     assert result == "What is the difference between a Python tuple and a list?"
     assert "Do not answer the question." in captured["prompt"]
+
+
+def test_interpret_question_clarifies_misspelled_title(monkeypatch):
+    monkeypatch.setattr(
+        interpretation,
+        "generate",
+        lambda prompt: "Who wrote The Moon's a Balloon?",
+    )
+
+    result = interpretation.interpret_question(
+        "who wrote the moons a ballon"
+    )
+
+    assert result == "Who wrote The Moon's a Balloon?"

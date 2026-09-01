@@ -22,6 +22,9 @@ EXAMPLES = [
     ("What is the latest version of Python?", Route.RESEARCH),
     ("Who is the current Prime Minister of the UK?", Route.RESEARCH),
     ("What is the weather forecast for tomorrow?", Route.RESEARCH),
+    ("Who wrote The Moon's a Balloon?", Route.RESEARCH),
+    ("Who invented the telephone?", Route.RESEARCH),
+    ("When was Python first released?", Route.RESEARCH),
     ("What does pytest -q mean?", Route.LLM),
     ("What is the difference between a list and a tuple in Python?", Route.LLM),
     ("What does a Python virtual environment do?", Route.LLM),
@@ -74,10 +77,12 @@ remembered, discussed, or decided.
 
 NEWS means the question asks about recent current events for a topic.
 
-RESEARCH means the question requires current or external information.
+RESEARCH means the question asks for a factual answer that should be
+verified against an external source, including facts about people,
+books, films, music, events, dates, places, or historical facts.
 
-LLM means the question can be answered from general knowledge.
-
+LLM means the question is explanatory or conceptual and can be answered
+without external verification.
 DECLINE means ALF has no suitable capability or reliable source.
 
 Use the examples below as guidance.

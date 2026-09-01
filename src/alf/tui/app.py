@@ -177,6 +177,23 @@ class ALFTUI(App):
         self.show_workspace("remember")
 
 
+    def calculate_expression(self) -> None:
+        self.query_one("#calc-workspace").calculate_expression()
+
+
+    async def save_remembered_memory(self) -> None:
+        await self.query_one("#remember-workspace").save_remembered_memory()
+
+
+    def ask_question(self) -> None:
+        self.query_one("#question-workspace").ask_question()
+
+
+    async def on_input_submitted(self, event) -> None:
+        if event.input.id == "question-input":
+            self.query_one("#question-workspace").ask_question()
+
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "quit":
             self.exit()
@@ -210,11 +227,16 @@ class ALFTUI(App):
 
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        if event.list_view.id != "navigation":
+        if event.list_view.id == "navigation":
+            command = event.item.id.removeprefix("navigation-")
+            self.show_navigation_command(command)
             return
 
-        command = event.item.id.removeprefix("navigation-")
-        self.show_navigation_command(command)
+        if event.list_view.id in {
+            "calc-examples",
+            "calc-symbolic-examples",
+        }:
+            self.query_one("#calc-workspace").on_list_view_selected(event)
 
 
 def main() -> None:

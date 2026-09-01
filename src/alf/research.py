@@ -5,6 +5,7 @@ Provides a small boundary between ALF and external information sources.
 """
 
 import json
+import re
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
@@ -13,6 +14,31 @@ from .identity import get_identity
 WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
 
 MAX_WEB_RESULTS = 3
+
+
+def prepare_search_query(question):
+    """
+    Prepare a concise search query from a research question.
+
+    Explicitly quoted phrases are treated as search terms. Questions asking
+    who wrote something are searched using the thing being written. Other
+    questions are returned unchanged.
+    """
+    matches = re.findall(r'"([^"]+)"', question)
+
+    if matches:
+        return matches[0]
+
+    match = re.match(
+        r"^\s*who\s+wrote\s+(.+?)\??\s*$",
+        question,
+        re.IGNORECASE,
+    )
+
+    if match:
+        return match.group(1)
+
+    return question
 
 
 def fetch(url):
@@ -40,7 +66,7 @@ def search_wikipedia(question):
         "&format=json"
         "&utf8=1"
         "&srlimit=5"
-        f"&srsearch={quote(question)}"
+        f"&srsearch={quote(prepare_search_query(question))}"
     )
 
     data = json.loads(fetch(WIKIPEDIA_API + params))
@@ -105,9 +131,15 @@ def search_web(question):
     """
     Search SearXNG and return a small set of candidate pages.
     """
-    url = f"http://127.0.0.1:8080/search?q={quote(question)}&format=json"
+    url = (
+    "http://127.0.0.1:8080/search"
+    f"?q={quote(prepare_search_query(question))}&format=json"
+    )
 
-    data = json.loads(fetch(url))
+    try:
+        data = json.loads(fetch(url))
+    except OSError:
+        return []
 
     results = []
 

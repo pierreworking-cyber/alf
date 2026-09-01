@@ -345,16 +345,16 @@ class MemoriesTUI(Vertical):
             if selected is None:
                 return
 
-            memory_id = selected.id.removeprefix("memory-")
-            memory = get_memory(int(memory_id))
+            memory_id = int(selected.id.removeprefix("memory-"))
+            memory = get_memory(memory_id)
 
             if memory is None:
                 return
 
             if memory["status"] == "archived":
-                restore_memory(int(memory_id))
+                restore_memory(memory_id)
             else:
-                archive_memory(int(memory_id))
+                archive_memory(memory_id)
 
             await self.refresh_memory_list()
 

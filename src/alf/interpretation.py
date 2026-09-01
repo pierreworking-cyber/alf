@@ -40,6 +40,9 @@ If the question is ambiguous, awkward, or likely to produce poor search
 results, reformulate it into a clearer question that is suitable for
 research.
 
+If the question contains an apparent spelling error or malformed
+specific term, correct it when the intended term is reasonably clear.
+
 Do not answer the question.
 Do not provide an explanation.
 Do not add facts that are not implied by the question.
