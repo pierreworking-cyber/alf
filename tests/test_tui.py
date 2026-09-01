@@ -1,7 +1,7 @@
 import asyncio
 import threading
 
-from textual.widgets import Button, Input, ListView, RadioSet
+from textual.widgets import Button, Input, ListView
 
 from alf.command_catalogue import commands
 from alf.question import QuestionResult
@@ -126,17 +126,6 @@ def make_memory_fakes(
     monkeypatch.setattr("alf.tui.remember_tui.asyncio.sleep", fake_sleep)
 
     return store
-
-
-
-
-
-
-
-
-
-
-
 
 
 def test_initial_navigation_shows_question_workspace(monkeypatch):
@@ -540,7 +529,7 @@ def test_question_success_shows_answer_and_re_arms(monkeypatch):
         captured["arguments"] = (question, verbose)
         return QuestionResult(
             answer="The capital is Paris.",
-            source="wikipedia",
+            source="web",
             research_question="capital of France",
         )
 
@@ -576,7 +565,7 @@ def test_question_success_shows_answer_and_re_arms(monkeypatch):
             )
             assert (
                 app.query_one("#answer-source").render().plain
-                == "Source: wikipedia"
+                == "Source: web"
             )
             assert not app.query_one("#ask", Button).disabled
             assert app.query_one("#answer-ok").display
@@ -639,7 +628,7 @@ def test_question_second_submission_is_rejected_while_in_flight(monkeypatch):
         release.wait(timeout=10)
         return QuestionResult(
             answer="The capital is Paris.",
-            source="wikipedia",
+            source="web",
             research_question="capital of France",
         )
 

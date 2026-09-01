@@ -72,7 +72,6 @@ from .presentation import (
     render_memory_saved,
     render_memory_usage,
     render_news_error,
-    render_news_items,
     render_news_query,
     render_news_refreshed,
     render_news_status,

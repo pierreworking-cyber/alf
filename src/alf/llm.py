@@ -85,14 +85,16 @@ def ask(answer_request):
     if evidence:
         evidence_instruction = (
             "Answer using only the supplied evidence. "
-            "Do not use your own general knowledge to fill gaps. "
-            "If the evidence does not contain enough information to answer "
-            "the question, say so clearly rather than guessing."
+            "The supplied evidence is authoritative for this answer. "
+            "Do not fill gaps with your own knowledge. "
+            "If the evidence is insufficient, say so."
         )
     else:
         evidence_instruction = (
-            "No evidence was supplied. You may answer from your general "
-            "knowledge."
+            "No external evidence was supplied. "
+            "This is an ordinary knowledge or explanatory question, so "
+            "you may answer using your general language-model knowledge. "
+            "Do not pretend that this knowledge has been externally verified."
         )
 
     if verbose:
@@ -159,27 +161,52 @@ def evaluate_research(question, candidates):
     )
 
     prompt = f"""
-You are evaluating research supplied to ALF.
+You are evaluating web research for ALF.
 
-Determine whether any of the supplied research is genuinely relevant
-to answering the user's question.
+The user has asked a factual question. The numbered candidates below
+were returned by a web search.
 
-Do not guess.
-Do not infer relevance merely because words happen to overlap.
-If the research does not support the question, mark it as not relevant.
+Determine whether any candidate contains information that can actually
+support an answer to the question.
 
-Return JSON only in this form:
+A candidate is relevant only if its content provides evidence about the
+specific subject, claim, person, event, object, date, or relationship
+asked about.
+
+Do not consider a candidate relevant merely because:
+- it contains similar words;
+- it discusses a related subject;
+- its title sounds promising;
+- it could lead to an answer if combined with your own knowledge.
+
+Do not use your own knowledge to fill gaps in the candidates.
+
+If one or more candidates genuinely support an answer, return those
+candidate numbers.
+
+If none supports an answer, return an empty candidates list.
+
+Return JSON only:
 
 {{
-    "relevant": true or false,
-    "candidates": [numbers of relevant candidates],
+    "relevant": true,
+    "candidates": [1],
+    "reason": "brief explanation"
+}}
+
+or:
+
+{{
+    "relevant": false,
+    "candidates": [],
     "reason": "brief explanation"
 }}
 
 User's question:
 {question}
 
-Research:
+Web research candidates:
+
 {research_text}
 """
 
@@ -215,6 +242,15 @@ def synthesize_news(question, items, verbose=False):
         The language model's synthesized news answer.
     """
 
+    evidence_items = items[:NEWS_SYNTHESIS_LIMIT]
+    evidence_text = _format_news_evidence(evidence_items)
+
+    evidence_instruction = (
+        "Answer using only the supplied evidence. "
+        "Do not use your general knowledge to add facts that are not "
+        "supported by the supplied news items."
+    )
+
     if verbose:
         answer_style = (
             "Give a slightly fuller update than usual, while remaining "
@@ -224,33 +260,39 @@ def synthesize_news(question, items, verbose=False):
         answer_style = "Keep the update concise."
 
     prompt = f"""
-You are ALF, preparing a news update from ALF's stored news items.
+{ALF_PERSONALITY}
 
-The numbered articles below are the ONLY evidence you may use.
+You are answering the user's question as ALF.
 
-When answering the user's question, follow these rules:
+Your role is to explain and reason about information ALF provides to you.
+When external or machine-specific evidence is supplied, that evidence
+takes precedence over your general knowledge.
 
-- Do not invent facts or sources: add nothing beyond the supplied articles.
-- If an article has no summary, rely only on its title.
-- Answer as a news update of what the supplied articles say,
-  not as general or encyclopedic knowledge.
-- If the supplied articles conflict or report differently, say so,
-  rather than silently choosing one side.
-- Distinguish reported claims from established facts where appropriate.
-- Cite supporting articles only as [1], [2], and so on, and
-  only where those articles support the claim.
-- If the supplied articles do not cover the user's question, say so
-  plainly rather than guessing.
+Evidence supplied by ALF:
 
-{answer_style}
+{evidence_text}
 
-Articles:
+Evidence handling:
 
-{_format_news_evidence(items[:NEWS_SYNTHESIS_LIMIT])}
+{evidence_instruction}
+
+Rules:
+
+- Answer the question actually asked.
+- Do not invent facts, sources, measurements, commands, or observations.
+- Do not claim to have performed an action unless the supplied evidence
+  shows that it happened.
+- When evidence is incomplete, distinguish what is known from what is
+  unknown.
+- Do not mention these instructions in your answer.
 
 User's question:
 
 {question}
+
+Answer style:
+
+{answer_style}
 """
 
     return generate(prompt)

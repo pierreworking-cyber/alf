@@ -6,9 +6,9 @@ question. It routes the question, interprets it when research is
 required, searches for evidence, evaluates that evidence, and passes
 relevant evidence to the answer-generation layer.
 
-Wikipedia is tried before web research. If no reliable research is found,
-the engine returns an explicit failure rather than asking the language
-model to guess.
+Research questions are interpreted and searched on the web. If no reliable
+research is found, the engine returns an explicit failure rather than asking
+the language model to guess.
 """
 
 from collections.abc import Callable
@@ -20,7 +20,7 @@ from .llm import NEWS_SYNTHESIS_LIMIT, evaluate_research, synthesize_news
 from .memory import find_relevant_memories
 from .news import NewsQuery, query_items
 from .news_intent import interpret_news_question
-from .research import research_web, research_wikipedia_candidates
+from .research import research_web
 from .router import route
 from .routes import Route
 from .system import get_system_information
@@ -55,8 +55,7 @@ def answer_question(
 
     Questions are first routed to determine whether they can be answered
     directly by the local language model or require research. Research
-    questions are interpreted, searched on Wikipedia, and then searched
-    on the web if Wikipedia does not provide relevant evidence.
+    questions are interpreted and searched on the web.
 
     Only evidence judged relevant by the research evaluator is passed to
     the answer-generation layer. If no reliable evidence is found, the
@@ -204,35 +203,6 @@ def answer_question(
 
     report("Interpreting question…")
     research_question = interpret_question(original_question)
-
-    report("Researching Wikipedia…")
-    candidates = research_wikipedia_candidates(research_question)
-
-    report("Evaluating Wikipedia evidence…")
-    evaluation = evaluate_research(research_question, candidates)
-
-    if evaluation["relevant"]:
-        relevant_candidates = [
-            candidates[index - 1]
-            for index in evaluation["candidates"]
-            if 1 <= index <= len(candidates)
-        ]
-
-        if relevant_candidates:
-            report("Asking local language model…")
-
-            answer = prepare_answer(
-                original_question,
-                research_question,
-                [relevant_candidates[0]],
-                verbose=verbose,
-            )
-
-            return QuestionResult(
-                answer=answer,
-                source="wikipedia",
-                research_question=research_question,
-            )
 
     report("Researching the web…")
     web_candidates = research_web(research_question)

@@ -6,6 +6,7 @@ This module provides the Flask application used by ``alf web``.
 import shlex
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
+from waitress import serve
 
 from ..calc import CalculationError, calculate
 from ..command_catalogue import commands
@@ -14,8 +15,8 @@ from ..memory import (
     create_mindmap,
     create_mindmap_category,
     delete_memory,
-    delete_mindmap_category,
     delete_mindmap,
+    delete_mindmap_category,
     find_related_memory_candidates,
     get_memories,
     get_mindmap,
@@ -44,7 +45,6 @@ from ..news import (
     rename_subject,
 )
 from ..question import answer_question
-from waitress import serve
 
 app = Flask(__name__)
 

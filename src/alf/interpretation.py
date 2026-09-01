@@ -50,7 +50,8 @@ Do not change the subject of the question.
 Preserve the meaning of the user's question.
 Preserve useful and specific terminology already present in the question.
 Do not replace terminology merely to make the wording sound more natural.
-
+Do not turn a question into a request for information that the original
+question does not ask for.
 Return only the question.
 
 User's question:

@@ -109,9 +109,8 @@ def test_ask_returns_ollama_response(monkeypatch):
             "question": "What is the capital of France?",
             "evidence": [
                 {
-                    "source": "wikipedia",
+                    "source": "web",
                     "title": "France",
-                    "page_id": 123,
                     "text": "France is a country in Europe.",
                 }
             ],
@@ -177,11 +176,11 @@ def test_ask_requires_answers_to_stay_within_evidence(monkeypatch):
     )
 
     assert (
-        "Answer using only the supplied evidence."
+        "The supplied evidence is authoritative for this answer."
         in captured["prompt"]
     )
     assert (
-        "Do not use your own general knowledge to fill gaps."
+        "Do not fill gaps with your own knowledge."
         in captured["prompt"]
     )
     assert result == "I don't have enough evidence to answer that."
@@ -272,9 +271,8 @@ def test_evaluate_research_returns_relevant_result(monkeypatch):
         "What is the capital of France?",
         [
             {
-                "source": "wikipedia",
+                "source": "web",
                 "title": "France",
-                "page_id": 123,
                 "text": "France is a country in Europe. Its capital is Paris.",
             }
         ],
@@ -317,9 +315,8 @@ def test_evaluate_research_returns_not_relevant_result(monkeypatch):
         "What film featured children mistaking a homeless man for Jesus?",
         [
             {
-                "source": "wikipedia",
+                "source": "web",
                 "title": "Whitney Houston",
-                "page_id": 34071,
                 "text": "Whitney Houston was an American singer and actress.",
             }
         ],
@@ -357,9 +354,8 @@ def test_evaluate_research_rejects_invalid_response(monkeypatch):
             "What is the capital of France?",
             [
                 {
-                    "source": "wikipedia",
+                    "source": "web",
                     "title": "France",
-                    "page_id": 123,
                     "text": "France is a country in Europe.",
                 }
             ],
@@ -453,16 +449,24 @@ def test_synthesize_news_grounds_the_model_to_supplied_evidence(monkeypatch):
 
     prompt = captured["prompt"]
 
-    assert "the ONLY evidence you may use" in prompt
-    assert "Do not invent facts or sources" in prompt
-    assert "rely only on its title" in prompt
-    assert "Answer as a news update of what the supplied articles say" in prompt
-    assert "not as general or encyclopedic knowledge" in prompt
-    assert "conflict or report differently, say so" in prompt
-    assert "Distinguish reported claims from established facts" in prompt
-    assert "only where those articles support the claim" in prompt
-    assert "do not cover the user's question, say so" in prompt
-    assert "plainly rather than guessing" in prompt
+    assert (
+        "Your role is to explain and reason about information ALF provides to you."
+        in prompt
+    )
+    assert (
+        "When external or machine-specific evidence is supplied, that evidence"
+        in prompt
+    )
+    assert (
+        "Answer the question actually asked."
+        in prompt
+    )
+    assert "Do not invent facts, sources, measurements, commands, or observations." in prompt
+    assert (
+        "When evidence is incomplete, distinguish what is known from what is"
+        in prompt
+    )
+    assert "Do not mention these instructions in your answer." in prompt
     assert "https://feeds.example/n/1" in prompt
     assert "https://feeds.example/n/2" in prompt
     assert "https://feeds.example/n/3" not in prompt

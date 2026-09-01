@@ -119,7 +119,7 @@ def test_render_question_includes_interpretation_when_different(capsys):
 def test_render_question_omits_interpretation_when_unchanged(capsys):
     presentation.render_question(
         "What are microbes?",
-        "wikipedia",
+        "web",
         "What are microbes?",
     )
 
