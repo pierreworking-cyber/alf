@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 from .identity import get_identity
 
-MAX_WEB_RESULTS = 3
+MAX_WEB_RESULTS = 10
 
 
 def prepare_search_query(question):
