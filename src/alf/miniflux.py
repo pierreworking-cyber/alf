@@ -188,13 +188,15 @@ class Miniflux:
         published_before=None,
         limit=100,
         offset=0,
+        status=None,
     ):
         """
         Return a page of entries, newest first, optionally filtered.
 
         ``published_after`` and ``published_before`` are unix timestamps
-        as accepted by the Miniflux API. Results are capped by Miniflux
-        at 100 entries per page.
+        as accepted by the Miniflux API. ``status`` may contain entry
+        statuses such as ``read`` or ``unread``.
+        Results are capped by Miniflux at 100 entries per page.
         """
         params = {
             "limit": limit,
@@ -209,6 +211,9 @@ class Miniflux:
 
         if published_before is not None:
             params["published_before"] = published_before
+
+        if status is not None:
+            params["status"] = status
 
         data = self._request(
             "GET",

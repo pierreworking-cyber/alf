@@ -485,9 +485,10 @@ def refresh(subject=None, client=None):
     """
     Refresh stored news feeds and import their entries.
 
-    Entries are deduplicated by entry hash, so refreshing repeatedly is
-    safe and imports only items not already stored. Feeds that fail to
-    refresh are reported without aborting the whole refresh.
+    Miniflux is refreshed first, then the latest read and unread entries
+    are retrieved. Entries are deduplicated by entry hash, so refreshing
+    repeatedly is safe and imports only items not already stored. Feeds
+    that fail to refresh are reported without aborting the whole refresh.
 
     Args:
         subject: Optional subject name to restrict the refresh to.
@@ -521,6 +522,11 @@ def refresh(subject=None, client=None):
             for category in client.get_categories()
         }
 
+        feeds_by_id = {
+            feed["id"]: feed
+            for feed in client.get_feeds()
+        }
+
         refreshed = 0
         imported = 0
         skipped = 0
@@ -529,8 +535,24 @@ def refresh(subject=None, client=None):
 
         for subject_entries in subjects:
             feeds = subject_entries["feeds"]
+            subject_failed = False
 
             for feed in feeds:
+                miniflux_feed = feeds_by_id.get(feed["miniflux_feed_id"])
+
+                if miniflux_feed is not None:
+                    connection.execute(
+                        """
+                        UPDATE news_feeds
+                        SET title = ?
+                        WHERE id = ?
+                        """,
+                        (
+                            miniflux_feed["title"],
+                            feed["id"],
+                        ),
+                    )
+
                 try:
                     client.refresh_feed(feed["miniflux_feed_id"])
                 except MinifluxError as exc:
@@ -540,6 +562,7 @@ def refresh(subject=None, client=None):
                             "reason": str(exc),
                         }
                     )
+                    subject_failed = True
                     continue
 
                 refreshed += 1
@@ -556,8 +579,15 @@ def refresh(subject=None, client=None):
                 continue
 
             try:
-                entries = client.get_entries(
+                read_entries = client.get_entries(
                     category_id=category["id"],
+                    status="read",
+                    limit=100,
+                )
+                unread_entries = client.get_entries(
+                    category_id=category["id"],
+                    status="unread",
+                    limit=100,
                 )
             except MinifluxError as exc:
                 failures.append(
@@ -567,6 +597,22 @@ def refresh(subject=None, client=None):
                     }
                 )
                 continue
+
+            if subject_failed:
+                subject_results.append(
+                    {
+                        "name": subject_entries["name"],
+                        "new_items": 0,
+                    }
+                )
+                continue
+
+            entries = read_entries + unread_entries
+            entries.sort(
+                key=lambda entry: entry["published_at"],
+                reverse=True,
+            )
+            entries = entries[:100]
 
             count, deduplicated = _import_entries(
                 connection,
