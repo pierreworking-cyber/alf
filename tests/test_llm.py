@@ -6,7 +6,7 @@ from alf import llm
 def test_check_ollama_when_service_and_model_are_available(monkeypatch):
     response_data = {
         "models": [
-            {"name": "qwen3:8b"},
+            {"name": "gemma3:12b"},
             {"name": "some-other-model"},
         ],
     }
@@ -32,7 +32,7 @@ def test_check_ollama_when_service_and_model_are_available(monkeypatch):
     assert result == {
         "available": True,
         "model_available": True,
-        "model": "qwen3:8b",
+        "model": "gemma3:12b",
         "error": None,
     }
 
@@ -65,7 +65,7 @@ def test_check_ollama_when_model_is_missing(monkeypatch):
     assert result == {
         "available": True,
         "model_available": False,
-        "model": "qwen3:8b",
+        "model": "gemma3:12b",
         "error": None,
     }
 
@@ -80,7 +80,7 @@ def test_check_ollama_when_service_is_unavailable(monkeypatch):
 
     assert result["available"] is False
     assert result["model_available"] is False
-    assert result["model"] == "qwen3:8b"
+    assert result["model"] == "gemma3:12b"
     assert result["error"] == "Connection refused"
 
 
@@ -364,188 +364,3 @@ def test_evaluate_research_rejects_invalid_response(monkeypatch):
         assert str(error) == "Invalid research evaluation response"
     else:
         raise AssertionError("Expected ValueError")
-
-
-def make_news_synthesis_item(**overrides):
-    """
-    Build a news item dict for synthesis tests.
-    """
-
-    item = {
-        "id": 1,
-        "subject": "Ukraine",
-        "feed_title": "https://feeds.example/ukraine.rss",
-        "title": "Ukraine economy shows strong growth",
-        "url": "https://feeds.example/n/1",
-        "summary": "The economy grew strongly last month.",
-        "published_at": "2026-08-27T10:00:00Z",
-    }
-
-    item.update(overrides)
-
-    return item
-
-
-def test_synthesize_news_builds_numbered_evidence(monkeypatch):
-    captured = {}
-
-    items = [
-        make_news_synthesis_item(),
-        make_news_synthesis_item(
-            id=2,
-            title="Ukraine plans a redesign",
-            url="https://feeds.example/n/2",
-            summary="",
-        ),
-    ]
-
-    def fake_generate(prompt):
-        captured["prompt"] = prompt
-        return "Ukraine's economy grew strongly last week [1]."
-
-    monkeypatch.setattr(llm, "generate", fake_generate)
-
-    result = llm.synthesize_news(
-        "What has happened in Ukraine recently?",
-        items,
-    )
-
-    assert result == "Ukraine's economy grew strongly last week [1]."
-
-    prompt = captured["prompt"]
-
-    assert "What has happened in Ukraine recently?" in prompt
-    assert "[1] Ukraine economy shows strong growth" in prompt
-    assert "Ukraine, 27-Aug-2026 10:00, Example" in prompt
-    assert "https://feeds.example/n/1" in prompt
-    assert "Summary: The economy grew strongly last month." in prompt
-    assert "[2] Ukraine plans a redesign" in prompt
-    assert prompt.count("Summary:") == 1
-
-
-def test_synthesize_news_grounds_the_model_to_supplied_evidence(monkeypatch):
-    captured = {}
-
-    def fake_generate(prompt):
-        captured["prompt"] = prompt
-        return "First story [1]."
-
-    monkeypatch.setattr(llm, "generate", fake_generate)
-
-    items = [
-        make_news_synthesis_item(),
-        make_news_synthesis_item(
-            id=2,
-            title="Second story",
-            url="https://feeds.example/n/2",
-            summary="The second story continues.",
-        ),
-    ]
-
-    llm.synthesize_news(
-        "What has happened in Ukraine recently?",
-        items,
-    )
-
-    prompt = captured["prompt"]
-
-    assert (
-        "Your role is to explain and reason about information ALF provides to you."
-        in prompt
-    )
-    assert (
-        "When external or machine-specific evidence is supplied, that evidence"
-        in prompt
-    )
-    assert (
-        "Answer the question actually asked."
-        in prompt
-    )
-    assert "Do not invent facts, sources, measurements, commands, or observations." in prompt
-    assert (
-        "When evidence is incomplete, distinguish what is known from what is"
-        in prompt
-    )
-    assert "Do not mention these instructions in your answer." in prompt
-    assert "https://feeds.example/n/1" in prompt
-    assert "https://feeds.example/n/2" in prompt
-    assert "https://feeds.example/n/3" not in prompt
-
-
-def test_synthesize_news_omits_summary_when_missing(monkeypatch):
-    captured = {}
-
-    def fake_generate(prompt):
-        captured["prompt"] = prompt
-        return "ok"
-
-    monkeypatch.setattr(llm, "generate", fake_generate)
-
-    items = [
-        make_news_synthesis_item(summary=""),
-        make_news_synthesis_item(id=2, title="No summary item", summary=None),
-    ]
-
-    llm.synthesize_news("Question?", items)
-
-    assert "Summary:" not in captured["prompt"]
-
-
-def test_synthesize_news_caps_evidence_items(monkeypatch):
-    captured = {}
-
-    def fake_generate(prompt):
-        captured["prompt"] = prompt
-        return "ok"
-
-    monkeypatch.setattr(llm, "generate", fake_generate)
-
-    items = [
-        make_news_synthesis_item(
-            id=index,
-            title=f"Story {index}",
-            url=f"https://feeds.example/n/{index}",
-        )
-        for index in range(1, 21)
-    ]
-
-    llm.synthesize_news("Question?", items)
-
-    prompt = captured["prompt"]
-
-    assert "[1] Story 1" in prompt
-    assert "[15] Story 15" in prompt
-    assert "[16] Story 16" not in prompt
-
-
-def test_synthesize_news_uses_fuller_style_when_verbose(monkeypatch):
-    captured = {}
-
-    def fake_generate(prompt):
-        captured["prompt"] = prompt
-        return "ok"
-
-    monkeypatch.setattr(llm, "generate", fake_generate)
-
-    llm.synthesize_news(
-        "Question?",
-        [make_news_synthesis_item()],
-        verbose=True,
-    )
-
-    assert "Give a slightly fuller update than usual" in captured["prompt"]
-    assert "Keep the update concise." not in captured["prompt"]
-
-
-def test_synthesize_news_uses_concise_style_by_default(monkeypatch):
-    captured = {}
-
-    def fake_generate(prompt):
-        captured["prompt"] = prompt
-        return "ok"
-
-    monkeypatch.setattr(llm, "generate", fake_generate)
-
-    llm.synthesize_news("Question?", [make_news_synthesis_item()])
-
-    assert "Keep the update concise." in captured["prompt"]

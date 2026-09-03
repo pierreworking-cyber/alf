@@ -118,7 +118,6 @@ def news_feed(feed_id):
         limit = int(request.args.get("limit", 25))
         items = list_items(
             feed_id=feed_id,
-            days=30,
             limit=limit,
         )
     except (ValueError, NewsError) as error:

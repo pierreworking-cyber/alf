@@ -8,7 +8,7 @@ def test_check_llm_service_when_ollama_and_model_are_available(monkeypatch):
         lambda: {
             "available": True,
             "model_available": True,
-            "model": "qwen3:8b",
+            "model": "gemma3:12b",
             "error": None,
         },
     )
@@ -20,7 +20,7 @@ def test_check_llm_service_when_ollama_and_model_are_available(monkeypatch):
         "healthy": True,
         "details": {
             "service_available": True,
-            "model": "qwen3:8b",
+            "model": "gemma3:12b",
             "model_available": True,
             "error": None,
         },
@@ -34,7 +34,7 @@ def test_check_llm_service_when_model_is_missing(monkeypatch):
         lambda: {
             "available": True,
             "model_available": False,
-            "model": "qwen3:8b",
+            "model": "gemma3:12b",
             "error": None,
         },
     )
@@ -46,7 +46,7 @@ def test_check_llm_service_when_model_is_missing(monkeypatch):
         "healthy": False,
         "details": {
             "service_available": True,
-            "model": "qwen3:8b",
+            "model": "gemma3:12b",
             "model_available": False,
             "error": None,
         },
@@ -60,7 +60,7 @@ def test_check_llm_service_when_ollama_is_unavailable(monkeypatch):
         lambda: {
             "available": False,
             "model_available": False,
-            "model": "qwen3:8b",
+            "model": "gemma3:12b",
             "error": "Connection refused",
         },
     )
@@ -72,7 +72,7 @@ def test_check_llm_service_when_ollama_is_unavailable(monkeypatch):
         "healthy": False,
         "details": {
             "service_available": False,
-            "model": "qwen3:8b",
+            "model": "gemma3:12b",
             "model_available": False,
             "error": "Connection refused",
         },
@@ -86,7 +86,7 @@ def test_health_report_includes_ollama(monkeypatch):
         lambda: {
             "available": True,
             "model_available": True,
-            "model": "qwen3:8b",
+            "model": "gemma3:12b",
             "error": None,
         },
     )
@@ -99,4 +99,4 @@ def test_health_report_includes_ollama(monkeypatch):
     )
 
     assert ollama_check["healthy"] is True
-    assert ollama_check["details"]["model"] == "qwen3:8b"
+    assert ollama_check["details"]["model"] == "gemma3:12b"
