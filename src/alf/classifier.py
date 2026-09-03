@@ -16,9 +16,6 @@ EXAMPLES = [
     ("What did we decide about SearXNG?", Route.MEMORY),
     ("What did I ask you to remember about ALF?", Route.MEMORY),
     ("What have we previously decided about the project?", Route.MEMORY),
-    ("What has happened with SearXNG this week?", Route.NEWS),
-    ("Any news on the ALF project recently?", Route.NEWS),
-    ("What happened last week?", Route.NEWS),
     ("What is the latest version of Python?", Route.RESEARCH),
     ("Who is the current Prime Minister of the UK?", Route.RESEARCH),
     ("What is the weather forecast for tomorrow?", Route.RESEARCH),
@@ -65,7 +62,6 @@ Classify the user's question into exactly one of these categories:
 
 system
 memory
-news
 research
 llm
 decline
@@ -75,11 +71,9 @@ SYSTEM means the question requires information about this computer.
 MEMORY means the question asks about something Peter and ALF previously
 remembered, discussed, or decided.
 
-NEWS means the question asks about recent current events for a topic.
-
 RESEARCH means the question asks for a factual answer that should be
 verified against an external source, including facts about people,
-books, films, music, events, dates, places, or historical facts.
+books, films, music, events, dates, places, or current developments.
 
 LLM means the question is explanatory or conceptual and can be answered
 without external verification.

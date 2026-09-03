@@ -1,103 +1,13 @@
 """
-Deterministic News question interpretation for ALF.
-
-Recognises and interprets questions that ask about recent news for a
-topic, without consulting the language model. Recognition is
-deliberately conservative: a question is treated as News only when it
-is question shaped, names an identifiable topic, and carries an
-explicit recent time window or clear current-events vocabulary.
-Ordinary factual questions fall through to ALF's existing routing so
-they keep their usual routes.
-
-The module owns the News time-window grammar and topic-term extraction
-used by the router, the question engine, and the development CLI query
-command.
+News query data structures and text helpers for ALF.
 """
 
-import re
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
+import re
 
 NEWS_DEFAULT_WINDOW_DAYS = 7
-
 MAX_WINDOW_DAYS = 366
-
-_UNIT_DAYS = {
-    "hour": 1 / 24,
-    "hours": 1 / 24,
-    "day": 1,
-    "days": 1,
-    "week": 7,
-    "weeks": 7,
-    "month": 30,
-    "months": 30,
-}
-
-_SPELLED_NUMBERS = {
-    "one": 1,
-    "two": 2,
-    "three": 3,
-    "four": 4,
-    "five": 5,
-    "six": 6,
-    "seven": 7,
-}
-
-_SPELLED_NUMBER_WORDS = "|".join(_SPELLED_NUMBERS)
-
-_NUMBER_COUNTS = rf"\d+|{_SPELLED_NUMBER_WORDS}"
-
-_RELATIVE_WINDOW = re.compile(
-    r"\b("
-    r"in the last|over the last|during the last|for the last|"
-    r"within the last|last|past|previous"
-    r")\s+("
-    rf"{_NUMBER_COUNTS}"
-    r")\s+(hour|hours|day|days|week|weeks|month|months)\b",
-    re.IGNORECASE,
-)
-
-_AGO_WINDOW = re.compile(
-    r"\b("
-    rf"{_NUMBER_COUNTS}"
-    r")\s+(hour|hours|day|days|week|weeks|month|months)\s+ago\b",
-    re.IGNORECASE,
-)
-
-_TODAY = re.compile(r"\btoday\b", re.IGNORECASE)
-
-_YESTERDAY = re.compile(r"\byesterday\b", re.IGNORECASE)
-
-_THIS_WEEK = re.compile(r"\bthis week\b", re.IGNORECASE)
-
-_RECENTLY = re.compile(r"\b(recently|lately|of late)\b", re.IGNORECASE)
-
-_QUESTION_LEAD = re.compile(
-    r"^\s*(?:any|what|when|which|who|where|why|how|is|are|was|were|"
-    r"does|did|has|have)\b",
-    re.IGNORECASE,
-)
-
-_NEWS_MARKERS = re.compile(
-    r"\b(?:news|headline|headlines|happened|happening|"
-    r"going on|developments?)\b",
-    re.IGNORECASE,
-)
-
-_MEMORY_GUARD = re.compile(
-    r"\b(?:did we|did i|have we|we decided|we decide|we discussed|"
-    r"we said|you said|you told|you mentioned|you discussed|"
-    r"do you remember|do you recall)\b",
-    re.IGNORECASE,
-)
-
-_YEAR_REFERENCE = re.compile(r"\b(?:19|20)\d{2}\b")
-
-_MONTH_DAY_REFERENCE = re.compile(
-    r"\b(?:january|february|march|april|may|june|july|august|"
-    r"september|october|november|december)\s+\d{1,2}(?:st|nd|rd|th)?\b",
-    re.IGNORECASE,
-)
 
 _TOPIC_STOP_WORDS = frozenset(
     """
@@ -119,11 +29,10 @@ _TOPIC_STOP_WORDS = frozenset(
     """.split()
 )
 
-
 @dataclass(frozen=True)
 class NewsWindow:
     """
-    A News time window describing the question's requested recency.
+    A News time window.
 
     Attributes:
         start: The inclusive window start, or ``None`` when open-ended.
@@ -140,12 +49,12 @@ class NewsWindow:
 @dataclass(frozen=True)
 class NewsIntent:
     """
-    A deterministically interpreted News question.
+    Structured News query information.
 
     Attributes:
         topics: The significant topic terms, in order.
-        window: The requested recency window.
-        original: The question as entered by the user.
+        window: The requested time window.
+        original: The original query text.
     """
 
     topics: tuple[str, ...]
@@ -195,176 +104,3 @@ def topic_terms(text):
             break
 
     return tuple(terms)
-
-
-def interpret_news_question(question):
-    """
-    Recognise and interpret a News question.
-
-    Recognition is deterministic and conservative. A question is treated
-    as News only when it is question shaped, expresses recent news for an
-    identifiable topic, and does not look like a memory question or a
-    question anchored to a specific past date.
-
-    Args:
-        question: The user's question.
-
-    Returns:
-        A ``NewsIntent`` when the question clearly asks about recent news
-        for a topic; otherwise ``None`` so the question is routed
-        normally.
-    """
-
-    text = " ".join(question.split())
-
-    if not text or not _QUESTION_LEAD.match(text):
-        return None
-
-    if _MEMORY_GUARD.search(text):
-        return None
-
-    if _has_past_date(text):
-        return None
-
-    now = datetime.now(UTC)
-
-    interpretation = _interpret_window(text, now)
-
-    if interpretation is None:
-        return None
-
-    window, remaining = interpretation
-
-    topics = topic_terms(remaining)
-
-    if not topics:
-        return None
-
-    return NewsIntent(topics=topics, window=window, original=question)
-
-
-def _has_past_date(text):
-    """
-    Return whether the text references a specific past date.
-
-    Questions anchored to specific past dates or years are treated as
-    historical rather than recent-news questions, so they are not routed
-    to News.
-    """
-
-    return (
-        _YEAR_REFERENCE.search(text) is not None
-        or _MONTH_DAY_REFERENCE.search(text) is not None
-    )
-
-
-def _window_days(count, unit):
-    """
-    Resolve a window count and unit to a number of days.
-
-    Counts may be given in digits or in the supported spelled-out forms.
-    """
-
-    if count.isdigit():
-        value = float(count)
-    else:
-        value = _SPELLED_NUMBERS[count.lower()]
-
-    return value * _UNIT_DAYS[unit]
-
-
-def _interpret_window(text, now):
-    """
-    Resolve the recency window for a News question, gating News intent.
-
-    An explicit relative or ago window establishes a News intent on its
-    own. Otherwise the question must carry current-events vocabulary;
-    calendar words such as "today", "yesterday", "this week", or
-    "recently" then select the window, with a default applied when no
-    window is named.
-
-    Returns a ``(NewsWindow, remaining text)`` pair when the question is
-    a News question, otherwise ``None``.
-    """
-
-    match = _RELATIVE_WINDOW.search(text)
-
-    if match:
-        days = _window_days(match.group(2), match.group(3))
-
-        if 0 < days <= MAX_WINDOW_DAYS:
-            return (
-                _window(now - timedelta(days=days), now, days),
-                _trim(text, match),
-            )
-
-    match = _AGO_WINDOW.search(text)
-
-    if match:
-        days = _window_days(match.group(1), match.group(2))
-
-        if 0 < days <= MAX_WINDOW_DAYS:
-            return (
-                _window(now - timedelta(days=days), now, days),
-                _trim(text, match),
-            )
-
-    if not _NEWS_MARKERS.search(text):
-        return None
-
-    match = _TODAY.search(text)
-
-    if match:
-        start = _start_of_day(now)
-        return NewsWindow(start, now, 0), _trim(text, match)
-
-    match = _YESTERDAY.search(text)
-
-    if match:
-        start = _start_of_day(now) - timedelta(days=1)
-        return NewsWindow(start, now, 1), _trim(text, match)
-
-    match = _THIS_WEEK.search(text)
-
-    if match:
-        start = _start_of_week(now)
-        return (
-            NewsWindow(start, now, (now - start).days),
-            _trim(text, match),
-        )
-
-    match = _RECENTLY.search(text)
-
-    if match:
-        start = now - timedelta(days=NEWS_DEFAULT_WINDOW_DAYS)
-        return (
-            NewsWindow(start, now, NEWS_DEFAULT_WINDOW_DAYS),
-            _trim(text, match),
-        )
-
-    start = now - timedelta(days=NEWS_DEFAULT_WINDOW_DAYS)
-    return NewsWindow(start, now, NEWS_DEFAULT_WINDOW_DAYS), text
-
-
-def _window(start, end, days):
-    """
-    Build a NewsWindow, keeping whole days for display.
-    """
-
-    display = round(days) if days >= 1 else None
-
-    return NewsWindow(start, end, display)
-
-
-def _start_of_day(value):
-    return value.replace(hour=0, minute=0, second=0, microsecond=0)
-
-
-def _start_of_week(value):
-    return _start_of_day(value) - timedelta(days=_start_of_day(value).weekday())
-
-
-def _trim(text, match):
-    return " ".join(
-        (text[: match.start()] + " " + text[match.end():]).split()
-    )

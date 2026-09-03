@@ -13,13 +13,10 @@ the language model to guess.
 
 from collections.abc import Callable
 from dataclasses import dataclass
-
 from .answer import prepare_answer
 from .interpretation import interpret_question
-from .llm import NEWS_SYNTHESIS_LIMIT, evaluate_research, synthesize_news
+from .llm import evaluate_research
 from .memory import find_relevant_memories
-from .news import NewsQuery, query_items
-from .news_intent import interpret_news_question
 from .research import research_web
 from .router import route
 from .routes import Route
@@ -142,56 +139,6 @@ def answer_question(
             ),
             source=None,
             research_question=None,
-        )
-
-    if selected_route == Route.NEWS:
-        report("Searching stored news…")
-
-        intent = interpret_news_question(original_question)
-
-        if intent is None:
-            return QuestionResult(
-                answer=(
-                    "I couldn't tell which news topic you're asking about."
-                ),
-                source=None,
-                research_question=None,
-            )
-
-        items = query_items(NewsQuery.from_intent(intent))
-
-        if not items:
-            return QuestionResult(
-                answer=(
-                    "I couldn't find any stored news items about that. "
-                    "I don't want to guess."
-                ),
-                source=None,
-                research_question=None,
-                news_items=[],
-            )
-
-        evidence_items = items[:NEWS_SYNTHESIS_LIMIT]
-
-        report("Asking local language model…")
-
-        try:
-            answer = synthesize_news(
-                original_question,
-                evidence_items,
-                verbose=verbose,
-            )
-        except Exception:
-            answer = ""
-
-        if not answer or not answer.strip():
-            answer = _news_result_summary(evidence_items)
-
-        return QuestionResult(
-            answer=answer,
-            source="news",
-            research_question=None,
-            news_items=evidence_items,
         )
 
     if selected_route == Route.DECLINE:

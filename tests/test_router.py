@@ -1,4 +1,3 @@
-import pytest
 
 from alf.router import route
 from alf.routes import Route
@@ -22,29 +21,6 @@ def test_route_memory_question():
 
 def test_route_research_question():
     assert route("What is the latest version of Python?") == Route.RESEARCH
-
-
-def test_route_news_question():
-    assert route("What has happened with SearXNG this week?") == Route.NEWS
-
-
-def test_route_news_question_without_classifier(monkeypatch):
-    monkeypatch.setattr(
-        "alf.router.classify",
-        lambda question: pytest.fail("classifier should not be consulted"),
-    )
-
-    assert route("What news on the ALF project recently?") == Route.NEWS
-
-
-def test_route_any_news_question_without_classifier(monkeypatch):
-    monkeypatch.setattr(
-        "alf.router.classify",
-        lambda question: pytest.fail("classifier should not be consulted"),
-    )
-
-    assert route("Any news about Trump recently?") == Route.NEWS
-    assert route("Any news on Trump?") == Route.NEWS
 
 
 def test_route_person_activity_question_not_news(monkeypatch):

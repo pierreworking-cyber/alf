@@ -6,7 +6,6 @@ from enum import Enum
 class Route(Enum):
     SYSTEM = "system"
     MEMORY = "memory"
-    NEWS = "news"
     RESEARCH = "research"
     LLM = "llm"
     DECLINE = "decline"
