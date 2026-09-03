@@ -372,6 +372,47 @@ def test_refresh_imports_entries(fake, database):
     assert news.get_news_information()["items"] == 2
 
 
+def test_refresh_registers_new_miniflux_feed(fake, database):
+    client = make_client(fake)
+
+    news.add_subject(
+        "Ukraine",
+        ["https://feeds.example/ukraine.rss"],
+        client=client,
+    )
+
+    category = client.get_categories()[0]
+    new_feed = fake.add_feed(
+        "Ukraine News",
+        "https://feeds.example/new.rss",
+        category_id=category["id"],
+    )
+
+    fake.schedule_entries(
+        new_feed["id"],
+        [
+            {
+                "title": "New Feed Story",
+                "url": "https://feeds.example/news/new",
+                "published_at": ENTRY_ONE,
+            }
+        ],
+    )
+
+    result = news.refresh("Ukraine", client=client)
+
+    assert result["refreshed"] == 2
+    assert result["imported"] == 1
+
+    feeds = news.get_news_feeds()
+    assert len(feeds) == 2
+    assert any(feed["title"] == "Ukraine News" for feed in feeds)
+
+    items = news.list_items("Ukraine")
+    assert len(items) == 1
+    assert items[0]["title"] == "New Feed Story"
+
+
 def test_refresh_without_arguments_refreshes_everything(fake, database):
     client = make_client(fake)
 

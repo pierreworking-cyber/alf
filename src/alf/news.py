@@ -481,6 +481,18 @@ def delete_feed(feed_id, client=None):
         }
 
 
+def _sync_subject_feeds(connection, client, subjects, categories):
+    """Register Miniflux feeds belonging to existing ALF subjects."""
+    for subject in subjects:
+        category = categories.get(subject["name"])
+
+        if category is None:
+            continue
+
+        for feed in client.get_feeds(category_id=category["id"]):
+            _register_feed(connection, subject["id"], feed)
+
+
 def refresh(subject=None, client=None):
     """
     Refresh stored news feeds and import their entries.
@@ -521,6 +533,15 @@ def refresh(subject=None, client=None):
             category["title"]: category
             for category in client.get_categories()
         }
+
+        _sync_subject_feeds(
+            connection,
+            client,
+            subjects,
+            categories,
+        )
+
+        subjects = _subjects_with_feeds(connection, subject)
 
         feeds_by_id = {
             feed["id"]: feed
