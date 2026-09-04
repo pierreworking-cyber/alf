@@ -184,10 +184,10 @@ def get_memory_query_options():
 
     return {
         "category": None,
+        "memory_category_id": None,
         "include_archived": False,
         "group": None,
     }
-
 
 def validate_related_memory_ids(related_memory_ids):
     """
@@ -455,6 +455,10 @@ def get_memories(options=None):
         conditions.append("category = ?")
         parameters.append(options["category"])
 
+    if options["memory_category_id"] is not None:
+        conditions.append("memory_category_id = ?")
+        parameters.append(options["memory_category_id"])
+
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
 
@@ -496,27 +500,34 @@ def search_memories(term, options=None):
     if options is None:
         options = get_memory_query_options()
 
-    query = """
-        SELECT id, created, category, status, content,
-        previous_memory_id, related_memory_ids, memory_category_id
-        FROM memories
-        WHERE content LIKE ? ESCAPE '\\'
-    """
-
     escaped_term = term.replace("\\", "\\\\")
     escaped_term = escaped_term.replace("%", "\\%")
     escaped_term = escaped_term.replace("_", "\\_")
 
+    conditions = ["content LIKE ? ESCAPE '\\'"]
     parameters = [f"%{escaped_term}%"]
 
     if not options["include_archived"]:
-        query += " AND status = 'active'"
+        conditions.append("status = 'active'")
 
     if options["category"]:
-        query += " AND category = ?"
+        conditions.append("category = ?")
         parameters.append(options["category"])
 
-    query += " ORDER BY id"
+    if options["memory_category_id"] is not None:
+        conditions.append("memory_category_id = ?")
+        parameters.append(options["memory_category_id"])
+
+    query = """
+        SELECT id, created, category, status, content,
+        previous_memory_id, related_memory_ids, memory_category_id
+        FROM memories
+    """
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += " ORDER BY id DESC"
 
     with get_connection() as connection:
         rows = connection.execute(query, parameters).fetchall()

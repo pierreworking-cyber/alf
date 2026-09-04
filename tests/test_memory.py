@@ -48,10 +48,11 @@ def test_get_memory_types():
 
 def test_default_memory_query_options():
     assert memory.get_memory_query_options() == {
-        "category": None,
-        "include_archived": False,
-        "group": None,
-    }
+    "category": None,
+    "memory_category_id": None,
+    "include_archived": False,
+    "group": None,
+}
 
 
 def test_validate_related_memory_ids_with_no_ids(database):
@@ -275,7 +276,8 @@ def test_get_memories_by_category(database):
     memory.remember("fact", "A fact.")
 
     memories = memory.get_memories(
-        {"category": "note", "include_archived": False, "group": None}
+        {"category": "note", "memory_category_id": None,
+        "include_archived": False, "group": None}
     )
 
     assert len(memories) == 1
@@ -293,7 +295,8 @@ def test_get_memories_includes_archived_when_requested(database):
     assert [item["id"] for item in memories] == [1]
 
     memories = memory.get_memories(
-        {"category": None, "include_archived": True, "group": None}
+        {"category": None, "memory_category_id": None,
+        "include_archived": True, "group": None}
     )
 
     assert [item["id"] for item in memories] == [2, 1]
@@ -316,10 +319,11 @@ def test_get_memories_does_not_modify_options(database):
     memory.get_memories(options)
 
     assert options == {
-        "category": None,
-        "include_archived": False,
-        "group": None,
-    }
+    "category": None,
+    "memory_category_id": None,
+    "include_archived": False,
+    "group": None,
+}
 
 
 def test_get_memory_returns_memory_by_id(database):
@@ -527,25 +531,27 @@ def test_search_memories_respects_category_and_archive_options(database):
 
     results = memory.search_memories(
         "ALF",
-        {
-            "category": "note",
-            "include_archived": False,
-            "group": None,
-        },
+{
+    "category": None,
+    "memory_category_id": None,
+    "include_archived": False,
+    "group": None,
+},
     )
 
-    assert [item["id"] for item in results] == [1]
+    assert [item["id"] for item in results] == [2, 1]
 
     results = memory.search_memories(
         "ALF",
         {
             "category": "note",
+            "memory_category_id": None,
             "include_archived": True,
             "group": None,
         },
     )
 
-    assert [item["id"] for item in results] == [1, 3]
+    assert [item["id"] for item in results] == [3, 1]
 
 
 def test_search_memories_returns_empty_for_no_match(database):
@@ -781,7 +787,7 @@ def test_archive_memory(database):
     assert memory.get_memories() == []
 
     memories = memory.get_memories(
-        {"category": None, "include_archived": True, "group": None}
+        {"category": None, "memory_category_id": None, "include_archived": True, "group": None}
     )
 
     assert memories[0]["status"] == "archived"

@@ -21,6 +21,7 @@ from .memory import (
     delete_memories,
     get_memories,
     get_memory,
+    get_memory_categories,
     get_memory_types,
     get_memory_history,
     get_memory_query_options,
@@ -410,7 +411,7 @@ def search_command(*arguments):
 
 
 def categories_command(argument=None):
-    render_memory_categories(get_memory_types())
+    render_memory_categories(get_memory_categories())
 
 
 def memory_command(*arguments):
