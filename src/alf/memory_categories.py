@@ -205,3 +205,98 @@ def get_memory_category(category_id):
         "modified": row[5],
         "position": row[6],
     }
+
+
+def update_memory_category(category_id, name):
+    """
+    Rename a memory category.
+
+    Returns:
+        ``"duplicate"`` when the name is already used by a sibling,
+        ``False`` when the category does not exist, otherwise ``True``.
+    """
+
+    with _get_connection() as connection:
+        category = connection.execute(
+            """
+            SELECT parent_id
+            FROM memory_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        duplicate = connection.execute(
+            """
+            SELECT id
+            FROM memory_categories
+            WHERE COALESCE(parent_id, 0) = COALESCE(?, 0)
+              AND name = ?
+              AND id != ?
+            """,
+            (category[0], name, category_id),
+        ).fetchone()
+
+        if duplicate is not None:
+            return "duplicate"
+
+        modified = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        connection.execute(
+            """
+            UPDATE memory_categories
+            SET name = ?, modified = ?
+            WHERE id = ?
+            """,
+            (name, modified, category_id),
+        )
+
+    return True
+
+
+def delete_memory_category(category_id):
+    """
+    Delete a memory category.
+
+    Memories assigned to the category become unclassified. Child
+    categories become top-level categories through the foreign key's
+    ON DELETE SET NULL behaviour.
+
+    Returns:
+        ``False`` when the category does not exist, otherwise ``True``.
+    """
+
+    with _get_connection() as connection:
+        category = connection.execute(
+            """
+            SELECT id
+            FROM memory_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+        if category is None:
+            return False
+
+        connection.execute(
+            """
+            UPDATE memories
+            SET memory_category_id = NULL
+            WHERE memory_category_id = ?
+            """,
+            (category_id,),
+        )
+
+        connection.execute(
+            """
+            DELETE FROM memory_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        )
+
+    return True

@@ -15,10 +15,12 @@ from ..memory import (
     create_mindmap,
     create_mindmap_category,
     delete_memory,
+    delete_memory_category,
     delete_mindmap,
     delete_mindmap_category,
     find_related_memory_candidates,
     get_memories,
+    get_memory_category,
     get_memory_categories,
     get_memory_query_options,
     get_mindmap,
@@ -31,6 +33,7 @@ from ..memory import (
     restore_memory,
     set_memory_category,
     update_memory,
+    update_memory_category,
     update_mindmap,
     update_mindmap_category,
 )
@@ -371,6 +374,91 @@ def memories():
         selected_memory=selected_memory,
         edit_id=edit_id,
     )
+
+@app.post("/memory-categories")
+def create_memory_category_web():
+    """Create a memory category from the web interface."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No category data supplied"}), 400
+
+    name = data.get("name", "").strip()
+
+    if not name:
+        return jsonify({"error": "Category name is required"}), 400
+
+    parent_id = data.get("parent_id")
+
+    if parent_id is not None:
+        try:
+            parent_id = int(parent_id)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid parent category"}), 400
+
+        if get_memory_category(parent_id) is None:
+            return jsonify({"error": "Parent category not found"}), 404
+
+    category_id = create_memory_category(
+        name,
+        parent_id,
+    )
+
+    if category_id == "duplicate":
+        return jsonify(
+            {"error": "Memory category name is already in use"}
+        ), 409
+
+    return jsonify(
+        {
+            "id": category_id,
+            "name": name,
+            "parent_id": parent_id,
+        }
+    )
+
+
+@app.patch("/memory-categories/<int:category_id>")
+def update_memory_category_web(category_id):
+    """Rename a memory category."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No category data supplied"}), 400
+
+    name = data.get("name", "").strip()
+
+    if not name:
+        return jsonify({"error": "Category name is required"}), 400
+
+    updated = update_memory_category(
+        category_id,
+        name,
+    )
+
+    if updated == "duplicate":
+        return jsonify(
+            {"error": "Memory category name is already in use"}
+        ), 409
+
+    if not updated:
+        return jsonify({"error": "Memory category not found"}), 404
+
+    return jsonify({"updated": True})
+
+
+@app.delete("/memory-categories/<int:category_id>")
+def delete_memory_category_web(category_id):
+    """Delete a memory category."""
+
+    deleted = delete_memory_category(category_id)
+
+    if not deleted:
+        return jsonify({"error": "Memory category not found"}), 404
+
+    return jsonify({"deleted": True})
 
 @app.post("/memories/archive")
 def archive_memory_web():

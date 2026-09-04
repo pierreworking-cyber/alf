@@ -148,6 +148,76 @@
             background: #34495a;
             color: #edf1f3;
         }
+
+        .memory-taxonomy-header {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .memory-taxonomy-header a {
+            flex: 1;
+        }
+
+        .memory-category-menu {
+            padding: 3px 7px;
+            border: 0;
+            border-radius: 5px;
+            background: transparent;
+            color: #aebdca;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .memory-category-menu:hover {
+            background: #34495a;
+            color: #edf1f3;
+        }
+
+        .memory-category-actions {
+            margin: -2px 0 6px;
+            padding: 6px;
+            border: 1px solid #46596b;
+            border-radius: 8px;
+            background: #25313e;
+            box-shadow: 0 8px 20px rgba(10, 18, 28, 0.25);
+            display: flex;
+            gap: 4px;
+        }
+
+        .memory-category-actions button {
+            padding: 5px 8px;
+            border: 0;
+            border-radius: 5px;
+            background: transparent;
+            color: #aebdca;
+            font: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .memory-category-actions button:hover {
+            background: #34495a;
+            color: #edf1f3;
+        }
+
+        .memory-new-category {
+            margin-top: 10px;
+            padding: 6px 9px;
+            border: 1px solid #46596b;
+            border-radius: 6px;
+            background: transparent;
+            color: #aebdca;
+            font: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .memory-new-category:hover {
+            background: #34495a;
+            color: #edf1f3;
+        }
+
         .memory {
             display: block;
             padding: 10px 12px;
@@ -297,17 +367,30 @@
 {% macro render_memory_categories(parent_id=None) %}
     {% for category in memory_categories
         if category.parent_id == parent_id %}
-        <li>
-            <a
-                href="{{ url_for(
-                    'memories',
-                    memory_category=category.id,
-                    archived='on' if include_archived else None
-                ) }}"
-                class="{% if memory_category_id == category.id %}selected{% endif %}"
-            >
-                {{ category.name }}
-            </a>
+        <li
+            class="memory-taxonomy-category"
+            data-category-id="{{ category.id }}"
+        >
+            <div class="memory-taxonomy-header">
+                <a
+                    href="{{ url_for(
+                        'memories',
+                        memory_category=category.id,
+                        archived='on' if include_archived else None
+                    ) }}"
+                    class="{% if memory_category_id == category.id %}selected{% endif %}"
+                >
+                    {{ category.name }}
+                </a>
+
+                <button
+                    type="button"
+                    class="memory-category-menu"
+                    aria-label="Category options"
+                >
+                    ⋮
+                </button>
+            </div>
 
             {% if memory_categories
                 |selectattr("parent_id", "equalto", category.id)
@@ -351,6 +434,14 @@
 
                         {{ render_memory_categories() }}
                     </ul>
+                    <button
+                        type="button"
+                        id="new-memory-category"
+                        class="memory-new-category"
+                    >
+                        ＋ New category
+                    </button>
+
                 </nav>
                                 <form method="get">
                     {% if memory_category_id is not none %}
@@ -368,7 +459,12 @@
                     {% for memory in memories %}
                         <a
                             class="memory{% if memory.status != 'active' %} memory-archived{% endif %}"
-                            href="{{ url_for('memories', archived='on' if include_archived else None, selected=memory.id) }}"
+                            href="{{ url_for(
+                                'memories',
+                                memory_category=memory_category_id,
+                                archived='on' if include_archived else None,
+                                selected=memory.id
+                            ) }}"
                         >
                             <span class="memory-id">{{ memory.id }}</span>
                             <span class="memory-category">
@@ -530,7 +626,7 @@
     <script
         src="{{ url_for('static', filename='dialog.js') }}"
     ></script>
-
+    <script src="{{ url_for('static', filename='memories.js') }}"></script>
     <script>
         document
             .querySelector(".delete-memory-form")

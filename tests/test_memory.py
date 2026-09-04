@@ -284,6 +284,77 @@ def test_get_memories_by_category(database):
     assert memories[0]["content"] == "A note."
 
 
+def test_update_memory_category_renames_category(database):
+    category_id = memory.create_memory_category("Linux")
+
+    assert memory.update_memory_category(
+        category_id,
+        "Linux applications",
+    ) is True
+
+    category = memory.get_memory_category(category_id)
+
+    assert category["name"] == "Linux applications"
+
+
+def test_update_memory_category_rejects_duplicate_sibling(database):
+    first_id = memory.create_memory_category("Linux")
+    second_id = memory.create_memory_category("Applications")
+
+    assert memory.update_memory_category(
+        second_id,
+        "Linux",
+    ) == "duplicate"
+
+    assert memory.get_memory_category(second_id)["name"] == "Applications"
+
+
+def test_update_memory_category_allows_same_name(database):
+    category_id = memory.create_memory_category("Linux")
+
+    assert memory.update_memory_category(
+        category_id,
+        "Linux",
+    ) is True
+
+
+def test_update_memory_category_rejects_unknown_category(database):
+    assert memory.update_memory_category(
+        999,
+        "Linux",
+    ) is False
+
+
+def test_delete_memory_category_unassigns_memories(database):
+    category_id = memory.create_memory_category("Linux")
+
+    memory.remember("note", "Install applications.")
+    memory.set_memory_category(1, category_id)
+
+    assert memory.delete_memory_category(category_id) is True
+
+    assert memory.get_memory(1)["memory_category_id"] is None
+    assert memory.get_memory_category(category_id) is None
+
+
+def test_delete_memory_category_promotes_children(database):
+    parent_id = memory.create_memory_category("Linux")
+    child_id = memory.create_memory_category(
+        "Applications",
+        parent_id,
+    )
+
+    assert memory.delete_memory_category(parent_id) is True
+
+    child = memory.get_memory_category(child_id)
+
+    assert child["parent_id"] is None
+
+
+def test_delete_memory_category_rejects_unknown_category(database):
+    assert memory.delete_memory_category(999) is False
+
+
 def test_get_memories_includes_archived_when_requested(database):
     memory.remember("note", "Active memory.")
     memory.remember("note", "Archived memory.")

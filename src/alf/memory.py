@@ -27,7 +27,10 @@ from datetime import datetime
 from . import memory_categories, mind_maps, news
 from .memory_categories import (  # noqa: F401
     create_memory_category,
+    delete_memory_category,
     get_memory_categories,
+    get_memory_category,
+    update_memory_category,
 )
 from .mind_maps import (  # noqa: F401
     create_mindmap,
