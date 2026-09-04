@@ -21,7 +21,7 @@ from .memory import (
     delete_memories,
     get_memories,
     get_memory,
-    get_memory_categories,
+    get_memory_types,
     get_memory_history,
     get_memory_query_options,
     get_related_memories,
@@ -297,7 +297,7 @@ def remember_command(*arguments):
     if category is None:
         render_invalid_memory_category(
             original_category,
-            get_memory_categories(),
+            get_memory_types(),
         )
         return
 
@@ -343,7 +343,7 @@ def parse_memory_query_options(arguments, command="memories"):
             if category is None:
                 render_invalid_memory_category(
                     arguments[index],
-                    get_memory_categories(),
+                    get_memory_types(),
                 )
                 return None
 
@@ -410,7 +410,7 @@ def search_command(*arguments):
 
 
 def categories_command(argument=None):
-    render_memory_categories(get_memory_categories())
+    render_memory_categories(get_memory_types())
 
 
 def memory_command(*arguments):

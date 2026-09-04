@@ -24,7 +24,11 @@ compatibility.
 import sqlite3
 from datetime import datetime
 
-from . import mind_maps, news
+from . import memory_categories, mind_maps, news
+from .memory_categories import (  # noqa: F401
+    create_memory_category,
+    get_memory_types,
+)
 from .mind_maps import (  # noqa: F401
     create_mindmap,
     create_mindmap_category,
@@ -55,9 +59,9 @@ from .paths import get_data_directory
 DATABASE = get_data_directory() / "alf.db"
 
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
-VALID_MEMORY_CATEGORIES = [
+VALID_MEMORY_TYPES = [
     "note",
     "fact",
     "decision",
@@ -91,7 +95,8 @@ def initialise_database(connection):
             content TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'active',
             previous_memory_id INTEGER,
-            related_memory_ids TEXT
+            related_memory_ids TEXT,
+            memory_category_id INTEGER
         )
         """
     )
@@ -118,6 +123,7 @@ def initialise_database(connection):
 
     mind_maps.create_tables(connection)
     news.create_tables(connection)
+    memory_categories.create_tables(connection)
 
     if version == 4:
         mind_maps.migrate_from_v4(connection)
@@ -125,7 +131,11 @@ def initialise_database(connection):
 
     if version == 5:
         mind_maps.migrate_position_v5(connection)
+        version = 7
 
+    if version < 8:
+        memory_categories.migrate_from_v7(connection)
+        version = 8
 
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
@@ -152,15 +162,15 @@ def get_connection():
     return connection
 
 
-def get_memory_categories():
+def get_memory_types():
     """
-    Return a copy of ALF's valid memory categories.
+    Return a copy of ALF's valid memory types.
 
     Returns:
-        A list of supported memory category names.
+        A list of supported memory type names.
     """
 
-    return VALID_MEMORY_CATEGORIES.copy()
+    return VALID_MEMORY_TYPES.copy()
 
 
 def get_memory_query_options():

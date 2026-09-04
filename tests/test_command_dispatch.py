@@ -82,7 +82,7 @@ def test_remember_command_resolves_category_prefix(monkeypatch):
 
     monkeypatch.setattr(
         commands,
-        "get_memory_categories",
+        "get_memory_types",
         lambda: ["note", "fact", "decision", "preference"],
     )
 
@@ -120,7 +120,7 @@ def test_remember_command_rejects_unknown_category(monkeypatch):
 
     monkeypatch.setattr(
         commands,
-        "get_memory_categories",
+        "get_memory_types",
         lambda: ["note", "fact", "decision", "preference"],
     )
 

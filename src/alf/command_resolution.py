@@ -6,7 +6,7 @@ resolution. It does not attempt to infer natural-language intent.
 """
 
 from .command_catalogue import commands
-from .memory import get_memory_categories
+from .memory import get_memory_types
 
 
 def get_command_matches(value):
@@ -77,7 +77,7 @@ def resolve_category(value):
 
     value = value.strip().lower()
 
-    categories = get_memory_categories()
+    categories = get_memory_types()
 
     if value in categories:
         return value
