@@ -115,6 +115,15 @@ a {
     color: #aebdca;
 }
 
+#memory-category-id {
+    padding: 7px 9px;
+    border: 1px solid #46596b;
+    border-radius: 9px;
+    background: #253341;
+    color: #edf1f3;
+    font: inherit;
+}
+
 #related-list {
     display: flex;
     flex-direction: column;
