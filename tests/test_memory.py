@@ -105,6 +105,7 @@ def test_update_memory_changes_content_without_creating_memory(database):
             "content": "Edited memory.",
             "previous_memory_id": None,
             "related_memory_ids": None,
+            "memory_category_id": None,
         }
     ]
 
@@ -333,6 +334,7 @@ def test_get_memory_returns_memory_by_id(database):
         "status": "active",
         "content": "A specific memory.",
         "previous_memory_id": None,
+        "memory_category_id": None,
         "related_memory_ids": None,
     }
 
@@ -1106,6 +1108,40 @@ def test_memory_information(database):
 
     assert information["total_memories"] == 2
     assert information["categories"] == ["fact", "note"]
+
+
+def test_remember_creates_unclassified_memory(database):
+    memory.remember("note", "Unclassified memory.")
+
+    result = memory.get_memory(1)
+
+    assert result["memory_category_id"] is None
+
+
+def test_set_memory_category_assigns_category(database):
+    category_id = memory.create_memory_category("Linux")
+
+    memory.remember("note", "Install applications.")
+
+    assert memory.set_memory_category(1, category_id) is True
+    assert memory.get_memory(1)["memory_category_id"] == category_id
+
+
+def test_set_memory_category_rejects_unknown_category(database):
+    memory.remember("note", "Install applications.")
+
+    assert memory.set_memory_category(1, 999) is False
+    assert memory.get_memory(1)["memory_category_id"] is None
+
+
+def test_set_memory_category_can_clear_category(database):
+    category_id = memory.create_memory_category("Linux")
+
+    memory.remember("note", "Install applications.")
+    memory.set_memory_category(1, category_id)
+
+    assert memory.set_memory_category(1, None) is True
+    assert memory.get_memory(1)["memory_category_id"] is None
 
 
 def test_capability(database):

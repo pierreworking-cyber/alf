@@ -1,10 +1,12 @@
 """
 Memory taxonomy storage and category management.
 
-Memory categories are user-defined organisational categories for
-persistent memories. They are separate from ALF's memory types such
-as ``note``, ``fact``, ``decision``, and ``preference``.
+Memory categories are user-defined organisational categories used to
+group and organise persistent memories. They form a separate
+hierarchical taxonomy from ALF's fixed memory types, such as `note`,
+`fact`, `decision`, and `preference`.
 """
+
 
 from datetime import datetime
 
@@ -140,7 +142,7 @@ def create_memory_category(name: str, parent_id=None):
         return cursor.lastrowid
 
 
-def get_memory_types():
+def get_memory_categories():
     """
     Return all memory categories in hierarchical position order.
 
@@ -169,3 +171,37 @@ def get_memory_types():
         }
         for row in rows
     ]
+
+
+def get_memory_category(category_id):
+    """
+    Return a memory category by ID.
+
+    Args:
+        category_id: ID of the memory category.
+
+    Returns:
+        A category dictionary, or ``None`` when the category does not exist.
+    """
+    with _get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT id, name, parent_id, status, created, modified, position
+            FROM memory_categories
+            WHERE id = ?
+            """,
+            (category_id,),
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    return {
+        "id": row[0],
+        "name": row[1],
+        "parent_id": row[2],
+        "status": row[3],
+        "created": row[4],
+        "modified": row[5],
+        "position": row[6],
+    }
