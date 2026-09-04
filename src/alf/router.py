@@ -1,7 +1,6 @@
 """ALF's answer-routing boundary."""
 
 from .classifier import classify
-from .routes import Route
 
 
 def route(question):

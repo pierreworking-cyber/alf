@@ -208,13 +208,13 @@ def test_fake_serves_bare_category_and_feed_arrays(fake):
         headers=headers,
         payload=None,
     )
-    feeds_status, feeds = fake.handle(
+    _, feeds = fake.handle(
         "GET",
         "/v1/feeds",
         headers=headers,
         payload=None,
     )
-    category_status, category_feeds = fake.handle(
+    _, category_feeds = fake.handle(
         "GET",
         f"/v1/categories/{category['id']}/feeds",
         headers=headers,

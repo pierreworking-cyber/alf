@@ -2,9 +2,9 @@
 News query data structures and text helpers for ALF.
 """
 
+import re
 from dataclasses import dataclass
 from datetime import datetime
-import re
 
 NEWS_DEFAULT_WINDOW_DAYS = 7
 MAX_WINDOW_DAYS = 366

@@ -12,6 +12,7 @@ it is not treated as an independent source of trusted knowledge.
 
 import json
 from urllib.request import Request, urlopen
+
 from .personality import ALF_PERSONALITY
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"

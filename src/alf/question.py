@@ -13,6 +13,7 @@ the language model to guess.
 
 from collections.abc import Callable
 from dataclasses import dataclass
+
 from .answer import prepare_answer
 from .interpretation import interpret_question
 from .llm import evaluate_research

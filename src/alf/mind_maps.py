@@ -258,6 +258,8 @@ def migrate_position_v5(connection):
             """,
             (position, category_id),
         )
+
+
 def _create_uncategorised(connection) -> int:
     """
     Insert the reserved ``Uncategorised`` category at position 0.
@@ -388,6 +390,7 @@ def get_mindmap_categories():
         }
         for row in rows
     ]
+
 
 def move_mindmap_category(category_id: int, position: int):
     """
