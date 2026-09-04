@@ -348,6 +348,47 @@ def memories():
     memories = get_memories(options)
     memory_categories = get_memory_categories()
 
+    category_by_id = {
+        category["id"]: category
+        for category in memory_categories
+    }
+
+    category_paths = {}
+
+    def get_category_path(category_id):
+        if category_id is None:
+            return "Unclassified"
+
+        if category_id in category_paths:
+            return category_paths[category_id]
+
+        category = category_by_id.get(category_id)
+
+        if category is None:
+            return "Unclassified"
+
+        parts = [category["name"]]
+        parent_id = category["parent_id"]
+
+        while parent_id is not None:
+            parent = category_by_id.get(parent_id)
+
+            if parent is None:
+                break
+
+            parts.insert(0, parent["name"])
+            parent_id = parent["parent_id"]
+
+        path = " / ".join(parts)
+        category_paths[category_id] = path
+
+        return path
+
+    for memory in memories:
+        memory["memory_category_path"] = get_category_path(
+            memory["memory_category_id"]
+        )
+
     selected_memory = None
 
     if selected_id:

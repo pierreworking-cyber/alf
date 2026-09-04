@@ -246,6 +246,15 @@
             font-size: 0.85rem;
         }
 
+        .memory-taxonomy-tag {
+            margin-left: 10px;
+            padding: 2px 7px;
+            border-radius: 6px;
+            background: #34495a;
+            color: #c5d0d9;
+            font-size: 0.78rem;
+        }
+
         .memory-content {
             margin-top: 3px;
         }
@@ -487,7 +496,9 @@
                                     *
                                 {% endif %}
                             </span>
-                            <div class="memory-content">
+                            <span class="memory-taxonomy-tag">
+                                {{ memory.memory_category_path }}
+                            </span>                            <div class="memory-content">
                                 {{ memory.content }}
                             </div>
                         </a>

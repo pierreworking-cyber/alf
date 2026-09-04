@@ -132,20 +132,20 @@ a {
 .memory-taxonomy-category.collapsed > ul {
     display: none;
 }
-        .memory-category-collapse {
-            width: 22px;
-            padding: 3px 0;
-            border: 0;
-            background: transparent;
-            color: #aebdca;
-            font: inherit;
-            cursor: pointer;
-            text-align: center;
-        }
+.memory-category-collapse {
+    width: 22px;
+    padding: 3px 0;
+    border: 0;
+    background: transparent;
+    color: #aebdca;
+    font: inherit;
+    cursor: pointer;
+    text-align: center;
+}
 
-        .memory-category-collapse:hover {
-            color: #edf1f3;
-        }
+.memory-category-collapse:hover {
+    color: #edf1f3;
+}
 
 #related-list {
     display: flex;
