@@ -375,6 +375,33 @@ def memories():
         edit_id=edit_id,
     )
 
+@app.patch("/memories/<int:memory_id>/category")
+def set_memory_category_web(memory_id):
+    """Assign a memory to a category from the web interface."""
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No category data supplied"}), 400
+
+    category_id = data.get("category_id")
+
+    if category_id is None:
+        return jsonify({"error": "Category ID is required"}), 400
+
+    try:
+        category_id = int(category_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid category ID"}), 400
+
+    if get_memory_category(category_id) is None:
+        return jsonify({"error": "Memory category not found"}), 404
+
+    if not set_memory_category(memory_id, category_id):
+        return jsonify({"error": "Memory not found"}), 404
+
+    return jsonify({"updated": True})
+
 @app.post("/memory-categories")
 def create_memory_category_web():
     """Create a memory category from the web interface."""

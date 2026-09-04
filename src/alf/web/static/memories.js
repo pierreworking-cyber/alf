@@ -48,6 +48,152 @@ document.addEventListener("DOMContentLoaded", () => {
         .getElementById("new-memory-category")
         ?.addEventListener("click", () => createCategory());
 
+    let draggedMemoryId = null;
+
+    document
+        .querySelectorAll(".memory[data-memory-id]")
+        .forEach((memory) => {
+            memory.addEventListener("dragstart", (event) => {
+                draggedMemoryId = memory.dataset.memoryId;
+                event.dataTransfer.effectAllowed = "move";
+            });
+
+            memory.addEventListener("dragend", () => {
+                draggedMemoryId = null;
+
+                document
+                    .querySelectorAll(".memory-taxonomy-header")
+                    .forEach((header) => {
+                        header.classList.remove(
+                            "memory-category-drag-over"
+                        );
+                    });
+            });
+        });
+
+    document
+        .querySelectorAll(".memory-taxonomy-header")
+        .forEach((header) => {
+            header.addEventListener("dragover", (event) => {
+                if (!draggedMemoryId) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                document
+                    .querySelectorAll(".memory-category-drag-over")
+                    .forEach((target) => {
+                        if (target !== header) {
+                            target.classList.remove(
+                                "memory-category-drag-over"
+                            );
+                        }
+                    });
+
+                event.dataTransfer.dropEffect = "move";
+                header.classList.add("memory-category-drag-over");
+            });
+
+            header.addEventListener("dragleave", () => {
+                header.classList.remove(
+                    "memory-category-drag-over"
+                );
+            });
+
+            header.addEventListener("drop", async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                header.classList.remove(
+                    "memory-category-drag-over"
+                );
+
+                if (!draggedMemoryId) {
+                    return;
+                }
+
+                const category = header.closest(
+                    ".memory-taxonomy-category"
+                );
+                const categoryId = category.dataset.categoryId;
+
+                const response = await fetch(
+                    `/memories/${draggedMemoryId}/category`,
+                    {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            category_id: categoryId,
+                        }),
+                    }
+                );
+
+                draggedMemoryId = null;
+
+                if (!response.ok) {
+                    await alfAlert(await readErrorMessage(response));
+                    return;
+                }
+
+                window.location.reload();
+            });
+        });
+
+    document
+        .querySelectorAll(".memory-taxonomy-category")
+        .forEach((category) => {
+            const collapseButton = category.querySelector(
+                ":scope > .memory-taxonomy-header > .memory-category-collapse"
+            );
+            const children = category.querySelector(
+                ":scope > ul"
+            );
+
+            if (!collapseButton || !children) {
+                return;
+            }
+
+            const categoryId = category.dataset.categoryId;
+            const storageKey =
+                `memory-category-collapsed:${categoryId}`;
+
+            if (localStorage.getItem(storageKey) === "true") {
+                category.classList.add("collapsed");
+                collapseButton.textContent = "▸";
+                collapseButton.setAttribute(
+                    "aria-label",
+                    "Expand category"
+                );
+            }
+
+            collapseButton.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const collapsed =
+                    category.classList.toggle("collapsed");
+
+                collapseButton.textContent =
+                    collapsed ? "▸" : "▾";
+
+                collapseButton.setAttribute(
+                    "aria-label",
+                    collapsed
+                        ? "Expand category"
+                        : "Collapse category"
+                );
+
+                localStorage.setItem(
+                    storageKey,
+                    collapsed ? "true" : "false"
+                );
+            });
+        });
+
     document
         .querySelectorAll(".memory-category-menu")
         .forEach((button) => {

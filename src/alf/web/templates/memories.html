@@ -372,6 +372,18 @@
             data-category-id="{{ category.id }}"
         >
             <div class="memory-taxonomy-header">
+                {% if memory_categories
+                    |selectattr("parent_id", "equalto", category.id)
+                    |list %}
+                    <button
+                        type="button"
+                        class="memory-category-collapse"
+                        aria-label="Collapse category"
+                    >
+                        ▾
+                    </button>
+                {% endif %}
+
                 <a
                     href="{{ url_for(
                         'memories',
@@ -459,6 +471,8 @@
                     {% for memory in memories %}
                         <a
                             class="memory{% if memory.status != 'active' %} memory-archived{% endif %}"
+                            draggable="true"
+                            data-memory-id="{{ memory.id }}"
                             href="{{ url_for(
                                 'memories',
                                 memory_category=memory_category_id,

@@ -124,6 +124,29 @@ a {
     font: inherit;
 }
 
+.memory-taxonomy-header.memory-category-drag-over {
+    background: #34495a;
+    border-radius: 6px;
+}
+
+.memory-taxonomy-category.collapsed > ul {
+    display: none;
+}
+        .memory-category-collapse {
+            width: 22px;
+            padding: 3px 0;
+            border: 0;
+            background: transparent;
+            color: #aebdca;
+            font: inherit;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .memory-category-collapse:hover {
+            color: #edf1f3;
+        }
+
 #related-list {
     display: flex;
     flex-direction: column;
