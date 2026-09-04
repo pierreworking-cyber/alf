@@ -12,6 +12,7 @@ from ..calc import CalculationError, calculate
 from ..command_catalogue import commands
 from ..memory import (
     archive_memory,
+    create_memory_category,
     create_mindmap,
     create_mindmap_category,
     delete_memory,
@@ -20,8 +21,8 @@ from ..memory import (
     delete_mindmap_category,
     find_related_memory_candidates,
     get_memories,
-    get_memory_category,
     get_memory_categories,
+    get_memory_category,
     get_memory_query_options,
     get_mindmap,
     get_mindmap_categories,

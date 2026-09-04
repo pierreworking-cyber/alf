@@ -298,7 +298,7 @@ def test_update_memory_category_renames_category(database):
 
 
 def test_update_memory_category_rejects_duplicate_sibling(database):
-    first_id = memory.create_memory_category("Linux")
+    memory.create_memory_category("Linux")
     second_id = memory.create_memory_category("Applications")
 
     assert memory.update_memory_category(
@@ -856,9 +856,13 @@ def test_archive_memory(database):
     memory.archive_memory(1)
 
     assert memory.get_memories() == []
-
     memories = memory.get_memories(
-        {"category": None, "memory_category_id": None, "include_archived": True, "group": None}
+        {
+            "category": None,
+            "memory_category_id": None,
+            "include_archived": True,
+            "group": None,
+        }
     )
 
     assert memories[0]["status"] == "archived"
