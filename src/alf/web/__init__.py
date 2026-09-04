@@ -19,6 +19,8 @@ from ..memory import (
     delete_mindmap_category,
     find_related_memory_candidates,
     get_memories,
+    get_memory_categories,
+    get_memory_query_options,
     get_mindmap,
     get_mindmap_categories,
     get_mindmaps,
@@ -27,6 +29,7 @@ from ..memory import (
     relate_memory,
     remember,
     restore_memory,
+    set_memory_category,
     update_memory,
     update_mindmap,
     update_mindmap_category,
@@ -291,6 +294,7 @@ def memories():
             "related_memory_ids",
             "",
         ).strip()
+        memory_category_id = request.form.get("memory_category_id")
 
         if memory_id and content:
             update_memory(
@@ -304,24 +308,41 @@ def memories():
                 related_memory_ids,
             )
 
+        if memory_id:
+            category_id = (
+                int(memory_category_id)
+                if memory_category_id
+                else None
+            )
+            set_memory_category(
+                int(memory_id),
+                category_id,
+            )
+
         return redirect(
             url_for(
                 "memories",
                 selected=memory_id,
+                memory_category=memory_category_id or None,
             )
         )
 
     include_archived = request.args.get("archived") == "on"
     selected_id = request.args.get("selected")
     edit_id = request.args.get("edit")
+    memory_category_id = request.args.get("memory_category")
 
-    options = {
-        "category": None,
-        "include_archived": include_archived,
-        "group": None,
-    }
+    options = get_memory_query_options()
+    options["include_archived"] = include_archived
+
+    if memory_category_id:
+        try:
+            options["memory_category_id"] = int(memory_category_id)
+        except ValueError:
+            memory_category_id = None
 
     memories = get_memories(options)
+    memory_categories = get_memory_categories()
 
     selected_memory = None
 
@@ -344,6 +365,8 @@ def memories():
     return render_template(
         "memories.html",
         memories=memories,
+        memory_categories=memory_categories,
+        memory_category_id=options["memory_category_id"],
         include_archived=include_archived,
         selected_memory=selected_memory,
         edit_id=edit_id,

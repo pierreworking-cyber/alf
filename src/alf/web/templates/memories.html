@@ -105,7 +105,49 @@
             flex-direction: column;
             gap: 5px;
         }
+        .memory-taxonomy {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #3b4b5b;
+        }
 
+        .memory-taxonomy h2 {
+            margin: 0 0 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #aebdca;
+        }
+
+        .memory-taxonomy ul {
+            margin: 0;
+            padding-left: 18px;
+            list-style: none;
+        }
+
+        .memory-taxonomy > ul {
+            padding-left: 0;
+        }
+
+        .memory-taxonomy li {
+            margin: 2px 0;
+        }
+
+        .memory-taxonomy a {
+            display: block;
+            padding: 5px 8px;
+            border-radius: 7px;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .memory-taxonomy a:hover {
+            background: #34495a;
+        }
+
+        .memory-taxonomy a.selected {
+            background: #34495a;
+            color: #edf1f3;
+        }
         .memory {
             display: block;
             padding: 10px 12px;
@@ -252,6 +294,31 @@
     </style>
 </head>
 <body>
+{% macro render_memory_categories(parent_id=None) %}
+    {% for category in memory_categories
+        if category.parent_id == parent_id %}
+        <li>
+            <a
+                href="{{ url_for(
+                    'memories',
+                    memory_category=category.id,
+                    archived='on' if include_archived else None
+                ) }}"
+                class="{% if memory_category_id == category.id %}selected{% endif %}"
+            >
+                {{ category.name }}
+            </a>
+
+            {% if memory_categories
+                |selectattr("parent_id", "equalto", category.id)
+                |list %}
+                <ul>
+                    {{ render_memory_categories(category.id) }}
+                </ul>
+            {% endif %}
+        </li>
+    {% endfor %}
+{% endmacro %}
     <main>
         <div class="top">
             <a class="brand" href="{{ url_for('home') }}">ALF</a>
@@ -266,17 +333,35 @@
 
         <section class="memories-workspace">
             <div class="memories-list">
-                <form method="get">
-                    <label class="memories-filter">
+                <nav class="memory-taxonomy">
+                    <h2>Memory categories</h2>
+
+                    <ul>
+                        <li>
+                            <a
+                                href="{{ url_for(
+                                    'memories',
+                                    archived='on' if include_archived else None
+                                ) }}"
+                                class="{% if memory_category_id is none %}selected{% endif %}"
+                            >
+                                All memories
+                            </a>
+                        </li>
+
+                        {{ render_memory_categories() }}
+                    </ul>
+                </nav>
+                                <form method="get">
+                    {% if memory_category_id is not none %}
                         <input
-                            type="checkbox"
-                            name="archived"
-                            value="on"
-                            {% if include_archived %}checked{% endif %}
-                            onchange="this.form.submit()"
+                            type="hidden"
+                            name="memory_category"
+                            value="{{ memory_category_id }}"
                         >
-                        Show archived
-                    </label>
+                    {% endif %}
+
+                    <label class="memories-filter">
                 </form>
 
                 <div class="memory-list">
@@ -326,7 +411,25 @@
                                 name="content"
                                 id="memory-editor"
                             >{{ selected_memory.content }}</textarea>
+                            <label for="memory-category-id">
+                                Memory category
+                            </label>
 
+                            <select
+                                name="memory_category_id"
+                                id="memory-category-id"
+                            >
+                                <option value="">Uncategorised</option>
+
+                                {% for category in memory_categories %}
+                                    <option
+                                        value="{{ category.id }}"
+                                        {% if selected_memory.memory_category_id == category.id %}selected{% endif %}
+                                    >
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                             <label for="related-memory-ids">
                                 Related memory IDs
                             </label>
@@ -424,8 +527,6 @@
             </div>
         </section>
     </main>
-    </main>
-
     <script
         src="{{ url_for('static', filename='dialog.js') }}"
     ></script>
