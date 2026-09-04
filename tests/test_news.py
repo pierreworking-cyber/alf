@@ -76,7 +76,7 @@ def test_database_schema_creates_news_tables(database):
             ).fetchall()
         }
 
-    assert version == 7
+    assert version == 8
     assert tables == {
         "news_subjects",
         "news_feeds",
@@ -107,7 +107,7 @@ def test_database_upgrades_from_version_six(database):
             ).fetchall()
         }
 
-    assert version == 7
+    assert version == 8
     assert tables == {
         "news_subjects",
         "news_feeds",
