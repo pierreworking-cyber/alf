@@ -11,14 +11,14 @@
 
     <style>
         main {
-            padding: 55px 0 70px;
+            padding: 25px 0 50px;
         }
 
         .top {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 45px;
+            margin-bottom: 20px;
         }
 
         .brand {
@@ -30,15 +30,6 @@
             text-decoration: none;
         }
 
-        .back {
-            color: #aebdca;
-            text-decoration: none;
-            font-size: 0.95rem;
-        }
-
-        .back:hover {
-            color: #edf1f3;
-        }
 
         .intro {
             text-align: center;
@@ -182,15 +173,12 @@
     <main>
         <div class="top">
             <a class="brand" href="{{ url_for('home') }}">ALF</a>
-            <a class="back" href="{{ url_for('home') }}">All capabilities</a>
         </div>
-
         <header class="intro">
             <div class="illustration">☁</div>
             <h1>Question</h1>
             <p>Ask ALF something and explore the answer.</p>
         </header>
-
         <section class="workspace">
             <form method="post" id="question-form">
                 <label for="question">What would you like to ask?</label>

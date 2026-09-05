@@ -10,14 +10,14 @@
     >
     <style>
         main {
-            padding: 55px 0 70px;
+            padding: 25px 0 50px;
         }
 
         .top {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 45px;
+            margin-bottom: 20px;
         }
 
         .brand {
@@ -29,15 +29,6 @@
             text-decoration: none;
         }
 
-        .back {
-            color: #aebdca;
-            text-decoration: none;
-            font-size: 0.95rem;
-        }
-
-        .back:hover {
-            color: #edf1f3;
-        }
 
         .intro {
             text-align: center;
@@ -72,15 +63,12 @@
     <main>
         <div class="top">
             <a class="brand" href="{{ url_for('home') }}">ALF</a>
-            <a class="back" href="{{ url_for('home') }}">All capabilities</a>
         </div>
-
         <header class="intro">
             <div class="illustration">✎</div>
             <h1>Remember</h1>
             <p>Give ALF something worth remembering.</p>
         </header>
-
         <section class="remember-workspace">
             <form method="post" id="remember-form">
                 <label for="content">What would you like ALF to remember?</label>
