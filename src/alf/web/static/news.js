@@ -1,4 +1,5 @@
 let currentFeedId = null;
+let articleWindow = null;
 const articleLimit = document.querySelector("#news-article-limit");
 
 async function loadFeed(feedId) {
@@ -44,13 +45,25 @@ async function loadFeed(feedId) {
     items.forEach(function (newsItem) {
         const article = document.createElement("article");
         article.className = "news-article";
-
         const title = document.createElement("h2");
         const link = document.createElement("a");
 
         link.href = newsItem.url;
-        link.target = "alf-news-article";
         link.textContent = newsItem.title;
+
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+
+            if (!articleWindow || articleWindow.closed) {
+                articleWindow = window.open(
+                    newsItem.url,
+                    "alf-news-article"
+                );
+            } else {
+                articleWindow.location.href = newsItem.url;
+                articleWindow.focus();
+            }
+        });
 
         title.append(link);
 
