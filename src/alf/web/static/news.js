@@ -117,6 +117,25 @@ if (articleLimit) {
 document
     .querySelectorAll(".news-subject")
     .forEach(function (subject) {
+        const subjectId = subject.dataset.subjectId;
+        const storageKey = `news-subject-collapsed:${subjectId}`;
+
+        if (localStorage.getItem(storageKey) === "true") {
+            subject.classList.add("collapsed");
+        }
+
+        subject
+            .querySelector(".news-subject-header h3")
+            .addEventListener("click", function () {
+                const collapsed =
+                    subject.classList.toggle("collapsed");
+
+                localStorage.setItem(
+                    storageKey,
+                    collapsed ? "true" : "false"
+                );
+            });
+
         subject.addEventListener("dragover", function (event) {
             if (event.dataTransfer.types.includes("text/plain")) {
                 event.preventDefault();
