@@ -372,6 +372,63 @@ def test_refresh_imports_entries(fake, database):
     assert news.get_news_information()["items"] == 2
 
 
+def test_refresh_imports_entries_from_each_feed(fake, database):
+    client = make_client(fake)
+
+    news.add_subject(
+        "Ukraine",
+        [
+            "https://feeds.example/busy.rss",
+            "https://feeds.example/quiet.rss",
+        ],
+        client=client,
+    )
+
+    feeds = client.get_feeds(category_id=1)
+
+    busy_feed = next(
+        feed for feed in feeds
+        if feed["feed_url"] == "https://feeds.example/busy.rss"
+    )
+    quiet_feed = next(
+        feed for feed in feeds
+        if feed["feed_url"] == "https://feeds.example/quiet.rss"
+    )
+
+    fake.schedule_entries(
+        busy_feed["id"],
+        [
+            {
+                "title": f"Busy News {index}",
+                "url": f"https://feeds.example/busy/{index}",
+                "published_at": ENTRY_ONE + index,
+            }
+            for index in range(100)
+        ],
+    )
+
+    fake.schedule_entries(
+        quiet_feed["id"],
+        [
+            {
+                "title": "Quiet News",
+                "url": "https://feeds.example/quiet/1",
+                "published_at": ENTRY_ONE,
+            }
+        ],
+    )
+
+    result = news.refresh("Ukraine", client=client)
+
+    assert result["refreshed"] == 2
+    assert result["imported"] == 101
+
+    items = news.list_items("Ukraine")
+
+    assert len(items) == 101
+    assert any(item["title"] == "Quiet News" for item in items)
+
+
 def test_refresh_registers_new_miniflux_feed(fake, database):
     client = make_client(fake)
 
@@ -572,12 +629,40 @@ def test_refresh_reports_feed_failures_without_aborting(fake, database):
 
     news.add_subject(
         "Ukraine",
-        ["https://feeds.example/ukraine.rss"],
+        [
+            "https://feeds.example/failing.rss",
+            "https://feeds.example/working.rss",
+        ],
         client=client,
     )
 
+    feeds = client.get_feeds(category_id=1)
+
+    failing_feed = next(
+        feed for feed in feeds
+        if feed["feed_url"] == "https://feeds.example/failing.rss"
+    )
+    working_feed = next(
+        feed for feed in feeds
+        if feed["feed_url"] == "https://feeds.example/working.rss"
+    )
+
+    fake.schedule_entries(
+        working_feed["id"],
+        [
+            {
+                "title": "Working Feed Story",
+                "url": "https://feeds.example/working/1",
+                "published_at": ENTRY_ONE,
+            }
+        ],
+    )
+
     def failing_transport(method, url, headers, payload, timeout):
-        if method == "PUT" and "/refresh" in url:
+        if (
+            method == "PUT"
+            and url.endswith(f"/feeds/{failing_feed['id']}/refresh")
+        ):
             return 404, json.dumps(
                 {"error_message": "Feed not found"}
             ).encode("utf-8")
@@ -598,13 +683,18 @@ def test_refresh_reports_feed_failures_without_aborting(fake, database):
 
     result = news.refresh("Ukraine", client=failing_client)
 
-    assert result["refreshed"] == 0
-    assert result["imported"] == 0
+    assert result["refreshed"] == 1
+    assert result["imported"] == 1
     assert len(result["failures"]) == 1
     assert result["failures"][0]["feed"] == (
-        "https://feeds.example/ukraine.rss"
+        "https://feeds.example/failing.rss"
     )
     assert "not found" in result["failures"][0]["reason"].lower()
+
+    items = news.list_items("Ukraine")
+
+    assert len(items) == 1
+    assert items[0]["title"] == "Working Feed Story"
 
 
 def test_refresh_requires_stored_feeds(database, tmp_path, monkeypatch):

@@ -542,7 +542,6 @@ def refresh(subject=None, client=None):
         )
 
         subjects = _subjects_with_feeds(connection, subject)
-
         feeds_by_id = {
             feed["id"]: feed
             for feed in client.get_feeds()
@@ -555,10 +554,9 @@ def refresh(subject=None, client=None):
         subject_results = []
 
         for subject_entries in subjects:
-            feeds = subject_entries["feeds"]
-            subject_failed = False
+            subject_imported = 0
 
-            for feed in feeds:
+            for feed in subject_entries["feeds"]:
                 miniflux_feed = feeds_by_id.get(feed["miniflux_feed_id"])
 
                 if miniflux_feed is not None:
@@ -583,71 +581,38 @@ def refresh(subject=None, client=None):
                             "reason": str(exc),
                         }
                     )
-                    subject_failed = True
                     continue
 
                 refreshed += 1
 
-            category = categories.get(subject_entries["name"])
+                try:
+                    entries = client.get_entries(
+                        feed_id=feed["miniflux_feed_id"],
+                        limit=100,
+                    )
+                except MinifluxError as exc:
+                    failures.append(
+                        {
+                            "feed": feed["title"],
+                            "reason": str(exc),
+                        }
+                    )
+                    continue
 
-            if category is None:
-                failures.append(
-                    {
-                        "feed": subject_entries["name"],
-                        "reason": "Subject category is missing",
-                    }
+                count, deduplicated = _import_entries(
+                    connection,
+                    subject_entries["id"],
+                    entries,
                 )
-                continue
 
-            try:
-                read_entries = client.get_entries(
-                    category_id=category["id"],
-                    status="read",
-                    limit=100,
-                )
-                unread_entries = client.get_entries(
-                    category_id=category["id"],
-                    status="unread",
-                    limit=100,
-                )
-            except MinifluxError as exc:
-                failures.append(
-                    {
-                        "feed": subject_entries["name"],
-                        "reason": str(exc),
-                    }
-                )
-                continue
-
-            if subject_failed:
-                subject_results.append(
-                    {
-                        "name": subject_entries["name"],
-                        "new_items": 0,
-                    }
-                )
-                continue
-
-            entries = read_entries + unread_entries
-            entries.sort(
-                key=lambda entry: entry["published_at"],
-                reverse=True,
-            )
-            entries = entries[:100]
-
-            count, deduplicated = _import_entries(
-                connection,
-                subject_entries["id"],
-                entries,
-            )
-
-            imported += count
-            skipped += deduplicated
+                imported += count
+                skipped += deduplicated
+                subject_imported += count
 
             subject_results.append(
                 {
                     "name": subject_entries["name"],
-                    "new_items": count,
+                    "new_items": subject_imported,
                 }
             )
 

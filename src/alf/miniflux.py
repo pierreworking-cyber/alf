@@ -184,6 +184,7 @@ class Miniflux:
     def get_entries(
         self,
         category_id=None,
+        feed_id=None,
         published_after=None,
         published_before=None,
         limit=100,
@@ -193,6 +194,7 @@ class Miniflux:
         """
         Return a page of entries, newest first, optionally filtered.
 
+        ``feed_id`` optionally restricts results to one Miniflux feed.
         ``published_after`` and ``published_before`` are unix timestamps
         as accepted by the Miniflux API. ``status`` may contain entry
         statuses such as ``read`` or ``unread``.
@@ -202,9 +204,11 @@ class Miniflux:
             "limit": limit,
             "offset": offset,
         }
-
         if category_id is not None:
             params["category_id"] = category_id
+
+        if feed_id is not None:
+            params["feed_id"] = feed_id
 
         if published_after is not None:
             params["published_after"] = published_after
