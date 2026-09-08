@@ -137,6 +137,17 @@ def test_renaming_missing_category_returns_not_found(client):
     assert response.status_code == 404
 
 
+def _create_memory():
+    memory.remember(
+        "note",
+        "Test memory.",
+    )
+
+    with memory.get_connection() as connection:
+        return connection.execute(
+            "SELECT id FROM memories ORDER BY id DESC LIMIT 1"
+        ).fetchone()[0]
+
 def _create_mindmap(client):
     _create_category(client, "House")
 
@@ -150,6 +161,72 @@ def _create_mindmap(client):
     )
     assert response.status_code == 200
     return response.get_json()["id"]
+
+
+def test_memories_preserves_preview_lines_on_save(client):
+    memory_id = _create_memory()
+
+    response = client.post(
+        "/memories",
+        data={
+            "memory_id": str(memory_id),
+            "content": "Updated memory.",
+            "preview_lines": "5",
+        },
+    )
+
+    assert response.status_code == 302
+    assert "preview_lines=5" in response.location
+
+
+def test_memories_preserves_preview_lines_on_archive(client):
+    memory_id = _create_memory()
+
+    response = client.post(
+        "/memories/archive",
+        data={
+            "memory_id": str(memory_id),
+            "preview_lines": "5",
+        },
+    )
+
+    assert response.status_code == 302
+    assert "preview_lines=5" in response.location
+
+
+def test_memories_preserves_preview_lines_on_restore(client):
+    memory_id = _create_memory()
+
+    client.post(
+        "/memories/archive",
+        data={"memory_id": str(memory_id)},
+    )
+
+    response = client.post(
+        "/memories/restore",
+        data={
+            "memory_id": str(memory_id),
+            "preview_lines": "5",
+        },
+    )
+
+    assert response.status_code == 302
+    assert "preview_lines=5" in response.location
+
+
+def test_memories_preserves_preview_lines_on_delete(client):
+    memory_id = _create_memory()
+
+    response = client.post(
+        "/memories/delete",
+        data={
+            "memory_id": str(memory_id),
+            "preview_lines": "5",
+        },
+    )
+
+    assert response.status_code == 302
+    assert "preview_lines=5" in response.location
 
 
 def test_deleting_mindmap_via_delete_endpoint(client):

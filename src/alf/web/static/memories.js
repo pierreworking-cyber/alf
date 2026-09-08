@@ -49,12 +49,14 @@ document.addEventListener("DOMContentLoaded", () => {
         ?.addEventListener("click", () => createCategory());
 
     let draggedMemoryId = null;
+    let memoryWasDragged = false;
 
     document
         .querySelectorAll(".memory[data-memory-id]")
         .forEach((memory) => {
             memory.addEventListener("dragstart", (event) => {
                 draggedMemoryId = memory.dataset.memoryId;
+                memoryWasDragged = true;
                 event.dataTransfer.effectAllowed = "move";
             });
 
@@ -68,6 +70,23 @@ document.addEventListener("DOMContentLoaded", () => {
                             "memory-category-drag-over"
                         );
                     });
+            });
+
+            memory.addEventListener("click", (event) => {
+                if (memoryWasDragged) {
+                    memoryWasDragged = false;
+                    return;
+                }
+
+                if (event.target.closest("button")) {
+                    return;
+                }
+
+                const link = memory.querySelector(".memory-select");
+
+                if (link) {
+                    window.location.href = link.href;
+                }
             });
         });
 
@@ -300,4 +319,29 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
     document.addEventListener("click", closeMenus);
+});
+
+document.querySelectorAll(".memory").forEach((memory) => {
+    const expandButton = memory.querySelector(".memory-expand");
+    const rollupButton = memory.querySelector(".memory-rollup");
+    const preview = memory.querySelector(".memory-preview");
+    const full = memory.querySelector(".memory-full");
+
+    if (!expandButton || !rollupButton || !preview || !full) {
+        return;
+    }
+
+    expandButton.addEventListener("click", () => {
+        preview.hidden = true;
+        full.hidden = false;
+        expandButton.hidden = true;
+        rollupButton.hidden = false;
+    });
+
+    rollupButton.addEventListener("click", () => {
+        full.hidden = true;
+        preview.hidden = false;
+        rollupButton.hidden = true;
+        expandButton.hidden = false;
+    });
 });

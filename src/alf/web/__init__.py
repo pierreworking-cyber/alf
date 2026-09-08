@@ -31,6 +31,7 @@ from ..memory import (
     move_mindmap_category,
     relate_memory,
     remember,
+    search_memories,
     restore_memory,
     set_memory_category,
     update_memory,
@@ -299,6 +300,8 @@ def memories():
             "",
         ).strip()
         memory_category_id = request.form.get("memory_category_id")
+        search_term = request.form.get("search", "").strip()
+        preview_lines = request.form.get("preview_lines", "10")
 
         if memory_id and content:
             update_memory(
@@ -328,6 +331,8 @@ def memories():
                 "memories",
                 selected=memory_id,
                 memory_category=memory_category_id or None,
+                search=search_term or None,
+                preview_lines=preview_lines,
             )
         )
 
@@ -335,6 +340,13 @@ def memories():
     selected_id = request.args.get("selected")
     edit_id = request.args.get("edit")
     memory_category_id = request.args.get("memory_category")
+    search_term = request.args.get("search", "").strip()
+    preview_lines = request.args.get("preview_lines", "10")
+
+    if preview_lines not in {"2", "5", "10", "15"}:
+        preview_lines = "10"
+
+    preview_lines = int(preview_lines)
 
     options = get_memory_query_options()
     options["include_archived"] = include_archived
@@ -345,7 +357,13 @@ def memories():
         except ValueError:
             memory_category_id = None
 
-    memories = get_memories(options)
+    if search_term:
+        memories = search_memories(
+            search_term,
+            options,
+        )
+    else:
+        memories = get_memories(options)
     memory_categories = get_memory_categories()
 
     category_by_id = {
@@ -406,15 +424,16 @@ def memories():
             ),
             None,
         )
-
     return render_template(
         "memories.html",
         memories=memories,
         memory_categories=memory_categories,
         memory_category_id=options["memory_category_id"],
         include_archived=include_archived,
+        search_term=search_term,
         selected_memory=selected_memory,
         edit_id=edit_id,
+        preview_lines=preview_lines,
     )
 
 @app.patch("/memories/<int:memory_id>/category")
@@ -534,6 +553,10 @@ def archive_memory_web():
     """Archive a memory from the web interface."""
 
     memory_id = request.form.get("memory_id")
+    preview_lines = request.form.get("preview_lines", "10")
+    memory_category_id = request.form.get("memory_category")
+    include_archived = request.form.get("archived") == "on"
+    search_term = request.form.get("search", "").strip()
 
     if memory_id:
         archive_memory(int(memory_id))
@@ -542,6 +565,10 @@ def archive_memory_web():
         url_for(
             "memories",
             selected=memory_id,
+            memory_category=memory_category_id or None,
+            archived="on" if include_archived else None,
+            search=search_term or None,
+            preview_lines=preview_lines,
         )
     )
 
@@ -550,6 +577,10 @@ def restore_memory_web():
     """Restore a memory from the web interface."""
 
     memory_id = request.form.get("memory_id")
+    preview_lines = request.form.get("preview_lines", "10")
+    memory_category_id = request.form.get("memory_category")
+    include_archived = request.form.get("archived") == "on"
+    search_term = request.form.get("search", "").strip()
 
     if memory_id:
         restore_memory(int(memory_id))
@@ -558,6 +589,10 @@ def restore_memory_web():
         url_for(
             "memories",
             selected=memory_id,
+            memory_category=memory_category_id or None,
+            archived="on" if include_archived else None,
+            search=search_term or None,
+            preview_lines=preview_lines,
         )
     )
 
@@ -566,12 +601,23 @@ def delete_memory_web():
     """Delete a memory from the web interface."""
 
     memory_id = request.form.get("memory_id")
+    preview_lines = request.form.get("preview_lines", "10")
+    memory_category_id = request.form.get("memory_category")
+    include_archived = request.form.get("archived") == "on"
+    search_term = request.form.get("search", "").strip()
 
     if memory_id:
         delete_memory(int(memory_id))
 
     return redirect(
-        url_for("memories")
+        url_for(
+            "memories",
+            selected=memory_id,
+            memory_category=memory_category_id or None,
+            archived="on" if include_archived else None,
+            search=search_term or None,
+            preview_lines=preview_lines,
+        )
     )
 
 @app.route("/calc", methods=["GET", "POST"])

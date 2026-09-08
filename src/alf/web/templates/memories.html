@@ -80,15 +80,123 @@
         .memories-filter {
             display: flex;
             align-items: center;
-            margin-bottom: 18px;
+            gap: 8px;
+            margin-bottom: 10px;
             color: #aebdca;
             font-size: 0.9rem;
         }
 
-        .memories-filter input {
+        .memories-filter input[type="search"] {
+            width: 240px;
+            height: 32px;
+            padding: 5px 9px;
+            border: 1px solid #46596b;
+            border-radius: 6px;
+            background: #25313e;
+            color: #edf1f3;
+            font: inherit;
+            box-sizing: border-box;
+        }
+
+        .memories-filter input[type="search"]:focus {
+            outline: none;
+            border-color: #6d8ca8;
+        }
+
+        .memories-filter select {
+            height: 32px;
+            padding: 5px 28px 5px 9px;
+            border: 1px solid #46596b;
+            border-radius: 6px;
+            background: #25313e;
+            color: #edf1f3;
+            font: inherit;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .memories-filter select:focus {
+            outline: none;
+            border-color: #6d8ca8;
+        }
+
+        .memories-filter input[type="checkbox"] {
+            appearance: none;
             width: 16px;
             height: 16px;
-            margin: 0 8px 0 0;
+            margin: 0;
+            border: 1px solid #596d80;
+            border-radius: 4px;
+            background: #25313e;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .memories-filter input[type="checkbox"]:checked {
+            background: #5f7f9c;
+            border-color: #6d8ca8;
+        }
+
+        .memories-filter input[type="checkbox"]:checked::after {
+            content: "✓";
+            display: block;
+            color: #edf1f3;
+            font-size: 12px;
+            line-height: 14px;
+            text-align: center;
+        }
+
+        .memories-filter input[type="checkbox"]:focus-visible {
+            outline: 2px solid #6d8ca8;
+            outline-offset: 2px;
+        }
+
+        .memory-expand,
+        .memory-rollup {
+            margin-top: 8px;
+            padding: 4px 9px;
+            border: 1px solid #46596b;
+            border-radius: 5px;
+            background: #25313e;
+            color: #aebdca;
+            font: inherit;
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
+
+        .memory-expand:hover,
+        .memory-rollup:hover {
+            background: #34495a;
+            color: #edf1f3;
+            border-color: #596d80;
+        }
+
+        .memory-expand:focus-visible,
+        .memory-rollup:focus-visible {
+            outline: 2px solid #6d8ca8;
+            outline-offset: 2px;
+        }
+
+        .memories-filter + button[type="submit"] {
+            padding: 5px 12px;
+            border: 1px solid #46596b;
+            border-radius: 6px;
+            background: #25313e;
+            color: #aebdca;
+            font: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .memories-filter + button[type="submit"]:hover {
+            background: #34495a;
+            color: #edf1f3;
+            border-color: #596d80;
+        }
+
+        .memories-filter + button[type="submit"]:focus-visible {
+            outline: 2px solid #6d8ca8;
+            outline-offset: 2px;
         }
 
         .memory-list {
@@ -148,6 +256,20 @@
 
         .memory-taxonomy-header a {
             flex: 1;
+        }
+
+        .memory-category-collapse {
+            width: 22px;
+            padding: 3px 0;
+            border: 0;
+            background: transparent;
+            color: #aebdca;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .memory-category-collapse:hover {
+            color: #edf1f3;
         }
 
         .memory-category-menu {
@@ -388,7 +510,9 @@
                     href="{{ url_for(
                         'memories',
                         memory_category=category.id,
-                        archived='on' if include_archived else None
+                        archived='on' if include_archived else None,
+                        search=search_term or None,
+                        preview_lines=preview_lines
                     ) }}"
                     class="{% if memory_category_id == category.id %}selected{% endif %}"
                 >
@@ -435,7 +559,9 @@
                             <a
                                 href="{{ url_for(
                                     'memories',
-                                    archived='on' if include_archived else None
+                                    archived='on' if include_archived else None,
+                                    search=search_term or None,
+                                    preview_lines=preview_lines
                                 ) }}"
                                 class="{% if memory_category_id is none %}selected{% endif %}"
                             >
@@ -452,9 +578,8 @@
                     >
                         ＋ New category
                     </button>
-
                 </nav>
-                                <form method="get">
+                <form method="get">
                     {% if memory_category_id is not none %}
                         <input
                             type="hidden"
@@ -464,34 +589,98 @@
                     {% endif %}
 
                     <label class="memories-filter">
+                        Search
+                        <input
+                            type="search"
+                            name="search"
+                            value="{{ search_term }}"
+                            placeholder="Search memories"
+                        >
+                    </label>
+
+                    <label class="memories-filter">
+                        Preview lines
+                        <select name="preview_lines">
+                            {% for lines in [2, 5, 10, 15] %}
+                                <option
+                                    value="{{ lines }}"
+                                    {% if preview_lines == lines %}selected{% endif %}
+                                >
+                                    {{ lines }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    <label class="memories-filter">
+                        <input
+                            type="checkbox"
+                            name="archived"
+                            {% if include_archived %}checked{% endif %}
+                        >
+                        Include archived
+                    </label>
+
+                    <button type="submit">Filter</button>
                 </form>
 
                 <div class="memory-list">
                     {% for memory in memories %}
-                        <a
+                        <div
                             class="memory{% if memory.status != 'active' %} memory-archived{% endif %}"
                             draggable="true"
                             data-memory-id="{{ memory.id }}"
-                            href="{{ url_for(
-                                'memories',
-                                memory_category=memory_category_id,
-                                archived='on' if include_archived else None,
-                                selected=memory.id
-                            ) }}"
                         >
-                            <span class="memory-id">{{ memory.id }}</span>
-                            <span class="memory-category">
-                                {{ memory.category }}
-                                {% if memory.status != "active" %}
-                                    *
+                            <a
+                                class="memory-select"
+                                href="{{ url_for(
+                                    'memories',
+                                    memory_category=memory_category_id,
+                                    archived='on' if include_archived else None,
+                                    search=search_term or None,
+                                    selected=memory.id,
+                                    preview_lines=preview_lines
+                                ) }}"
+                            >
+                                <span class="memory-id">{{ memory.id }}</span>
+                                <span class="memory-category">
+                                    {{ memory.category }}
+                                    {% if memory.status != "active" %}
+                                        *
+                                    {% endif %}
+                                </span>
+                                <span class="memory-taxonomy-tag">
+                                    {{ memory.memory_category_path }}
+                                </span>
+                            </a>
+
+                            <div class="memory-content">
+                                <div class="memory-preview">
+                                    {{ memory.content.split('\n')[:preview_lines|int] | join('\n') }}
+                                </div>
+
+                                {% if memory.content.split('\n') | length > preview_lines|int %}
+                                    <div class="memory-full" hidden>
+                                        {{ memory.content }}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        class="memory-expand"
+                                    >
+                                        Expand
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="memory-rollup"
+                                        hidden
+                                    >
+                                        Roll up
+                                    </button>
                                 {% endif %}
-                            </span>
-                            <span class="memory-taxonomy-tag">
-                                {{ memory.memory_category_path }}
-                            </span>                            <div class="memory-content">
-                                {{ memory.content }}
                             </div>
-                        </a>
+                        </div>
                     {% else %}
                         <div class="empty">No memories to display.</div>
                     {% endfor %}
@@ -517,7 +706,11 @@
                                 name="memory_id"
                                 value="{{ selected_memory.id }}"
                             >
-
+                            <input
+                                type="hidden"
+                                name="search"
+                                value="{{ search_term }}"
+                            >
                             <textarea
                                 name="content"
                                 id="memory-editor"
@@ -558,7 +751,14 @@
                                 </button>
 
                                 <a
-                                    href="{{ url_for('memories', selected=selected_memory.id) }}"
+                                    href="{{ url_for(
+                                        'memories',
+                                        selected=selected_memory.id,
+                                        memory_category=memory_category_id,
+                                        archived='on' if include_archived else None,
+                                        search=search_term or None,
+                                        preview_lines=preview_lines
+                                    ) }}"
                                 >
                                     Cancel
                                 </a>
@@ -569,7 +769,15 @@
 
                         <div class="memory-actions">
                             <a
-                                href="{{ url_for('memories', selected=selected_memory.id, edit=selected_memory.id) }}"
+                                href="{{ url_for(
+                                    'memories',
+                                    selected=selected_memory.id,
+                                    edit=selected_memory.id,
+                                    memory_category=memory_category_id,
+                                    archived='on' if include_archived else None,
+                                    search=search_term or None,
+                                    preview_lines=preview_lines
+                                ) }}"
                             >
                                 Edit
                             </a>
@@ -585,7 +793,28 @@
                                     value="{{ selected_memory.id }}"
                                 >
 
-                                <button type="submit">
+                        <input
+                            type="hidden"
+                            name="preview_lines"
+                            value="{{ preview_lines }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="memory_category"
+                            value="{{ memory_category_id }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="archived"
+                            value="{{ 'on' if include_archived else '' }}"
+                        >
+                        <input
+                            type="hidden"
+                            name="search"
+                            value="{{ search_term }}"
+                        >
+
+                        <button type="submit">
                                     {% if selected_memory.status == "archived" %}
                                         Restore
                                     {% else %}
@@ -600,8 +829,28 @@
                                         name="memory_id"
                                         value="{{ selected_memory.id }}"
                                     >
+                            <input
+                                type="hidden"
+                                name="preview_lines"
+                                value="{{ preview_lines }}"
+                            >
+                            <input
+                                type="hidden"
+                                name="memory_category"
+                                value="{{ memory_category_id }}"
+                            >
+                            <input
+                                type="hidden"
+                                name="archived"
+                                value="{{ 'on' if include_archived else '' }}"
+                            >
+                            <input
+                                type="hidden"
+                                name="search"
+                                value="{{ search_term }}"
+                            >
 
-                                    <button type="submit">
+                            <button type="submit">
                                         Restore
                                     </button>
                                 </form>
@@ -616,6 +865,26 @@
                                     type="hidden"
                                     name="memory_id"
                                     value="{{ selected_memory.id }}"
+                                >
+                                <input
+                                    type="hidden"
+                                    name="preview_lines"
+                                    value="{{ preview_lines }}"
+                                >
+                                <input
+                                    type="hidden"
+                                    name="memory_category"
+                                    value="{{ memory_category_id }}"
+                                >
+                                <input
+                                    type="hidden"
+                                    name="archived"
+                                    value="{{ 'on' if include_archived else '' }}"
+                                >
+                                <input
+                                    type="hidden"
+                                    name="search"
+                                    value="{{ search_term }}"
                                 >
 
                                 <button type="submit">
