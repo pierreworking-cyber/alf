@@ -256,31 +256,5 @@ commands = {
             "alf tui",
         ],
     },
-    "web": {
-        "id": "interface.web",
-        "help": "Launch the ALF web interface.",
-        "usage": "alf web",
-        "examples": [
-            "alf web",
-        ],
-    },
-    "news": {
-        "id": "news.manage",
-        "help": "Manage ALF's subscribed news subjects.",
-        "usage": "alf news <command> [arguments]",
-        "notes": [
-            "Commands: add, refresh, list, query, status",
-            "The news service is provided by Miniflux.",
-            "For news add, the first argument is the subject name.",
-        ],
-        "examples": [
-            'alf news add "World News" "https://feeds.bbci.co.uk/news/world/rss.xml"',
-            'alf news refresh',
-            'alf news refresh "Ukraine"',
-            'alf news list',
-            'alf news list "Ukraine" --days 7',
-            'alf news query "Ukraine" --days 7 --limit 10',
-            'alf news status',
-        ],
-    },
+
 }

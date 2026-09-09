@@ -59,43 +59,17 @@ def create_tables(connection):
     )
 
 
-def migrate_from_v7(connection):
-    """Migrate the memory database from schema version 7 to 8."""
-
-    create_tables(connection)
-
-    columns = connection.execute(
-        "PRAGMA table_info(memories)"
-    ).fetchall()
-
-    column_names = {column[1] for column in columns}
-
-    if "memory_category_id" not in column_names:
-        connection.execute(
-            """
-            ALTER TABLE memories
-            ADD COLUMN memory_category_id INTEGER
-            REFERENCES memory_categories(id)
-            """
-        )
-
-
-def create_memory_category(name: str, parent_id=None):
-    """
-    Create a new memory category.
-
-    Category names must be unique among siblings. A category's position
-    is assigned after the existing siblings.
+def create_memory_category(name, parent_id=None):
+    """Create a memory category.
 
     Returns:
-        The ID of the new category, or ``"duplicate"`` when the name is
+        The new category ID, or ``"duplicate"`` when the name is
         already used by a sibling.
     """
-
     with _get_connection() as connection:
         duplicate = connection.execute(
             """
-            SELECT id
+            SELECT 1
             FROM memory_categories
             WHERE COALESCE(parent_id, 0) = COALESCE(?, 0)
               AND name = ?

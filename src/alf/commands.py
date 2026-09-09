@@ -30,23 +30,6 @@ from .memory import (
     remember,
     search_memories,
 )
-from .miniflux import MinifluxError
-from .news import (
-    NEWS_QUERY_LIMIT,
-    NewsError,
-    NewsQuery,
-    add_subject,
-    get_news_config,
-    get_news_status,
-    list_subjects,
-    query_items,
-    refresh,
-)
-from .news_intent import (
-    MAX_WINDOW_DAYS,
-    NEWS_DEFAULT_WINDOW_DAYS,
-    topic_terms,
-)
 from .presentation import (
     error,
     render_about,
@@ -72,12 +55,6 @@ from .presentation import (
     render_memory_related,
     render_memory_saved,
     render_memory_usage,
-    render_news_error,
-    render_news_query,
-    render_news_refreshed,
-    render_news_status,
-    render_news_subject_added,
-    render_news_subjects,
     render_question,
     render_status,
     render_version,
@@ -670,247 +647,8 @@ def question_command(*arguments):
     )
 
 
-def news_command(*arguments):
-    """
-    Handle the ``news`` command.
-
-    Routes the first argument to the requested news subcommand and
-    validates the subcommand's arguments before invoking ALF's news
-    data layer.
-
-    Args:
-        *arguments: Command-line arguments supplied after ``news``.
-    """
-
-    if not arguments:
-        render_command_help("news", commands["news"])
-        return
-
-    subcommand = arguments[0]
-
-    handlers = {
-        "add": news_add_command,
-        "refresh": news_refresh_command,
-        "list": news_list_command,
-        "query": news_query_command,
-        "status": news_status_command,
-    }
-
-    handler = handlers.get(subcommand)
-
-    if handler is None:
-        render_command_structure_error("news")
-        return
-
-    handler(*arguments[1:])
-
-
-def news_add_command(*arguments):
-    """
-    Handle the ``news add`` subcommand.
-
-    Registers a news subject and its feed subscriptions.
-    """
-
-    if len(arguments) < 2:
-        render_command_structure_error("news")
-        return
-
-    for argument in arguments:
-        if argument.startswith("-"):
-            render_command_structure_error("news")
-            return
-
-    subject = arguments[0]
-    feed_urls = arguments[1:]
-
-    try:
-        result = add_subject(subject, feed_urls)
-    except (MinifluxError, NewsError) as exc:
-        render_news_error(str(exc))
-        return
-
-    render_news_subject_added(result)
-
-
-def news_refresh_command(*arguments):
-    """
-    Handle the ``news refresh`` subcommand.
-
-    Refreshes the stored feeds, optionally restricted to a subject.
-    """
-
-    if len(arguments) > 1:
-        render_command_structure_error("news")
-        return
-
-    subject = arguments[0] if arguments else None
-
-    try:
-        result = refresh(subject)
-    except (MinifluxError, NewsError) as exc:
-        render_news_error(str(exc))
-        return
-
-    render_news_refreshed(result)
-
-
-def news_list_command(*arguments):
-    """
-    Handle the ``news list`` subcommand.
-
-    Refreshes all stored news feeds and displays the stored subjects with
-    their feed counts, item counts, and the number of new items obtained
-    by the refresh.
-    """
-
-    if arguments:
-        render_command_structure_error("news")
-        return
-
-    if get_news_config() is None:
-        render_news_error("News is not configured. Run `alf news init`.")
-        return
-
-    try:
-        result = refresh()
-    except (MinifluxError, NewsError) as exc:
-        render_news_error(str(exc))
-        return
-
-    subjects = list_subjects()
-    render_news_subjects(subjects, result)
-
-
-def news_query_command(*arguments):
-    """
-    Handle the ``news query`` subcommand.
-
-    Retrieves stored news items matching the query text, optionally
-    restricted to a number of days back and a result limit.
-    """
-
-    days = None
-    limit = None
-    positional_arguments = []
-    index = 0
-
-    while index < len(arguments):
-        argument = arguments[index]
-
-        if argument in ("-d", "--days"):
-            if days is not None or index + 1 >= len(arguments):
-                render_command_structure_error("news")
-                return
-
-            try:
-                days = int(arguments[index + 1])
-            except ValueError:
-                render_command_structure_error("news")
-                return
-
-            if days <= 0 or days > MAX_WINDOW_DAYS:
-                render_command_structure_error("news")
-                return
-
-            index += 2
-            continue
-
-        if argument == "--limit":
-            if limit is not None or index + 1 >= len(arguments):
-                render_command_structure_error("news")
-                return
-
-            try:
-                limit = int(arguments[index + 1])
-            except ValueError:
-                render_command_structure_error("news")
-                return
-
-            if not 1 <= limit <= 100:
-                render_command_structure_error("news")
-                return
-
-            index += 2
-            continue
-
-        if argument.startswith("-"):
-            render_command_structure_error("news")
-            return
-
-        positional_arguments.append(argument)
-        index += 1
-
-    if not positional_arguments or len(positional_arguments) > 2:
-        render_command_structure_error("news")
-        return
-
-    if len(positional_arguments) == 1:
-        subject = None
-        search_text = positional_arguments[0]
-    else:
-        subject = positional_arguments[0]
-        search_text = positional_arguments[1]
-
-    topics = topic_terms(search_text)
-
-    if not topics:
-        render_command_structure_error("news")
-        return
-
-    if get_news_config() is None:
-        render_news_error("News is not configured. Run `alf news init`.")
-        return
-
-    try:
-        refresh()
-    except (MinifluxError, NewsError) as exc:
-        render_news_error(str(exc))
-        return
-
-    now = datetime.now(UTC)
-    start = now - timedelta(days=days or NEWS_DEFAULT_WINDOW_DAYS)
-
-    query = NewsQuery(
-        topics=topics,
-        subject=subject,
-        start=start,
-        end=now,
-        limit=limit or NEWS_QUERY_LIMIT,
-    )
-
-    try:
-        items = query_items(query)
-    except NewsError as exc:
-        render_news_error(str(exc))
-        return
-
-    render_news_query(items, query)
-
-
-def news_status_command(*arguments):
-    """
-    Handle the ``news status`` subcommand.
-
-    Reports the reachability of the news service and the amount of
-    stored news data.
-    """
-
-    if arguments:
-        render_command_structure_error("news")
-        return
-
-    render_news_status(get_news_status())
-
-
 def tui_command():
     from .tui import main
-
-    main()
-
-
-def web_command():
-    from .web import main
 
     main()
 
@@ -946,9 +684,7 @@ command_handlers = {
     "calc": calc_command,
     "search": search_command,
     "question": question_command,
-    "news": news_command,
     "tui": tui_command,
-    "web": web_command,
 }
 
 

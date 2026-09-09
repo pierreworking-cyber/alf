@@ -11,20 +11,12 @@ It also manages relationships between memories and their revision
 history. Presentation and command-handling concerns remain outside
 this module; its responsibility is to provide the underlying memory
 data and memory-system information to the rest of ALF.
-
-Mind map storage and category management live in ``alf.mind_maps``,
-which shares this module's memory database through ``get_connection``.
-The mind map API is re-exported here for compatibility.
-
-News subject storage lives in ``alf.news``, which shares the same
-database and schema ladder. Its API is also re-exported here for
-compatibility.
 """
 
 import sqlite3
 from datetime import datetime
 
-from . import memory_categories, mind_maps, news
+from . import memory_categories
 from .memory_categories import (  # noqa: F401
     create_memory_category,
     delete_memory_category,
@@ -32,37 +24,12 @@ from .memory_categories import (  # noqa: F401
     get_memory_category,
     update_memory_category,
 )
-from .mind_maps import (  # noqa: F401
-    create_mindmap,
-    create_mindmap_category,
-    delete_mindmap,
-    delete_mindmap_category,
-    get_mindmap,
-    get_mindmap_categories,
-    get_mindmaps,
-    move_mindmap,
-    move_mindmap_category,
-    update_mindmap,
-    update_mindmap_category,
-)
-from .news import (  # noqa: F401
-    NewsError,
-    add_subject,
-    get_client,
-    get_news_config,
-    get_news_information,
-    get_news_status,
-    initialise,
-    list_items,
-    query_items,
-    refresh,
-)
 from .paths import get_data_directory
+
 
 DATABASE = get_data_directory() / "alf.db"
 
-
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 1
 
 VALID_MEMORY_TYPES = [
     "note",
@@ -82,7 +49,6 @@ def initialise_database(connection):
     Args:
         connection: An open SQLite database connection.
     """
-
     cursor = connection.cursor()
 
     version = connection.execute(
@@ -115,32 +81,35 @@ def initialise_database(connection):
         """
     )
 
-    if version < 2:
-        cursor.execute(
+    memory_categories.create_tables(connection)
+
+    columns = {
+        column[1]
+        for column in connection.execute(
+            "PRAGMA table_info(memories)"
+        ).fetchall()
+    }
+
+    if "memory_category_id" not in columns:
+        connection.execute(
             """
-            INSERT INTO memory_fts (rowid, content)
-            SELECT id, content
-            FROM memories
+            ALTER TABLE memories
+            ADD COLUMN memory_category_id INTEGER
+            REFERENCES memory_categories(id)
             """
         )
 
-    mind_maps.create_tables(connection)
-    news.create_tables(connection)
-    memory_categories.create_tables(connection)
+    if version == 0:
+        connection.execute(
+            """
+            INSERT INTO memory_fts (memory_fts)
+            VALUES ('rebuild')
+            """
+        )
 
-    if version == 4:
-        mind_maps.migrate_from_v4(connection)
-        version = 5
-
-    if version == 5:
-        mind_maps.migrate_position_v5(connection)
-        version = 7
-
-    if version < 8:
-        memory_categories.migrate_from_v7(connection)
-        version = 8
-
-    connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+    connection.execute(
+        f"PRAGMA user_version = {SCHEMA_VERSION}"
+    )
     connection.commit()
 
 
@@ -153,7 +122,6 @@ def get_connection():
     Returns:
         An initialised SQLite database connection.
     """
-
     DATABASE.parent.mkdir(parents=True, exist_ok=True)
 
     connection = sqlite3.connect(DATABASE)

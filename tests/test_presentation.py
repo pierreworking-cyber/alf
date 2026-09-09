@@ -111,42 +111,6 @@ def test_render_question_without_source(capsys):
     assert "Source:" not in output
 
 
-def test_render_question_omits_news_sources_when_absent(capsys):
-    presentation.render_question(
-        "Ukraine's economy grew strongly last week.",
-        "news",
-    )
-
-    output = capsys.readouterr().out
-
-    assert "Ukraine's economy grew strongly last week." in output
-    assert "Sources" not in output
-
-
-def test_render_news_source_without_date_or_label(capsys):
-    presentation.render_news_source(
-        {
-            "id": 1,
-            "subject": "Ukraine",
-            "feed_title": "",
-            "title": "Ukraine economy shows strong growth",
-            "url": "https://feeds.example/n/1",
-            "summary": "",
-            "published_at": None,
-            "first_seen_at": "2026-08-27T10:01:00",
-            "matched_terms": ["economy"],
-            "content": None,
-        },
-        1,
-    )
-
-    output = capsys.readouterr().out
-
-    assert "[1] Ukraine" in output
-    assert "Ukraine economy shows strong growth" in output
-    assert "https://feeds.example/n/1" in output
-
-
 def test_render_ambiguous_command(capsys):
     presentation.render_ambiguous_command(
         "memor",
@@ -157,6 +121,7 @@ def test_render_ambiguous_command(capsys):
 
     assert "Ambiguous command: memor" in output
     assert "Similar options: alf memories, alf memory" in output
+
 
 def test_render_health_handles_commands_module_failure(capsys):
     report = {
