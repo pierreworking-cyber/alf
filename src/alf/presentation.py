@@ -303,44 +303,20 @@ def render_grouped_memories(memories):
 def render_question(
     answer,
     source=None,
-    interpretation=None,
-    news_items=None,
 ):
     """
     Render ALF's answer to a question.
 
-    When a news answer is rendered, its evidence items are listed as
-    numbered sources after the answer.
-
     Args:
         answer: The answer text to display.
-        source: The source supporting the answer, or ``None``.
-        interpretation: The interpreted question, when it differs from
-            the answer text.
-        news_items: The news item dictionaries supporting a news answer,
-            or ``None``.
+        source: The source used to produce the answer, or ``None``.
     """
 
     console.print()
-
-    if interpretation and interpretation != answer:
-        console.print(
-            f"Question interpreted as: {interpretation}",
-            markup=False,
-        )
-        console.print()
-
     console.print(answer, markup=False)
 
     if source:
         console.print(f"Source: {source.title()}")
-
-    if news_items:
-        console.print()
-        section("Sources")
-
-        for index, item in enumerate(news_items, start=1):
-            render_news_source(item, index)
 
     console.print()
 

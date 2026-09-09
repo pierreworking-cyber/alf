@@ -100,35 +100,6 @@ def test_render_question_includes_source(capsys):
     assert "Source: Web" in output
 
 
-def test_render_question_includes_interpretation_when_different(capsys):
-    presentation.render_question(
-        "Trailing commas are allowed in Python.",
-        "web",
-        "Why are trailing commas allowed in Python?",
-    )
-
-    output = capsys.readouterr().out
-
-    assert (
-        "Question interpreted as: "
-        "Why are trailing commas allowed in Python?"
-    ) in output
-    assert "Trailing commas are allowed in Python." in output
-
-
-def test_render_question_omits_interpretation_when_unchanged(capsys):
-    presentation.render_question(
-        "What are microbes?",
-        "web",
-        "What are microbes?",
-    )
-
-    output = capsys.readouterr().out
-
-    assert "Question interpreted as:" not in output
-    assert "What are microbes?" in output
-
-
 def test_render_question_without_source(capsys):
     presentation.render_question(
         "I couldn't find reliable research.",
@@ -138,54 +109,6 @@ def test_render_question_without_source(capsys):
 
     assert "I couldn't find reliable research." in output
     assert "Source:" not in output
-
-
-def test_render_question_includes_news_sources(capsys):
-    news_items = [
-        {
-            "id": 1,
-            "subject": "Ukraine",
-            "feed_title": "https://feeds.example/ukraine.rss",
-            "title": "Ukraine economy shows strong growth",
-            "url": "https://feeds.example/n/1",
-            "summary": "",
-            "published_at": "2026-08-27T10:00:00Z",
-            "first_seen_at": "2026-08-27T10:01:00",
-            "matched_terms": ["economy"],
-            "content": None,
-        },
-        {
-            "id": 2,
-            "subject": "Ukraine",
-            "feed_title": "https://feeds.example/ukraine.rss",
-            "title": "Ukraine plans a redesign",
-            "url": "https://feeds.example/n/2",
-            "summary": "",
-            "published_at": "2026-08-27T10:00:00Z",
-            "first_seen_at": "2026-08-27T10:01:00",
-            "matched_terms": ["economy", "redesign"],
-            "content": None,
-        },
-    ]
-
-    presentation.render_question(
-        "Ukraine's economy grew strongly last week [1]. "
-        "A redesign is planned [2].",
-        "news",
-        news_items=news_items,
-    )
-
-    output = capsys.readouterr().out
-
-    assert "Ukraine's economy grew strongly last week [1]." in output
-    assert "Source: News" in output
-    assert "Sources" in output
-    assert "[1] Ukraine · 27-Aug-2026 10:00 (Example)" in output
-    assert "Ukraine economy shows strong growth" in output
-    assert "https://feeds.example/n/1" in output
-    assert "[2] Ukraine · 27-Aug-2026 10:00 (Example)" in output
-    assert "Ukraine plans a redesign" in output
-    assert "https://feeds.example/n/2" in output
 
 
 def test_render_question_omits_news_sources_when_absent(capsys):

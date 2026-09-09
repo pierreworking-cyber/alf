@@ -3,8 +3,8 @@ Language-model interface for ALF.
 
 This module provides the boundary between ALF and the local Ollama
 service. It sends prompts to the configured model, builds answer
-requests using ALF's personality and supplied evidence, evaluates
-research candidates, and checks model availability.
+requests using ALF's personality and supplied evidence, and checks
+model availability.
 
 The language model is treated as an interpreter of prompts and evidence;
 it is not treated as an independent source of trusted knowledge.
@@ -128,99 +128,6 @@ Answer style:
 """
 
     return generate(prompt)
-
-
-def evaluate_research(question, candidates):
-    """
-    Evaluate whether supplied research is relevant to a question.
-
-    The configured language model examines the supplied research candidates
-    and identifies which candidates genuinely support answering the
-    question. The model is instructed not to treat superficial word
-    overlap as evidence of relevance.
-
-    Args:
-        question: The question the research should answer.
-        candidates: Research candidates containing ``title`` and ``text``.
-
-    Returns:
-        A dictionary containing the relevance decision, relevant
-        candidate numbers, and a brief explanation.
-
-    Raises:
-        ValueError: If the language model does not return valid JSON.
-    """
-
-    research_text = "\n\n".join(
-        f"Candidate {index + 1}: {candidate['title']}\n{candidate['text']}"
-        for index, candidate in enumerate(candidates)
-    )
-
-    prompt = f"""
-You are evaluating web research for ALF.
-
-The user has asked a factual question. The numbered candidates below
-were returned by a web search.
-
-Determine whether any candidate contains information that can actually
-support an answer to the question.
-
-A candidate is relevant only if its content provides evidence about the
-specific subject, claim, person, event, object, date, or relationship
-asked about.
-
-Do not consider a candidate relevant merely because:
-- it contains similar words;
-- it discusses a related subject;
-- its title sounds promising;
-- it could lead to an answer if combined with your own knowledge.
-
-Do not use your own knowledge to fill gaps in the candidates.
-
-If one or more candidates genuinely support an answer, return those
-candidate numbers.
-
-If none supports an answer, return an empty candidates list.
-
-Return JSON only:
-
-{{
-    "relevant": true,
-    "candidates": [1],
-    "reason": "brief explanation"
-}}
-
-or:
-
-{{
-    "relevant": false,
-    "candidates": [],
-    "reason": "brief explanation"
-}}
-
-User's question:
-{question}
-
-Web research candidates:
-
-{research_text}
-"""
-
-    response = generate(prompt).strip()
-
-    if response.startswith("```json") and response.endswith("```"):
-        response = response[7:-3].strip()
-
-    try:
-        evaluation = json.loads(response)
-    except (json.JSONDecodeError, TypeError, KeyError) as error:
-        raise ValueError("Invalid research evaluation response") from error
-
-    return {
-        "relevant": evaluation.get("relevant", False),
-        "candidates": evaluation.get("candidates", []),
-        "reason": evaluation.get("reason", ""),
-    }
 
 
 def check_ollama():

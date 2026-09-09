@@ -209,6 +209,3 @@ class QuestionTUI(Vertical):
 
         elif event.button.id == "answer-ok":
             self.clear_question()
-
-        elif event.button.id == "answer-ok":
-            self.clear_question()
