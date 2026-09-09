@@ -1,5 +1,5 @@
 """
-Local language-model interface for ALF.
+Language-model interface for ALF.
 
 This module provides the boundary between ALF and the local Ollama
 service. It sends prompts to the configured model, builds answer
@@ -22,7 +22,7 @@ OLLAMA_MODEL = "gemma4:31b-cloud"
 
 def generate(prompt):
     """
-    Send a prompt to ALF's configured local language model.
+    Send a prompt to ALF's configured language model.
 
     This is the low-level Ollama interface used by the higher-level
     functions in this module.
@@ -56,7 +56,7 @@ def generate(prompt):
 
 def ask(answer_request):
     """
-    Ask the local language model to produce an answer for ALF.
+    Ask the configured language model to produce an answer for ALF.
 
     The request combines the user's original question with any evidence
     supplied by ALF and selects either a concise or detailed answer style.
@@ -134,7 +134,7 @@ def evaluate_research(question, candidates):
     """
     Evaluate whether supplied research is relevant to a question.
 
-    The local language model examines the supplied research candidates
+    The configured language model examines the supplied research candidates
     and identifies which candidates genuinely support answering the
     question. The model is instructed not to treat superficial word
     overlap as evidence of relevance.

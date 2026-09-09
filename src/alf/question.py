@@ -52,7 +52,7 @@ def answer_question(
     """Process a user question and return the resulting answer.
 
     Questions are first routed to determine whether they can be answered
-    directly by the local language model or require research. Research
+    directly by the language model or require research. Research
     questions are interpreted and searched on the web.
 
     Only evidence judged relevant by the research evaluator is passed to
@@ -78,7 +78,7 @@ def answer_question(
     selected_route = route(original_question)
 
     if selected_route == Route.LLM:
-        report("Asking local language model…")
+        report("Asking language model…")
 
         answer = prepare_answer(
             original_question,
@@ -97,7 +97,7 @@ def answer_question(
 
         system_information = get_system_information()
 
-        report("Asking local language model…")
+        report("Asking language model…")
 
         answer = prepare_answer(
             original_question,
@@ -118,7 +118,7 @@ def answer_question(
         memories = find_relevant_memories(original_question)
 
         if memories:
-            report("Asking local language model…")
+            report("Asking language model…")
 
             answer = prepare_answer(
                 original_question,
@@ -169,7 +169,7 @@ def answer_question(
         ]
 
         if relevant_candidates:
-            report("Asking local language model…")
+            report("Asking language model…")
 
             answer = prepare_answer(
                 original_question,
