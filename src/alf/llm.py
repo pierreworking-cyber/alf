@@ -17,7 +17,7 @@ from .personality import ALF_PERSONALITY
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 OLLAMA_TAGS_URL = "http://127.0.0.1:11434/api/tags"
-OLLAMA_MODEL = "gemma3:12b"
+OLLAMA_MODEL = "gemma4:31b-cloud"
 
 
 def generate(prompt):
