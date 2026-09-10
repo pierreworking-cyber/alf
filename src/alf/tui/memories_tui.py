@@ -5,6 +5,7 @@ from textual.screen import ModalScreen
 from textual.widgets import (
     Button,
     Checkbox,
+    Input,
     Label,
     ListItem,
     ListView,
@@ -17,7 +18,9 @@ from alf.memory import (
     delete_memory,
     get_memories,
     get_memory,
+    relate_memory,
     restore_memory,
+    search_memories,
     update_memory,
 )
 
@@ -89,6 +92,154 @@ class DeleteMemoryConfirm(ModalScreen):
         self.dismiss(False)
 
 
+class SearchMemoriesModal(ModalScreen):
+    """Enter a search term for memories."""
+
+    CSS = """
+    SearchMemoriesModal {
+        align: center middle;
+    }
+
+    #memory-search {
+        width: 70;
+        height: auto;
+        padding: 1 2;
+        border: thick $accent;
+        background: $surface;
+    }
+
+    #memory-search-buttons {
+        width: 100%;
+        height: 3;
+        align: center middle;
+    }
+
+    #memory-search-buttons Button {
+        width: 20;
+        margin: 0 1;
+    }
+
+    #memory-search-input {
+        width: 100%;
+        margin: 1 0;
+    }
+    """
+
+    BINDINGS = [
+        ("escape", "cancel_search", "Cancel"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="memory-search"):
+            yield Label("Search memories")
+            yield Input(
+                placeholder="Enter search term",
+                id="memory-search-input",
+            )
+            with Horizontal(id="memory-search-buttons"):
+                yield Button("All memories", id="memory-search-all")
+                yield Button("Cancel", id="memory-search-cancel")
+
+    def on_mount(self) -> None:
+        self.query_one("#memory-search-input", Input).focus()
+
+    def action_cancel_search(self) -> None:
+        self.dismiss(None)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        term = event.value.strip()
+
+        if term:
+            self.dismiss(term)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "memory-search-all":
+            self.dismiss("")
+        elif event.button.id == "memory-search-cancel":
+            self.dismiss(None)
+
+class RelateMemoryModal(ModalScreen):
+    """Enter the ID of a memory to relate to the selected memory."""
+
+    CSS = """
+    RelateMemoryModal {
+        align: center middle;
+    }
+
+    #memory-relate {
+        width: 70;
+        height: auto;
+        padding: 1 2;
+        border: thick $accent;
+        background: $surface;
+    }
+
+    #memory-relate-input {
+        width: 100%;
+        margin: 1 0;
+    }
+
+    #memory-relate-buttons {
+        width: 100%;
+        height: 3;
+        align: center middle;
+    }
+
+    #memory-relate-buttons Button {
+        width: 20;
+        margin: 0 1;
+    }
+    """
+
+    BINDINGS = [
+        ("escape", "cancel_relate", "Cancel"),
+    ]
+
+    def __init__(self, memory_id: int) -> None:
+        super().__init__()
+        self._memory_id = memory_id
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="memory-relate"):
+            yield Label(
+                f"Relate memory {self._memory_id} to:"
+            )
+            yield Input(
+                placeholder="Memory ID",
+                id="memory-relate-input",
+            )
+            with Horizontal(id="memory-relate-buttons"):
+                yield Button("Relate", id="memory-relate-submit")
+                yield Button("Cancel", id="memory-relate-cancel")
+
+    def on_mount(self) -> None:
+        self.query_one("#memory-relate-input", Input).focus()
+
+    def action_cancel_relate(self) -> None:
+        self.dismiss(None)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        memory_id = event.value.strip()
+
+        if memory_id:
+            self.dismiss(memory_id)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "memory-relate-submit":
+            relate_input = self.query_one(
+                "#memory-relate-input",
+                Input,
+            )
+            memory_id = relate_input.value.strip()
+
+            if memory_id:
+                self.dismiss(memory_id)
+
+        elif event.button.id == "memory-relate-cancel":
+            self.dismiss(None)
+
+
+
 class MemoriesTUI(Vertical):
     """Textual workspace for viewing and managing memories."""
 
@@ -149,6 +300,11 @@ class MemoriesTUI(Vertical):
 
     editing_memory_id: str | None = None
 
+    BINDINGS = [
+        ("/", "search_memories", "Search"),
+        ("r", "relate_memory", "Relate"),
+    ]
+
     def compose(self) -> ComposeResult:
         with Horizontal():
             with Vertical(id="memories-list"):
@@ -192,6 +348,75 @@ class MemoriesTUI(Vertical):
                     with Horizontal(id="memory-edit-actions"):
                         yield Button("Save", id="memory-save")
                         yield Button("Cancel", id="memory-cancel")
+
+    @work
+    async def action_search_memories(self) -> None:
+        """Open the memory search dialog."""
+        term = await self.app.push_screen_wait(
+            SearchMemoriesModal()
+        )
+
+        if term is None:
+            return
+
+        memories = self.query_one("#memories", ListView)
+        await memories.clear()
+
+        if term == "":
+            current_memories = get_memories(
+                self.get_memory_query_options()
+            )
+        else:
+            current_memories = search_memories(
+                term,
+                self.get_memory_query_options(),
+            )
+
+        for memory in current_memories:
+            memory_id = str(memory["id"])
+            await memories.append(
+                ListItem(
+                    Label(
+                        f"{memory['id']}  "
+                        f"{memory['category']:<9} "
+                        f"{'* ' if memory['status'] != 'active' else ''}"
+                        f"{memory['content']}"
+                    ),
+                    id=f"memory-{memory_id}",
+                )
+            )
+
+        memories.focus()
+
+
+    @work
+    async def action_relate_memory(self) -> None:
+        """Open the memory relationship dialog."""
+        selected = self.query_one(
+            "#memories",
+            ListView,
+        ).highlighted_child
+
+        if selected is None:
+            return
+
+        memory_id = int(
+            selected.id.removeprefix("memory-")
+        )
+
+        related_id = await self.app.push_screen_wait(
+            RelateMemoryModal(memory_id)
+        )
+
+        if related_id is None:
+            return
+
+        if not relate_memory(memory_id, related_id):
+            return
+
+        self.show_memory(str(memory_id))
+
+
 
     def show_memory(self, memory_id: str) -> None:
         memory = get_memory(int(memory_id))
