@@ -89,7 +89,6 @@ commands = {
             "-r, --relate <ids>": "Relate this memory to existing memory IDs.",
         },
         "notes": [
-            "View available categories with: alf categories",
             "The category may also be given positionally.",
             "Options may appear before or after the memory text.",
         ],
@@ -143,11 +142,6 @@ commands = {
             "description": "Recall and explore previous memories.",
             "guidance": "Select a memory to view its details.",
         },
-    },
-    "categories": {
-        "id": "memory.categories",
-        "help": "Show memory categories.",
-        "usage": "alf categories",
     },
     "memory": {
         "id": "memory.show",
