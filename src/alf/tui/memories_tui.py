@@ -278,7 +278,6 @@ class MemoriesTUI(Vertical):
     def get_memory_query_options(self) -> dict:
         return {
             "category": None,
-            "memory_category_id": None,
             "include_archived": self.query_one(
                 "#memories-all",
                 Checkbox,

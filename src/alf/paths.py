@@ -11,5 +11,4 @@ def get_data_directory():
     """
     Return ALF's data directory.
     """
-
-    return Path.home() / ".local" / "share" / "alf"
+    return Path.home() / "Library" / "Application Support" / "ALF"

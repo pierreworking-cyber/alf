@@ -16,14 +16,6 @@ data and memory-system information to the rest of ALF.
 import sqlite3
 from datetime import datetime
 
-from . import memory_categories
-from .memory_categories import (  # noqa: F401
-    create_memory_category,
-    delete_memory_category,
-    get_memory_categories,
-    get_memory_category,
-    update_memory_category,
-)
 from .paths import get_data_directory
 
 
@@ -38,22 +30,14 @@ VALID_MEMORY_TYPES = [
     "preference",
 ]
 
-
 def initialise_database(connection):
     """
-    Create the memory schema and apply any required schema migrations.
+    Create the Mac memory schema.
 
-    The supplied SQLite connection is updated in place and committed
-    before the function returns.
-
-    Args:
-        connection: An open SQLite database connection.
+    The Mac version deliberately has a minimal schema consisting only
+    of the memories table and its FTS5 search index.
     """
     cursor = connection.cursor()
-
-    version = connection.execute(
-        "PRAGMA user_version"
-    ).fetchone()[0]
 
     cursor.execute(
         """
@@ -64,8 +48,7 @@ def initialise_database(connection):
             content TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'active',
             previous_memory_id INTEGER,
-            related_memory_ids TEXT,
-            memory_category_id INTEGER
+            related_memory_ids TEXT
         )
         """
     )
@@ -81,35 +64,6 @@ def initialise_database(connection):
         """
     )
 
-    memory_categories.create_tables(connection)
-
-    columns = {
-        column[1]
-        for column in connection.execute(
-            "PRAGMA table_info(memories)"
-        ).fetchall()
-    }
-
-    if "memory_category_id" not in columns:
-        connection.execute(
-            """
-            ALTER TABLE memories
-            ADD COLUMN memory_category_id INTEGER
-            REFERENCES memory_categories(id)
-            """
-        )
-
-    if version == 0:
-        connection.execute(
-            """
-            INSERT INTO memory_fts (memory_fts)
-            VALUES ('rebuild')
-            """
-        )
-
-    connection.execute(
-        f"PRAGMA user_version = {SCHEMA_VERSION}"
-    )
     connection.commit()
 
 
@@ -155,7 +109,6 @@ def get_memory_query_options():
 
     return {
         "category": None,
-        "memory_category_id": None,
         "include_archived": False,
         "group": None,
     }
@@ -312,39 +265,6 @@ def remember(
 
     return True
 
-
-def set_memory_category(memory_id: int, memory_category_id=None):
-    """
-    Assign a memory to a user-defined memory category.
-
-    Passing ``None`` removes the memory from its current category.
-
-    Returns:
-        ``True`` when the memory is updated, otherwise ``False``.
-    """
-
-    if get_memory(memory_id) is None:
-        return False
-
-    if memory_category_id is not None:
-        from .memory_categories import get_memory_category
-
-        if get_memory_category(memory_category_id) is None:
-            return False
-
-    with get_connection() as connection:
-        connection.execute(
-            """
-            UPDATE memories
-            SET memory_category_id = ?
-            WHERE id = ?
-            """,
-            (memory_category_id, memory_id),
-        )
-
-    return True
-
-
 def update_memory(memory_id: int, content: str):
     """
     Replace the content of an existing memory and update its search index.
@@ -412,7 +332,7 @@ def get_memories(options=None):
 
     query = """
         SELECT id, created, category, status, content,
-        previous_memory_id, related_memory_ids, memory_category_id
+        previous_memory_id, related_memory_ids
         FROM memories
     """
 
@@ -425,10 +345,6 @@ def get_memories(options=None):
     if options["category"]:
         conditions.append("category = ?")
         parameters.append(options["category"])
-
-    if options["memory_category_id"] is not None:
-        conditions.append("memory_category_id = ?")
-        parameters.append(options["memory_category_id"])
 
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
@@ -447,7 +363,6 @@ def get_memories(options=None):
             "content": row[4],
             "previous_memory_id": row[5],
             "related_memory_ids": row[6],
-            "memory_category_id": row[7],
         }
         for row in rows
     ]
@@ -485,13 +400,9 @@ def search_memories(term, options=None):
         conditions.append("category = ?")
         parameters.append(options["category"])
 
-    if options["memory_category_id"] is not None:
-        conditions.append("memory_category_id = ?")
-        parameters.append(options["memory_category_id"])
-
     query = """
         SELECT id, created, category, status, content,
-        previous_memory_id, related_memory_ids, memory_category_id
+        previous_memory_id, related_memory_ids
         FROM memories
     """
 
@@ -512,7 +423,6 @@ def search_memories(term, options=None):
             "content": row[4],
             "previous_memory_id": row[5],
             "related_memory_ids": row[6],
-            "memory_category_id": row[7],
         }
         for row in rows
     ]
@@ -595,7 +505,7 @@ def find_related_memory_candidates(content: str, limit=5):
         rows = connection.execute(
             f"""
             SELECT id, created, category, status, content,
-                   previous_memory_id, related_memory_ids, memory_category_id
+                   previous_memory_id, related_memory_ids
             FROM memories
             WHERE id IN ({placeholders})
             ORDER BY id
@@ -612,7 +522,6 @@ def find_related_memory_candidates(content: str, limit=5):
             "content": row[4],
             "previous_memory_id": row[5],
             "related_memory_ids": row[6],
-            "memory_category_id": row[7],
         }
         for row in rows
     }
@@ -752,7 +661,7 @@ def find_relevant_memories(question: str, limit=5):
         rows = connection.execute(
             f"""
             SELECT id, created, category, status, content,
-                   previous_memory_id, related_memory_ids, memory_category_id
+                   previous_memory_id, related_memory_ids
             FROM memories
             WHERE id IN ({placeholders})
             ORDER BY id
@@ -769,7 +678,6 @@ def find_relevant_memories(question: str, limit=5):
             "content": row[4],
             "previous_memory_id": row[5],
             "related_memory_ids": row[6],
-            "memory_category_id": row[7],
         }
         for row in rows
     }
@@ -798,7 +706,7 @@ def get_memory(memory_id: int):
         cursor.execute(
             """
             SELECT id, created, category, status, content,
-            previous_memory_id, related_memory_ids, memory_category_id
+            previous_memory_id, related_memory_ids
             FROM memories
             WHERE id = ?
             """,
@@ -818,7 +726,6 @@ def get_memory(memory_id: int):
         "content": row[4],
         "previous_memory_id": row[5],
         "related_memory_ids": row[6],
-        "memory_category_id": row[7],
     }
 
 

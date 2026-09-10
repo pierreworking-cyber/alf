@@ -49,7 +49,6 @@ def test_get_memory_types():
 def test_default_memory_query_options():
     assert memory.get_memory_query_options() == {
     "category": None,
-    "memory_category_id": None,
     "include_archived": False,
     "group": None,
 }
@@ -106,7 +105,6 @@ def test_update_memory_changes_content_without_creating_memory(database):
             "content": "Edited memory.",
             "previous_memory_id": None,
             "related_memory_ids": None,
-            "memory_category_id": None,
         }
     ]
 
@@ -276,83 +274,13 @@ def test_get_memories_by_category(database):
     memory.remember("fact", "A fact.")
 
     memories = memory.get_memories(
-        {"category": "note", "memory_category_id": None,
+        {"category": "note",
         "include_archived": False, "group": None}
     )
 
     assert len(memories) == 1
     assert memories[0]["content"] == "A note."
 
-
-def test_update_memory_category_renames_category(database):
-    category_id = memory.create_memory_category("Linux")
-
-    assert memory.update_memory_category(
-        category_id,
-        "Linux applications",
-    ) is True
-
-    category = memory.get_memory_category(category_id)
-
-    assert category["name"] == "Linux applications"
-
-
-def test_update_memory_category_rejects_duplicate_sibling(database):
-    memory.create_memory_category("Linux")
-    second_id = memory.create_memory_category("Applications")
-
-    assert memory.update_memory_category(
-        second_id,
-        "Linux",
-    ) == "duplicate"
-
-    assert memory.get_memory_category(second_id)["name"] == "Applications"
-
-
-def test_update_memory_category_allows_same_name(database):
-    category_id = memory.create_memory_category("Linux")
-
-    assert memory.update_memory_category(
-        category_id,
-        "Linux",
-    ) is True
-
-
-def test_update_memory_category_rejects_unknown_category(database):
-    assert memory.update_memory_category(
-        999,
-        "Linux",
-    ) is False
-
-
-def test_delete_memory_category_unassigns_memories(database):
-    category_id = memory.create_memory_category("Linux")
-
-    memory.remember("note", "Install applications.")
-    memory.set_memory_category(1, category_id)
-
-    assert memory.delete_memory_category(category_id) is True
-
-    assert memory.get_memory(1)["memory_category_id"] is None
-    assert memory.get_memory_category(category_id) is None
-
-
-def test_delete_memory_category_promotes_children(database):
-    parent_id = memory.create_memory_category("Linux")
-    child_id = memory.create_memory_category(
-        "Applications",
-        parent_id,
-    )
-
-    assert memory.delete_memory_category(parent_id) is True
-
-    child = memory.get_memory_category(child_id)
-
-    assert child["parent_id"] is None
-
-
-def test_delete_memory_category_rejects_unknown_category(database):
-    assert memory.delete_memory_category(999) is False
 
 
 def test_get_memories_includes_archived_when_requested(database):
@@ -366,7 +294,7 @@ def test_get_memories_includes_archived_when_requested(database):
     assert [item["id"] for item in memories] == [1]
 
     memories = memory.get_memories(
-        {"category": None, "memory_category_id": None,
+        {"category": None,
         "include_archived": True, "group": None}
     )
 
@@ -391,7 +319,6 @@ def test_get_memories_does_not_modify_options(database):
 
     assert options == {
     "category": None,
-    "memory_category_id": None,
     "include_archived": False,
     "group": None,
 }
@@ -409,7 +336,6 @@ def test_get_memory_returns_memory_by_id(database):
         "status": "active",
         "content": "A specific memory.",
         "previous_memory_id": None,
-        "memory_category_id": None,
         "related_memory_ids": None,
     }
 
@@ -604,7 +530,6 @@ def test_search_memories_respects_category_and_archive_options(database):
         "ALF",
 {
     "category": None,
-    "memory_category_id": None,
     "include_archived": False,
     "group": None,
 },
@@ -616,7 +541,6 @@ def test_search_memories_respects_category_and_archive_options(database):
         "ALF",
         {
             "category": "note",
-            "memory_category_id": None,
             "include_archived": True,
             "group": None,
         },
@@ -859,7 +783,6 @@ def test_archive_memory(database):
     memories = memory.get_memories(
         {
             "category": None,
-            "memory_category_id": None,
             "include_archived": True,
             "group": None,
         }
@@ -1189,40 +1112,6 @@ def test_memory_information(database):
 
     assert information["total_memories"] == 2
     assert information["categories"] == ["fact", "note"]
-
-
-def test_remember_creates_unclassified_memory(database):
-    memory.remember("note", "Unclassified memory.")
-
-    result = memory.get_memory(1)
-
-    assert result["memory_category_id"] is None
-
-
-def test_set_memory_category_assigns_category(database):
-    category_id = memory.create_memory_category("Linux")
-
-    memory.remember("note", "Install applications.")
-
-    assert memory.set_memory_category(1, category_id) is True
-    assert memory.get_memory(1)["memory_category_id"] == category_id
-
-
-def test_set_memory_category_rejects_unknown_category(database):
-    memory.remember("note", "Install applications.")
-
-    assert memory.set_memory_category(1, 999) is False
-    assert memory.get_memory(1)["memory_category_id"] is None
-
-
-def test_set_memory_category_can_clear_category(database):
-    category_id = memory.create_memory_category("Linux")
-
-    memory.remember("note", "Install applications.")
-    memory.set_memory_category(1, category_id)
-
-    assert memory.set_memory_category(1, None) is True
-    assert memory.get_memory(1)["memory_category_id"] is None
 
 
 def test_capability(database):

@@ -453,21 +453,6 @@ def render_memory(memory, related_memories=None):
             render_memory_entry(related_memory)
 
 
-def render_memory_categories(categories):
-    """
-    Render available ALF memory categories.
-    """
-
-    title("ALF memory categories")
-
-    console.print()
-
-    for category in categories:
-        info(f"- {category}")
-
-    console.print()
-
-
 def render_memory_archived(memory_id):
     """
     Render archive confirmation.

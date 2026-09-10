@@ -21,7 +21,6 @@ from .memory import (
     delete_memories,
     get_memories,
     get_memory,
-    get_memory_categories,
     get_memory_history,
     get_memory_query_options,
     get_memory_types,
@@ -46,7 +45,6 @@ from .presentation import (
     render_memories_deleted,
     render_memory,
     render_memory_archived,
-    render_memory_categories,
     render_memory_deleted,
     render_memory_history,
     render_memory_missing,
@@ -387,10 +385,6 @@ def search_command(*arguments):
     render_memories(memories, options)
 
 
-def categories_command(argument=None):
-    render_memory_categories(get_memory_categories())
-
-
 def memory_command(*arguments):
 
     if len(arguments) != 1:
@@ -672,7 +666,6 @@ command_handlers = {
     "help": help_command,
     "remember": remember_command,
     "memories": memories_command,
-    "categories": categories_command,
     "memory": memory_command,
     "relate": relate_command,
     "history": history_command,

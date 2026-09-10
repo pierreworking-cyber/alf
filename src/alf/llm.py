@@ -70,7 +70,7 @@ def ask(answer_request):
     """
 
     question = answer_request["question"]
-    evidence = answer_request["evidence"]
+    evidence = answer_request.get("evidence")
     verbose = answer_request.get("verbose", False)
 
     if evidence:
