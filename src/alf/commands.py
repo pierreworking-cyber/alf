@@ -9,7 +9,6 @@ Command routing is deterministic: command names and unambiguous prefixes
 are resolved explicitly rather than interpreted as natural-language intent.
 """
 
-from datetime import UTC, datetime, timedelta
 
 from .calc import CalculationError, calculate
 from .command_catalogue import commands

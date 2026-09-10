@@ -53,6 +53,47 @@ def generate(prompt):
 
     return result["response"]
 
+def generate_json(prompt):
+    """
+    Send a prompt to ALF's configured language model and parse JSON output.
+
+    The model response is treated as untrusted text. Markdown JSON
+    fences are removed before parsing because the model may add them
+    despite being asked for JSON output.
+
+    Args:
+        prompt: The complete prompt to send to the model.
+
+    Returns:
+        The decoded JSON response.
+    """
+    payload = json.dumps(
+        {
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+        }
+    ).encode("utf-8")
+
+    request = Request(
+        OLLAMA_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urlopen(request, timeout=60) as response:
+        result = json.load(response)
+
+    response_text = result["response"].strip()
+
+    if response_text.startswith("```"):
+        response_text = response_text.split("\n", 1)[1]
+        response_text = response_text.rsplit("\n", 1)[0]
+
+    return json.loads(response_text)
+
 
 def ask(answer_request):
     """

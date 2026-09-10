@@ -18,7 +18,6 @@ from datetime import datetime
 
 from .paths import get_data_directory
 
-
 DATABASE = get_data_directory() / "alf.db"
 
 SCHEMA_VERSION = 1

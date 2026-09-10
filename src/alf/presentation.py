@@ -17,6 +17,7 @@ that does not naturally fit one of the semantic helpers.
 """
 
 from datetime import datetime
+
 from rich.console import Console
 from rich.table import Table
 from sympy import pretty

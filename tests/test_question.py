@@ -1,4 +1,5 @@
 from alf import commands, question
+from alf.question_intent import is_action_request
 
 
 def test_question_command_passes_question_to_question_engine(monkeypatch):
@@ -141,3 +142,21 @@ def test_answer_question_reports_progress(monkeypatch):
     assert result.answer == "The answer."
     assert result.source == "llm"
     assert progress_messages == ["Asking language model…"]
+
+
+
+def test_action_request_is_detected():
+    assert is_action_request("Make me a cup of tea")
+    assert is_action_request("Delete /tmp/")
+    assert is_action_request("restart the computer")
+
+
+def test_explanatory_request_is_not_an_action():
+    assert not is_action_request("How do I delete /tmp?")
+    assert not is_action_request("What does rm -rf do?")
+    assert not is_action_request("How can I restart the computer?")
+
+
+def test_normal_question_is_not_an_action():
+    assert not is_action_request("What's the capital of France?")
+    assert not is_action_request("Who wrote The Moon's a Balloon?")
