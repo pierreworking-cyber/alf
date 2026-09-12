@@ -5,12 +5,15 @@ This module retrieves web pages, extracts readable text, and selects
 relevant evidence for answer generation.
 """
 
+import re
+import time
 from html.parser import HTMLParser
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
+from concurrent.futures import ThreadPoolExecutor
 
-import trafilatura
 from rank_bm25 import BM25Okapi
+import trafilatura
 
 from .llm import generate_json
 
@@ -88,7 +91,17 @@ def search_web(question):
     parser = ResultParser()
     parser.feed(html.decode("utf-8", errors="replace"))
 
-    return parser.results[:MAX_SEARCH_RESULTS]
+    results = []
+
+    for result in parser.results:
+        result_url = result["url"]
+
+        if domain(result_url) == "duckduckgo.com":
+            continue
+
+        results.append(result)
+
+    return results[:MAX_SEARCH_RESULTS]
 
 
 def fetch_and_extract(url):
@@ -131,28 +144,32 @@ def split_into_passages(text, max_words=PASSAGE_MAX_WORDS):
 def build_documents(results):
     """Fetch and extract readable text from search results."""
 
-    documents = []
-
-    for result in results:
+    def fetch_result(result):
         try:
             text = fetch_and_extract(result["url"])
         except Exception:
-            continue
+            return None
 
         if not text:
-            continue
+            return None
 
-        documents.append(
-            {
-                "title": result["title"],
-                "url": result["url"],
-                "domain": domain(result["url"]),
-                "passages": split_into_passages(text),
-            }
+        return {
+            "title": result["title"],
+            "url": result["url"],
+            "domain": domain(result["url"]),
+            "passages": split_into_passages(text),
+        }
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        documents = list(
+            executor.map(fetch_result, results)
         )
 
-    return documents
-
+    return [
+        document
+        for document in documents
+        if document is not None
+    ]
 
 def rank_passages(question, documents):
     """Rank extracted passages by lexical relevance to the question."""
@@ -173,19 +190,42 @@ def rank_passages(question, documents):
     if not passages:
         return []
 
+    def tokenize(text):
+        return re.findall(r"\b\w+\b", text.lower())
+
     tokenized = [
-        passage["text"].lower().split()
+        tokenize(passage["text"])
         for passage in passages
     ]
 
     bm25 = BM25Okapi(tokenized)
 
-    scores = bm25.get_scores(
-        question.lower().split()
-    )
+    query_tokens = tokenize(question)
 
-    ranked = sorted(
-        zip(scores, passages),
+    scores = bm25.get_scores(query_tokens)
+
+    ranked_scores = []
+
+    for score, passage, tokens in zip(
+        scores,
+        passages,
+        tokenized,
+    ):
+        overlap = len(set(query_tokens) & set(tokens))
+
+        adjusted_score = max(
+            0.0,
+            float(score) + overlap * 0.1,
+        )
+
+        ranked_scores.append(
+            (
+                adjusted_score,
+                passage,
+            )
+        )
+        ranked = sorted(
+        ranked_scores,
         key=lambda item: item[0],
         reverse=True,
     )
@@ -193,61 +233,61 @@ def rank_passages(question, documents):
     return [
         {
             **passage,
-            "score": score,
+            "score": float(score),
         }
         for score, passage in ranked[:MAX_EVIDENCE_RESULTS]
     ]
 
 
+
 def build_source_diverse_pool(documents, ranked_passages):
-    """Keep the strongest evidence from as many sources as possible."""
+    """Keep relevant evidence from as many sources as possible."""
 
     selected = []
     seen_domains = set()
 
     for candidate in ranked_passages:
+        if candidate["score"] <= 0:
+            continue
+
         if candidate["domain"] in seen_domains:
             continue
 
         selected.append(candidate)
         seen_domains.add(candidate["domain"])
 
-    for document in documents:
-        if document["domain"] in seen_domains:
-            continue
-
-        if not document["passages"]:
-            continue
-
-        selected.append(
-            {
-                "title": document["title"],
-                "url": document["url"],
-                "domain": document["domain"],
-                "text": document["passages"][0],
-                "score": 0.0,
-            }
-        )
-        seen_domains.add(document["domain"])
-
     return selected
 
 
-def research(question):
+def research(question, timings=None):
     """Retrieve and rank web evidence for a question."""
 
-    results = search_web(question)
-    documents = build_documents(results)
+    if timings is None:
+        timings = {}
 
+    start = time.perf_counter()
+    results = search_web(question)
+    timings["search"] = time.perf_counter() - start
+
+    start = time.perf_counter()
+    documents = build_documents(results)
+    timings["fetch_extract"] = time.perf_counter() - start
+
+    start = time.perf_counter()
     ranked_passages = rank_passages(
         question,
         documents,
     )
+    timings["ranking"] = time.perf_counter() - start
 
-    return build_source_diverse_pool(
+    start = time.perf_counter()
+    selected = build_source_diverse_pool(
         documents,
         ranked_passages,
     )
+    timings["diversity"] = time.perf_counter() - start
+
+    return selected
 
 
 def evaluate_evidence(question, candidates):
@@ -275,27 +315,51 @@ The following web evidence was retrieved:
 
 Determine the best-supported answer using ONLY the supplied evidence.
 
-Your job has two stages:
+Your job has three stages:
 
 1. Relevance:
-   Identify candidates that actually contain evidence relevant to
+   Identify candidates that contain evidence genuinely relevant to
    the question.
 
-2. Conflict resolution:
-   If relevant candidates disagree, determine which claim is best
-   supported.
+2. Evidence quality:
+   Determine whether each relevant candidate actually supports a
+   claim, rather than merely mentioning that somebody has made the
+   claim.
 
-Rules:
+3. Conflict resolution:
+   If relevant candidates disagree, determine which claims are best
+   supported by the quality and nature of the evidence.
 
-- Do not use your own general knowledge.
-- Do not invent missing facts.
-- Prefer authoritative sources over less authoritative sources.
+Important distinctions:
+
+- A source reporting that a historical figure, politician, scientist,
+  or other person once believed something does NOT establish that
+  belief as fact.
+- A historical theory may be important to mention while still being
+  rejected, disputed, outdated, or unsupported by modern scholarship.
+- Do not treat every explanation presented by a source as equally
+  credible.
+- Distinguish established findings from disputed theories and from
+  speculative or weak claims.
+- Prefer modern scholarly consensus when the question asks what is
+  generally accepted today.
 - Prefer primary or official sources where appropriate.
+- Prefer authoritative specialist sources over general-interest
+  websites.
 - Prefer explicit dates over vague or undated claims.
-- Pay attention to whether a claim is stale.
-- A source can be relevant but still be outdated.
-- Do not simply count how many sources make a claim.
-- If the evidence genuinely cannot resolve the question, say so.
+- Pay attention to whether a source is describing historical
+  scholarship rather than presenting that scholarship as current fact.
+- Do not promote a claim merely because several low-quality sources
+  repeat it.
+- A source can be relevant without being reliable evidence for its
+  particular claim.
+- If the evidence genuinely cannot establish an answer, say so.
+- Do not use your own general knowledge to fill gaps.
+- Do not invent missing facts.
+
+For every supporting candidate, it should be possible to explain why
+that candidate provides reliable evidence for the answer, rather than
+merely evidence that a claim exists.
 
 Return JSON only:
 
@@ -304,12 +368,11 @@ Return JSON only:
     "confidence": "high|medium|low",
     "supporting_candidates": [1, 2],
     "rejected_candidates": [3],
-    "reason": "brief explanation"
+    "reason": "brief explanation of why the selected evidence is reliable and why rejected or weaker claims were not used"
 }}
 """
+
     return generate_json(prompt)
-
-
 def select_evidence(candidates, evaluation):
     """Return the evidence candidates selected by the research judge."""
 
@@ -319,4 +382,3 @@ def select_evidence(candidates, evaluation):
         selected.append(candidates[index - 1])
 
     return selected
-
