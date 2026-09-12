@@ -7,15 +7,16 @@ relevant evidence for answer generation.
 
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
-from concurrent.futures import ThreadPoolExecutor
 
 from rank_bm25 import BM25Okapi
 import trafilatura
 
 from .llm import generate_json
+
 
 MAX_SEARCH_RESULTS = 10
 MAX_EVIDENCE_RESULTS = 10
@@ -51,6 +52,7 @@ class ResultParser(HTMLParser):
         elif tag == "div" and self.in_result:
             if self.current.get("title") and self.current.get("url"):
                 self.results.append(self.current)
+
             self.in_result = False
 
     def handle_data(self, data):
@@ -145,18 +147,40 @@ def build_documents(results):
     """Fetch and extract readable text from search results."""
 
     def fetch_result(result):
+        url = result["url"]
+        start = time.perf_counter()
+
         try:
-            text = fetch_and_extract(result["url"])
+            text = fetch_and_extract(url)
         except Exception:
+            elapsed = time.perf_counter() - start
+
+            print(
+                f"[research] FETCH FAILED {elapsed:.2f}s {url}",
+                flush=True,
+            )
+
             return None
 
+        elapsed = time.perf_counter() - start
+
         if not text:
+            print(
+                f"[research] FETCH EMPTY {elapsed:.2f}s {url}",
+                flush=True,
+            )
+
             return None
+
+        print(
+            f"[research] FETCH OK {elapsed:.2f}s {url}",
+            flush=True,
+        )
 
         return {
             "title": result["title"],
-            "url": result["url"],
-            "domain": domain(result["url"]),
+            "url": url,
+            "domain": domain(url),
             "passages": split_into_passages(text),
         }
 
@@ -170,6 +194,7 @@ def build_documents(results):
         for document in documents
         if document is not None
     ]
+
 
 def rank_passages(question, documents):
     """Rank extracted passages by lexical relevance to the question."""
@@ -224,7 +249,8 @@ def rank_passages(question, documents):
                 passage,
             )
         )
-        ranked = sorted(
+
+    ranked = sorted(
         ranked_scores,
         key=lambda item: item[0],
         reverse=True,
@@ -235,18 +261,41 @@ def rank_passages(question, documents):
             **passage,
             "score": float(score),
         }
-        for score, passage in ranked[:MAX_EVIDENCE_RESULTS]
+        for score, passage in ranked
     ]
 
 
-
 def build_source_diverse_pool(documents, ranked_passages):
-    """Keep relevant evidence from as many sources as possible."""
+    """Keep relevant evidence from diverse and authoritative sources."""
 
     selected = []
     seen_domains = set()
 
+    authoritative_domains = {
+        "gov.uk",
+    }
+
+    # First protect authoritative sources from being crowded out
+    # by slightly higher-scoring general sources.
     for candidate in ranked_passages:
+        if candidate["score"] <= 0:
+            continue
+
+        if candidate["domain"] not in authoritative_domains:
+            continue
+
+        if candidate["domain"] in seen_domains:
+            continue
+
+        selected.append(candidate)
+        seen_domains.add(candidate["domain"])
+
+    # Then fill the remaining evidence slots by relevance,
+    # keeping the sources diverse.
+    for candidate in ranked_passages:
+        if len(selected) >= MAX_EVIDENCE_RESULTS:
+            break
+
         if candidate["score"] <= 0:
             continue
 
@@ -373,6 +422,8 @@ Return JSON only:
 """
 
     return generate_json(prompt)
+
+
 def select_evidence(candidates, evaluation):
     """Return the evidence candidates selected by the research judge."""
 
