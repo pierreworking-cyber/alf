@@ -1,12 +1,6 @@
-"""
-Question processing for ALF.
-
-This module sends user questions to the answer-generation layer and returns
-the resulting answer.
-"""
-
+import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .answer import prepare_answer
 from .question_intent import is_action_request
@@ -16,15 +10,9 @@ from .research_router import needs_research
 
 @dataclass
 class QuestionResult:
-    """Result produced by the question-processing engine.
-
-    Attributes:
-        answer: The final answer presented to the user.
-        source: The source used to produce the answer.
-    """
-
     answer: str
     source: str | None
+    timings: dict[str, float] = field(default_factory=dict)
 
 
 def answer_question(
@@ -32,17 +20,6 @@ def answer_question(
     verbose: bool = False,
     progress: Callable[[str], None] | None = None,
 ) -> QuestionResult:
-    """Send a user question to the appropriate answer path.
-
-    Args:
-        original_question: The question as entered by the user.
-        verbose: Whether to request a more detailed answer.
-        progress: Optional callback used to report question processing stages.
-
-    Returns:
-        A ``QuestionResult`` containing the answer and its source.
-    """
-
     def report(message: str) -> None:
         if progress is not None:
             progress(message)
@@ -53,15 +30,30 @@ def answer_question(
             source=None,
         )
 
-    if needs_research(original_question):
+    router_start = time.perf_counter()
+    research_required = needs_research(original_question)
+    router_time = time.perf_counter() - router_start
+
+    if research_required:
         report("Researching…")
 
         try:
-            candidates = research(original_question)
+            research_timings = {}
+
+            research_start = time.perf_counter()
+            candidates = research(
+                original_question,
+                timings=research_timings,
+            )
+            research_time = time.perf_counter() - research_start
+
+            judge_start = time.perf_counter()
             evaluation = evaluate_evidence(
                 original_question,
                 candidates,
             )
+            judge_time = time.perf_counter() - judge_start
+
             evidence = select_evidence(
                 candidates,
                 evaluation,
@@ -86,25 +78,41 @@ def answer_question(
 
         report("Asking language model…")
 
+        answer_start = time.perf_counter()
         answer = prepare_answer(
             original_question,
             evidence=evidence,
+            research_judgement=evaluation["answer"],
             verbose=verbose,
         )
+        answer_time = time.perf_counter() - answer_start
 
         return QuestionResult(
             answer=answer,
             source="research",
+            timings={
+                "router": router_time,
+                "research": research_time,
+                **research_timings,
+                "evidence_judge": judge_time,
+                "answer": answer_time,
+            },
         )
 
     report("Asking language model…")
 
+    answer_start = time.perf_counter()
     answer = prepare_answer(
         original_question,
         verbose=verbose,
     )
+    answer_time = time.perf_counter() - answer_start
 
     return QuestionResult(
         answer=answer,
         source="llm",
+        timings={
+            "router": router_time,
+            "answer": answer_time,
+        },
     )

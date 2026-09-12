@@ -11,6 +11,7 @@ from .llm import ask
 def prepare_answer(
     question: str,
     evidence=None,
+    research_judgement=None,
     verbose: bool = False,
 ):
     """Prepare a question request and send it to the language-model layer.
@@ -26,6 +27,7 @@ def prepare_answer(
     answer_request = {
         "question": question,
         "evidence": evidence,
+        "research_judgement": research_judgement,
         "verbose": verbose,
     }
 

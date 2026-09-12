@@ -112,17 +112,26 @@ def ask(answer_request):
 
     question = answer_request["question"]
     evidence = answer_request.get("evidence")
+    research_judgement = answer_request.get("research_judgement")
     verbose = answer_request.get("verbose", False)
 
     if evidence:
         evidence_text = str(evidence)
     else:
         evidence_text = "No evidence was available."
+    if research_judgement:
+        research_judgement_text = research_judgement
+    else:
+        research_judgement_text = "No research judgement was supplied."
 
     if evidence:
         evidence_instruction = (
             "Answer using only the supplied evidence. "
             "The supplied evidence is authoritative for this answer. "
+            "The research judgement is the authoritative conclusion "
+            "of the evidence review. "
+            "Do not contradict or extend that judgement with your own "
+            "knowledge. "
             "Do not fill gaps with your own knowledge. "
             "If the evidence is insufficient, say so."
         )
@@ -154,6 +163,10 @@ You are answering the user's question as the voice of ALF.
 Evidence supplied by ALF:
 
 {evidence_text}
+
+Research judgement:
+
+{research_judgement_text}
 
 Evidence handling:
 

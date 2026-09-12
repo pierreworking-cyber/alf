@@ -239,3 +239,51 @@ def test_ask_uses_concise_style_when_not_verbose(monkeypatch):
     assert "Give a concise but useful answer." in captured["prompt"]
     assert "Do not add unnecessary detail." in captured["prompt"]
     assert result == "A concise answer."
+
+def test_ask_uses_research_judgement_when_evidence_is_supplied(
+    monkeypatch,
+):
+    captured = {}
+
+    def fake_generate(prompt):
+        captured["prompt"] = prompt
+        return "The researched answer."
+
+    monkeypatch.setattr(
+        llm,
+        "generate",
+        fake_generate,
+    )
+
+    result = llm.ask(
+        {
+            "question": "Why did the Roman Empire fall?",
+            "evidence": [
+                {
+                    "source": "example.com",
+                    "title": "Roman Empire",
+                    "text": (
+                        "The empire's decline had multiple causes."
+                    ),
+                },
+            ],
+            "research_judgement": (
+                "The fall was caused by multiple factors, "
+                "including political and economic instability."
+            ),
+        }
+    )
+
+    assert (
+        "The fall was caused by multiple factors, "
+        "including political and economic instability."
+        in captured["prompt"]
+    )
+
+    assert (
+        "The research judgement is the authoritative conclusion "
+        "of the evidence review."
+        in captured["prompt"]
+    )
+
+    assert result == "The researched answer."    

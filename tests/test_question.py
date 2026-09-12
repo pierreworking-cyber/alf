@@ -160,3 +160,155 @@ def test_explanatory_request_is_not_an_action():
 def test_normal_question_is_not_an_action():
     assert not is_action_request("What's the capital of France?")
     assert not is_action_request("Who wrote The Moon's a Balloon?")
+
+def test_answer_question_passes_research_evidence_to_answer_layer(
+    monkeypatch,
+):
+    captured = {}
+
+    monkeypatch.setattr(
+        question,
+        "needs_research",
+        lambda original_question: True,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "research",
+        lambda original_question, timings=None: [
+            {
+                "title": "Source A",
+                "url": "https://example.com/a",
+                "domain": "example.com",
+                "text": "Evidence supporting claim A.",
+                "score": 10.0,
+            },
+        ],
+    )
+
+    monkeypatch.setattr(
+        question,
+        "evaluate_evidence",
+        lambda original_question, candidates: {
+            "answer": "Claim A is the best-supported answer.",
+            "confidence": "high",
+            "supporting_candidates": [1],
+            "rejected_candidates": [],
+            "reason": "Source A directly supports claim A.",
+        },
+    )
+
+    monkeypatch.setattr(
+        question,
+        "select_evidence",
+        lambda candidates, evaluation: candidates,
+    )
+
+    def fake_prepare_answer(
+        original_question,
+        evidence=None,
+        verbose=False,
+        **kwargs,
+    ):
+        captured["question"] = original_question
+        captured["evidence"] = evidence
+        captured["verbose"] = verbose
+        return "The researched answer."
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        fake_prepare_answer,
+    )
+
+    result = question.answer_question(
+        "Why did this happen?",
+    )
+
+    assert result.answer == "The researched answer."
+    assert result.source == "research"
+    assert captured["question"] == "Why did this happen?"
+    assert captured["evidence"] == [
+        {
+            "title": "Source A",
+            "url": "https://example.com/a",
+            "domain": "example.com",
+            "text": "Evidence supporting claim A.",
+            "score": 10.0,
+        },
+    ]
+    assert captured["verbose"] is False
+
+
+def test_answer_question_passes_research_judgement_to_answer_layer(
+    monkeypatch,
+):
+    captured = {}
+
+    monkeypatch.setattr(
+        question,
+        "needs_research",
+        lambda original_question: True,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "research",
+        lambda original_question, timings=None: [
+            {
+                "title": "Source A",
+                "url": "https://example.com/a",
+                "domain": "example.com",
+                "text": "Evidence supporting claim A.",
+                "score": 10.0,
+            },
+        ],
+    )
+
+    evaluation = {
+        "answer": "Claim A is the best-supported answer.",
+        "confidence": "high",
+        "supporting_candidates": [1],
+        "rejected_candidates": [],
+        "reason": "Source A directly supports claim A.",
+    }
+
+    monkeypatch.setattr(
+        question,
+        "evaluate_evidence",
+        lambda original_question, candidates: evaluation,
+    )
+
+    monkeypatch.setattr(
+        question,
+        "select_evidence",
+        lambda candidates, evaluation: candidates,
+    )
+
+    def fake_prepare_answer(
+        original_question,
+        evidence=None,
+        verbose=False,
+        **kwargs,
+    ):
+        captured["question"] = original_question
+        captured["evidence"] = evidence
+        captured["kwargs"] = kwargs
+        return "The researched answer."
+
+    monkeypatch.setattr(
+        question,
+        "prepare_answer",
+        fake_prepare_answer,
+    )
+
+    result = question.answer_question(
+        "Why did this happen?",
+    )
+
+    assert result.answer == "The researched answer."
+    assert result.source == "research"
+    assert captured["kwargs"]["research_judgement"] == (
+        "Claim A is the best-supported answer."
+    )
+
