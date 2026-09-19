@@ -90,8 +90,19 @@ def search_web(question):
     with urlopen(request, timeout=15) as response:
         html = response.read()
 
+    text = html.decode("utf-8", errors="replace")
+
+    if "Unfortunately, bots use DuckDuckGo too." in text:
+        print(
+            "[research] DuckDuckGo has presented a bot challenge. "
+            "Please open DuckDuckGo in a browser and perform a normal "
+            "search, then try ALF again.",
+            flush=True,
+        )
+        return []
+
     parser = ResultParser()
-    parser.feed(html.decode("utf-8", errors="replace"))
+    parser.feed(text)
 
     results = []
 
@@ -148,34 +159,14 @@ def build_documents(results):
 
     def fetch_result(result):
         url = result["url"]
-        start = time.perf_counter()
 
         try:
             text = fetch_and_extract(url)
         except Exception:
-            elapsed = time.perf_counter() - start
-
-            print(
-                f"[research] FETCH FAILED {elapsed:.2f}s {url}",
-                flush=True,
-            )
-
             return None
-
-        elapsed = time.perf_counter() - start
 
         if not text:
-            print(
-                f"[research] FETCH EMPTY {elapsed:.2f}s {url}",
-                flush=True,
-            )
-
             return None
-
-        print(
-            f"[research] FETCH OK {elapsed:.2f}s {url}",
-            flush=True,
-        )
 
         return {
             "title": result["title"],
