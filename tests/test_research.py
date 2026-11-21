@@ -34,14 +34,17 @@ def test_rank_passages_puts_relevant_passage_first():
             "url": "https://example.com/irrelevant",
             "domain": "example.com",
             "passages": [
-               "Germany's largest city is Berlin, located in the northeastern part of the country.",],
+               "Germany's largest city is Berlin, located in the "
+               "northeastern part of the country.",
+            ],
         },
         {
             "title": "Relevant",
             "url": "https://example.org/relevant",
             "domain": "example.org",
             "passages": [
-                "Paris is the capital city of France and serves as the country's political centre.",
+                "Paris is the capital city of France and serves as the "
+                "country's political centre.",
             ],
         },
     ]
@@ -182,6 +185,20 @@ def test_select_evidence_returns_requested_candidates():
         candidates[0],
         candidates[2],
     ]
+
+
+def test_select_evidence_ignores_invalid_candidate_indices():
+    from alf.research import select_evidence
+
+    candidates = [
+        {"domain": "a.example", "text": "A"},
+    ]
+
+    evaluation = {
+        "supporting_candidates": [0, 1, 2, "1"],
+    }
+
+    assert select_evidence(candidates, evaluation) == [candidates[0]]
 
 
 def test_select_evidence_returns_empty_for_no_support():
@@ -481,4 +498,55 @@ def test_search_web_rejects_duckduckgo_ad_redirects(monkeypatch):
     assert not any(
         url.startswith("https://duckduckgo.com/")
         for url in urls
-    )    
+    )
+
+
+def test_normalise_result_url_decodes_duckduckgo_redirect():
+    from alf.research import normalise_result_url
+
+    href = (
+        "//duckduckgo.com/l/"
+        "?uddg=https%3A%2F%2Fexample.com%2Fstory"
+    )
+
+    assert normalise_result_url(href) == "https://example.com/story"
+
+
+def test_search_web_falls_back_to_lite_after_bot_challenge(monkeypatch):
+    import alf.research as research_module
+
+    lite_html = """
+    <a rel="nofollow" href="https://example.org/prison"
+       class="result-link">
+        Russell Brand in prison
+    </a>
+    """
+
+    requested = []
+
+    def fake_fetch(url, question):
+        requested.append(url)
+
+        if url == research_module.DDG_HTML_URL:
+            return "Unfortunately, bots use DuckDuckGo too."
+
+        return lite_html
+
+    monkeypatch.setattr(
+        research_module,
+        "fetch_search_page",
+        fake_fetch,
+    )
+
+    results = research_module.search_web("Is Russell Brand in prison?")
+
+    assert requested == [
+        research_module.DDG_HTML_URL,
+        research_module.DDG_LITE_URL,
+    ]
+    assert results == [
+        {
+            "url": "https://example.org/prison",
+            "title": "Russell Brand in prison",
+        }
+    ]

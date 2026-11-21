@@ -9,18 +9,20 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
-from urllib.parse import urlencode, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 
-from rank_bm25 import BM25Okapi
 import trafilatura
+from rank_bm25 import BM25Okapi
 
 from .llm import generate_json
-
 
 MAX_SEARCH_RESULTS = 10
 MAX_EVIDENCE_RESULTS = 10
 PASSAGE_MAX_WORDS = 120
+
+DDG_HTML_URL = "https://html.duckduckgo.com/html/"
+DDG_LITE_URL = "https://lite.duckduckgo.com/lite/"
 
 
 class ResultParser(HTMLParser):
@@ -62,19 +64,74 @@ class ResultParser(HTMLParser):
             ).strip()
 
 
+class LiteResultParser(HTMLParser):
+    """Parse DuckDuckGo Lite search results."""
+
+    def __init__(self):
+        super().__init__()
+        self.results = []
+        self.in_result = False
+        self.current = {}
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        classes = (attributes.get("class") or "").split()
+
+        if tag == "a" and "result-link" in classes:
+            self.in_result = True
+            self.current = {"url": attributes.get("href", "")}
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self.in_result:
+            if self.current.get("title") and self.current.get("url"):
+                self.results.append(self.current)
+
+            self.in_result = False
+
+    def handle_data(self, data):
+        if self.in_result:
+            self.current["title"] = (
+                self.current.get("title", "") + data
+            ).strip()
+
+
 def domain(url):
     """Return the normalised domain name for a URL."""
 
     return urlparse(url).netloc.lower().removeprefix("www.")
 
 
-def search_web(question):
-    """Search DuckDuckGo and return candidate result URLs."""
+def normalise_result_url(href):
+    """Resolve DuckDuckGo redirect links to their destination URL."""
+
+    if href.startswith("//"):
+        href = "https:" + href
+
+    parsed = urlparse(href)
+
+    if domain(href) == "duckduckgo.com" and parsed.path == "/l/":
+        target = parse_qs(parsed.query).get("uddg", [href])[0]
+        return target
+
+    return href
+
+
+def is_bot_challenge(text):
+    """Detect a DuckDuckGo bot challenge page."""
+
+    return (
+        "Unfortunately, bots use DuckDuckGo too." in text
+        or "unusual traffic" in text.lower()
+    )
+
+
+def fetch_search_page(url, question):
+    """Fetch a DuckDuckGo search results page for a question."""
 
     data = urlencode({"q": question}).encode("utf-8")
 
     request = Request(
-        "https://html.duckduckgo.com/html/",
+        url,
         data=data,
         headers={
             "User-Agent": (
@@ -82,17 +139,39 @@ def search_web(question):
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/139.0 Safari/537.36"
             ),
-            "Referer": "https://html.duckduckgo.com/",
+            "Referer": "https://duckduckgo.com/",
         },
         method="POST",
     )
 
     with urlopen(request, timeout=15) as response:
-        html = response.read()
+        return response.read().decode("utf-8", errors="replace")
 
-    text = html.decode("utf-8", errors="replace")
 
-    if "Unfortunately, bots use DuckDuckGo too." in text:
+def search_web(question):
+    """Search DuckDuckGo and return candidate result URLs."""
+
+    challenged = False
+    parsers = []
+
+    for url, parser_class in (
+        (DDG_HTML_URL, ResultParser),
+        (DDG_LITE_URL, LiteResultParser),
+    ):
+        try:
+            text = fetch_search_page(url, question)
+        except Exception:
+            continue
+
+        if is_bot_challenge(text):
+            challenged = True
+            continue
+
+        parser = parser_class()
+        parser.feed(text)
+        parsers.append(parser)
+
+    if not parsers and challenged:
         print(
             "[research] DuckDuckGo has presented a bot challenge. "
             "Please open DuckDuckGo in a browser and perform a normal "
@@ -101,18 +180,19 @@ def search_web(question):
         )
         return []
 
-    parser = ResultParser()
-    parser.feed(text)
-
     results = []
 
-    for result in parser.results:
-        result_url = result["url"]
+    for parser in parsers:
+        for result in parser.results:
+            result_url = normalise_result_url(result["url"])
 
-        if domain(result_url) == "duckduckgo.com":
-            continue
+            if domain(result_url) == "duckduckgo.com":
+                continue
 
-        results.append(result)
+            results.append({**result, "url": result_url})
+
+        if results:
+            break
 
     return results[:MAX_SEARCH_RESULTS]
 
@@ -408,7 +488,8 @@ Return JSON only:
     "confidence": "high|medium|low",
     "supporting_candidates": [1, 2],
     "rejected_candidates": [3],
-    "reason": "brief explanation of why the selected evidence is reliable and why rejected or weaker claims were not used"
+    "reason": "brief explanation of why the selected evidence "
+              "is reliable and why rejected or weaker claims were not used"
 }}
 """
 
@@ -420,7 +501,10 @@ def select_evidence(candidates, evaluation):
 
     selected = []
 
-    for index in evaluation["supporting_candidates"]:
+    for index in evaluation.get("supporting_candidates", []):
+        if not isinstance(index, int) or not 1 <= index <= len(candidates):
+            continue
+
         selected.append(candidates[index - 1])
 
     return selected
