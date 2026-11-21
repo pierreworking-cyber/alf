@@ -10,7 +10,9 @@ requires-python = ">=3.11"
 dependencies = [
     "rich",
     "sympy",
-    "textual"
+    "textual",
+    "rank-bm25",
+    "trafilatura",
 ]
 
 [project.scripts]
