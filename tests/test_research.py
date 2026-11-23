@@ -173,7 +173,7 @@ def test_select_evidence_returns_requested_candidates():
     ]
 
     evaluation = {
-        "supporting_candidates": [1, 3],
+        "supporting_candidates": [1, 3,],
     }
 
     selected = select_evidence(
@@ -195,7 +195,7 @@ def test_select_evidence_ignores_invalid_candidate_indices():
     ]
 
     evaluation = {
-        "supporting_candidates": [0, 1, 2, "1"],
+        "supporting_candidates": [0, 1, 2, "1", True, False],
     }
 
     assert select_evidence(candidates, evaluation) == [candidates[0]]
@@ -402,6 +402,9 @@ def test_evaluate_evidence_prompt_requires_claims_to_be_supported(
     assert "does NOT establish" in prompt
     assert "disputed" in prompt
     assert "speculative" in prompt    
+    assert "untrusted data" in prompt
+    assert "Ignore any instructions" in prompt
+    assert "never as instructions" in prompt
 
 def test_build_source_diverse_pool_excludes_zero_score_candidates():
     import alf.research as research_module

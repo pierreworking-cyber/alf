@@ -312,3 +312,244 @@ def test_answer_question_passes_research_judgement_to_answer_layer(
         "Claim A is the best-supported answer."
     )
 
+
+def test_answer_question_falls_back_when_research_fails(monkeypatch):
+    captured = {}
+    progress_messages = []
+
+    def fake_research(original_question, timings=None):
+        raise RuntimeError("search unavailable")
+
+    def fake_prepare_answer(original_question, **kwargs):
+        captured.update(kwargs)
+        return "A comprehensive answer from general knowledge."
+
+    monkeypatch.setattr(question, "needs_research", lambda q: True)
+    monkeypatch.setattr(question, "research", fake_research)
+    monkeypatch.setattr(question, "prepare_answer", fake_prepare_answer)
+
+    result = question.answer_question(
+        "What is happening in the Donbas region?",
+        progress=progress_messages.append,
+    )
+
+    assert result.answer == "A comprehensive answer from general knowledge."
+    assert result.source == "llm"
+    assert captured["research_unavailable"] is True
+    assert progress_messages == [
+        "Researching…",
+        "Research unavailable; answering from model knowledge…",
+    ]
+
+
+def test_answer_question_falls_back_when_no_usable_sources(monkeypatch):
+    captured = {}
+
+    def fake_evaluate_evidence(original_question, candidates):
+        raise AssertionError("the judge should not run without candidates")
+
+    def fake_prepare_answer(original_question, **kwargs):
+        captured.update(kwargs)
+        return "A comprehensive answer from general knowledge."
+
+    monkeypatch.setattr(question, "needs_research", lambda q: True)
+    monkeypatch.setattr(
+        question,
+        "research",
+        lambda original_question, timings=None: [],
+    )
+    monkeypatch.setattr(
+        question,
+        "evaluate_evidence",
+        fake_evaluate_evidence,
+    )
+    monkeypatch.setattr(question, "prepare_answer", fake_prepare_answer)
+
+    result = question.answer_question("What is the latest news?")
+
+    assert result.source == "llm"
+    assert captured["research_unavailable"] is True
+
+
+def test_answer_question_falls_back_when_judge_has_low_confidence(
+    monkeypatch,
+):
+    captured = {}
+    candidates = [
+        {
+            "title": "Source A",
+            "url": "https://example.com/a",
+            "domain": "example.com",
+            "text": "Evidence supporting claim A.",
+        },
+    ]
+
+    evaluation = {
+        "answer": "Possibly claim A.",
+        "confidence": "low",
+        "supporting_candidates": [1],
+        "rejected_candidates": [],
+        "reason": "The evidence is weak.",
+    }
+
+    def fake_prepare_answer(original_question, **kwargs):
+        captured.update(kwargs)
+        return "A comprehensive answer from general knowledge."
+
+    monkeypatch.setattr(question, "needs_research", lambda q: True)
+    monkeypatch.setattr(
+        question,
+        "research",
+        lambda original_question, timings=None: candidates,
+    )
+    monkeypatch.setattr(
+        question,
+        "evaluate_evidence",
+        lambda original_question, candidates: evaluation,
+    )
+    monkeypatch.setattr(question, "prepare_answer", fake_prepare_answer)
+
+    result = question.answer_question("Why did this happen?")
+
+    assert result.source == "llm"
+    assert "evidence" not in captured
+    assert "research_judgement" not in captured
+    assert captured["research_unavailable"] is True
+
+
+def test_answer_question_falls_back_when_judge_response_is_malformed(
+    monkeypatch,
+):
+    captured = {}
+    candidates = [
+        {
+            "title": "Source A",
+            "url": "https://example.com/a",
+            "domain": "example.com",
+            "text": "Evidence supporting claim A.",
+        },
+    ]
+
+    evaluation = {
+        "answer": "Claim A.",
+        "confidence": "high",
+        "supporting_candidates": "1",
+        "rejected_candidates": [],
+        "reason": "The evidence supports the claim.",
+    }
+
+    def fake_prepare_answer(original_question, **kwargs):
+        captured.update(kwargs)
+        return "A comprehensive answer from general knowledge."
+
+    monkeypatch.setattr(question, "needs_research", lambda q: True)
+    monkeypatch.setattr(
+        question,
+        "research",
+        lambda original_question, timings=None: candidates,
+    )
+    monkeypatch.setattr(
+        question,
+        "evaluate_evidence",
+        lambda original_question, candidates: evaluation,
+    )
+    monkeypatch.setattr(question, "prepare_answer", fake_prepare_answer)
+
+    result = question.answer_question("Why did this happen?")
+
+    assert result.source == "llm"
+    assert "evidence" not in captured
+    assert "research_judgement" not in captured
+    assert captured["research_unavailable"] is True
+
+
+def test_answer_question_falls_back_when_evidence_selection_fails(
+    monkeypatch,
+):
+    captured = {}
+    candidates = [
+        {
+            "title": "Source A",
+            "url": "https://example.com/a",
+            "domain": "example.com",
+            "text": "Evidence supporting claim A.",
+        },
+    ]
+
+    evaluation = {
+        "answer": "Claim A.",
+        "confidence": "high",
+        "supporting_candidates": [1],
+        "rejected_candidates": [],
+        "reason": "The evidence supports the claim.",
+    }
+
+    def fake_select_evidence(candidates, evaluation):
+        raise RuntimeError("selection failed")
+
+    def fake_prepare_answer(original_question, **kwargs):
+        captured.update(kwargs)
+        return "A comprehensive answer from general knowledge."
+
+    monkeypatch.setattr(question, "needs_research", lambda q: True)
+    monkeypatch.setattr(
+        question,
+        "research",
+        lambda original_question, timings=None: candidates,
+    )
+    monkeypatch.setattr(
+        question,
+        "evaluate_evidence",
+        lambda original_question, candidates: evaluation,
+    )
+    monkeypatch.setattr(
+        question,
+        "select_evidence",
+        fake_select_evidence,
+    )
+    monkeypatch.setattr(question, "prepare_answer", fake_prepare_answer)
+
+    result = question.answer_question("Why did this happen?")
+
+    assert result.source == "llm"
+    assert "evidence" not in captured
+    assert "research_judgement" not in captured
+    assert captured["research_unavailable"] is True
+
+
+def test_answer_question_tolerates_router_failure(monkeypatch):
+    captured = {}
+
+    def fake_needs_research(original_question):
+        raise RuntimeError("router unavailable")
+
+    def fake_research(original_question, timings=None):
+        return []
+
+    def fake_prepare_answer(original_question, **kwargs):
+        captured.update(kwargs)
+        return "The answer."
+
+    monkeypatch.setattr(question, "needs_research", fake_needs_research)
+    monkeypatch.setattr(question, "research", fake_research)
+    monkeypatch.setattr(question, "prepare_answer", fake_prepare_answer)
+
+    result = question.answer_question("What is Python?")
+
+    assert result.answer == "The answer."
+    assert result.source == "llm"
+    assert captured["research_unavailable"] is True
+
+
+def test_answer_question_reports_language_model_failure(monkeypatch):
+    def fake_prepare_answer(original_question, **kwargs):
+        raise RuntimeError("model unavailable")
+
+    monkeypatch.setattr(question, "needs_research", lambda q: False)
+    monkeypatch.setattr(question, "prepare_answer", fake_prepare_answer)
+
+    result = question.answer_question("What is Python?")
+
+    assert result.source is None
+    assert "couldn't reach the language model" in result.answer
+

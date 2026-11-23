@@ -73,7 +73,7 @@ def test_generate_uses_timeout(monkeypatch):
     result = llm.generate("Hello")
 
     assert result == "Hello"
-    assert captured["timeout"] == 60
+    assert captured["timeout"] == llm.LLM_TIMEOUT
 
 
 def test_generate_propagates_urlopen_error(monkeypatch):
